@@ -26,34 +26,65 @@ mod xlm {
     ) -> soroban_sdk::token::StellarAssetClient<'a> {
         soroban_sdk::token::StellarAssetClient::new(&env, &contract_id(env))
     }
+
     /// Create a Stellar Asset Client for the asset which provides an admin interface
     pub fn token_client<'a>(env: &soroban_sdk::Env) -> soroban_sdk::token::TokenClient<'a> {
         soroban_sdk::token::TokenClient::new(&env, &contract_id(env))
     }
 }
+
 const ONE_XLM: i128 = 1_000_000_0; // 1 XLM in stroops;
 
 pub const fn to_stroops(num: u64) -> i128 {
     (num as i128) * ONE_XLM
 }
 
+// ORIGINAL: el scaffold obtiene XLM mediante Stellar Registry.
+//
+// #[cfg(not(test))]
+// stellar_registry::import_asset!("xlm");
+
+// CAMBIO: usamos directamente la dirección del contrato de XLM que existe
+// en Testnet, ya que estamos desplegando directamente en esa red.
 #[cfg(not(test))]
-stellar_registry::import_asset!("xlm");
+mod xlm {
+    pub fn contract_id(env: &soroban_sdk::Env) -> soroban_sdk::Address {
+        soroban_sdk::Address::from_string(&soroban_sdk::String::from_str(
+            env,
+            "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC",
+        ))
+    }
+
+    pub fn token_client<'a>(env: &soroban_sdk::Env) -> soroban_sdk::token::TokenClient<'a> {
+        soroban_sdk::token::TokenClient::new(env, &contract_id(env))
+    }
+}
 
 #[allow(unused)]
 pub const SERIALIZED_ASSET: [u8; 4] = [0, 0, 0, 0];
 
 pub use xlm::*;
+
 mod register {
-    
+
+    // ORIGINAL: intentaba crear el contrato del activo.
+    //
+    // #[allow(unused)]
+    // #[cfg(not(test))]
+    // pub fn register(env: &soroban_sdk::Env, admin: &soroban_sdk::Address) {
+    //     let balance = super::token_client(env).try_balance(&env.current_contract_address());
+    //     if balance.is_err()  {
+    //         env.deployer()
+    //             .with_stellar_asset(super::SERIALIZED_ASSET)
+    //             .deploy();
+    //     }
+    // }
+
+    // CAMBIO: XLM ya existe en Testnet, por lo que no necesitamos
+    // desplegar otro contrato para representarlo.
     #[allow(unused)]
     #[cfg(not(test))]
-    pub fn register(env: &soroban_sdk::Env, admin: &soroban_sdk::Address) {
-        let balance = super::token_client(env).try_balance(&env.current_contract_address());
-        if balance.is_err()  {
-            env.deployer().with_stellar_asset(super::SERIALIZED_ASSET).deploy();
-        }
-    }
+    pub fn register(_env: &soroban_sdk::Env, _admin: &soroban_sdk::Address) {}
 }
 
 #[allow(unused_imports)]
