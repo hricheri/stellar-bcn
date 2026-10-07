@@ -28,7 +28,7 @@ Este repositorio es el punto de partida del taller, no el proyecto final. Viene 
 ## Instalación
 
 ```bash
-git clone [https://github.com/janijesse/taller-stellar-bcn.git]
+git clone https://github.com/janijesse/taller-stellar-bcn.git
 cd taller-stellar-bcn
 npm install
 cp app/.env.example app/.env
