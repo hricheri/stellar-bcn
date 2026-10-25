@@ -1,6 +1,6 @@
 import { poseidon1 } from "poseidon-lite"
 // Types from the Client that `stellar scaffold` generates for our contract
-import  {
+import {
 	type Artist,
 	type Booking,
 	type Reputation,
@@ -120,11 +120,7 @@ export const markSeen = (me: string, other: string, count: number) => {
 const WEIGHTS = { city: 35, dates: 35, amenities: 30 }
 
 const normalize = (s: string) =>
-	s
-		.normalize("NFD")
-		.replace(/[̀-ͯ]/g, "")
-		.toLowerCase()
-		.trim()
+	s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim()
 
 export const toUnix = (date: string) =>
 	Math.floor(new Date(`${date}T00:00:00Z`).getTime() / 1000)
@@ -139,7 +135,8 @@ export function matchSpot(spot: Spot, wish: Wishlist): MatchResult {
 		const to = toUnix(wish.to)
 		const overlap =
 			Math.min(to, Number(spot.end)) - Math.max(from, Number(spot.start))
-		dateOverlap = to > from ? Math.max(0, Math.min(1, overlap / (to - from))) : 0
+		dateOverlap =
+			to > from ? Math.max(0, Math.min(1, overlap / (to - from))) : 0
 	}
 
 	const offered = new Set(spot.amenities)
@@ -196,17 +193,23 @@ export const formatXlm = (stroops: bigint) =>
 	stroops === 0n ? "Sin depósito" : `${Number(stroops) / Number(STROOPS)} XLM`
 
 export const TAG_LABELS: Record<string, string> = {
+	higiene: "Higiene y seguridad",
 	limpio: "Limpio",
 	insumos_ok: "Insumos prometidos",
 	responde: "Responde a tiempo",
 	promocion: "Promocionó mi visita",
 	respetuosx: "Respetuosx",
-	limpix: "Limpix",
 	ordenadx: "Ordenadx",
 	grafica: "Hizo su gráfica a tiempo",
 }
-export const HOST_TAGS = ["limpio", "insumos_ok", "responde", "promocion"]
-export const GUEST_TAGS = ["respetuosx", "limpix", "ordenadx", "responde", "grafica"]
+export const HOST_TAGS = ["higiene", "insumos_ok", "responde", "promocion"]
+export const GUEST_TAGS = [
+	"higiene",
+	"respetuosx",
+	"ordenadx",
+	"responde",
+	"grafica",
+]
 
 // ----- Invitaciones para clientes (Poseidon) -----
 
@@ -216,9 +219,11 @@ const BN254_R =
 
 export function newInviteSecret(): bigint {
 	const bytes = crypto.getRandomValues(new Uint8Array(31)) // 248 bits < r
-	return BigInt(
-		"0x" + Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join(""),
-	) % BN254_R
+	return (
+		BigInt(
+			"0x" + Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join(""),
+		) % BN254_R
+	)
 }
 
 /** Same as the contract's `commitment_of`: Poseidon(secret) over BN254 */
@@ -239,9 +244,7 @@ export function formatRange(start: bigint | number, end: bigint | number) {
 	const month = (d: Date) =>
 		d.toLocaleDateString("es-ES", { month: "short", timeZone: "UTC" })
 	const sameMonth = month(s) === month(e)
-	const left = sameMonth
-		? `${s.getUTCDate()}`
-		: `${s.getUTCDate()} ${month(s)}`
+	const left = sameMonth ? `${s.getUTCDate()}` : `${s.getUTCDate()} ${month(s)}`
 	return `${left} – ${e.getUTCDate()} ${month(e)} (${days} ${days === 1 ? "día" : "días"})`
 }
 
@@ -273,13 +276,19 @@ export function pendingActions(
 ): PendingAction[] {
 	const amHost = b.host === me
 	const out: PendingAction[] = []
-	if (b.status === BK_PENDING) out.push(amHost ? "confirmar_fechas" : "esperando_host")
+	if (b.status === BK_PENDING)
+		out.push(amHost ? "confirmar_fechas" : "esperando_host")
 	if (b.status === BK_CONFIRMED) {
-		if (!(amHost ? b.host_promo_sent : b.guest_promo_sent)) out.push("enviar_grafica")
-		const started = spotStart === undefined || Date.now() / 1000 >= Number(spotStart)
+		if (!(amHost ? b.host_promo_sent : b.guest_promo_sent))
+			out.push("enviar_grafica")
+		const started =
+			spotStart === undefined || Date.now() / 1000 >= Number(spotStart)
 		if (amHost && started) out.push("confirmar_estancia")
 	}
-	if (b.status === BK_COMPLETED && !(amHost ? b.host_reviewed : b.guest_reviewed))
+	if (
+		b.status === BK_COMPLETED &&
+		!(amHost ? b.host_reviewed : b.guest_reviewed)
+	)
 		out.push("resenar")
 	return out
 }
