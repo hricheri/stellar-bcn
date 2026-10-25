@@ -198,14 +198,15 @@ export const formatXlm = (stroops: bigint) =>
 export const TAG_LABELS: Record<string, string> = {
 	limpio: "Limpio",
 	insumos_ok: "Insumos prometidos",
-	responde: "Responde rápido",
+	responde: "Responde a tiempo",
 	promocion: "Promocionó mi visita",
 	respetuosx: "Respetuosx",
 	limpix: "Limpix",
 	ordenadx: "Ordenadx",
+	grafica: "Hizo su gráfica a tiempo",
 }
 export const HOST_TAGS = ["limpio", "insumos_ok", "responde", "promocion"]
-export const GUEST_TAGS = ["respetuosx", "limpix", "ordenadx"]
+export const GUEST_TAGS = ["respetuosx", "limpix", "ordenadx", "responde", "grafica"]
 
 // ----- Invitaciones para clientes (Poseidon) -----
 
