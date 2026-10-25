@@ -6,6 +6,7 @@ import {
 	type Artist,
 	formatDate,
 	formatXlm,
+	isEstablished,
 	type MatchResult,
 	type Spot,
 	SPOT_OPEN,
@@ -55,6 +56,22 @@ export const SpotCard = ({
 				<div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap" }}>
 					<span className="pill pill-lima">ESTUDIO</span>
 					{isHome && <span className="pill pill-lavender">+ HOGAR</span>}
+					{host &&
+						(isEstablished(host) ? (
+							<span
+								className="pill pill-lima"
+								title="Su host tiene 3+ reseñas con promedio 4 o más"
+							>
+								★ ESTABLECIDO
+							</span>
+						) : (
+							<span
+								className="pill pill-lavender"
+								title="Su host todavía está construyendo reputación"
+							>
+								✦ NUEVO
+							</span>
+						))}
 					{!open && <span className="pill pill-dark">RESERVADO</span>}
 				</div>
 				{match && <MatchRing percent={match.percent} />}
@@ -68,7 +85,10 @@ export const SpotCard = ({
 				</div>
 
 				{host && (
-					<ArtistRow artist={host} extra={<LikeButton artist={host.address} />} />
+					<ArtistRow
+						artist={host}
+						extra={<LikeButton artist={host.address} />}
+					/>
 				)}
 
 				{match ? (

@@ -5,6 +5,7 @@ import { PageTitle } from "../components/TattooUI"
 import { useArtist, useArtists, useSpots } from "../hooks/useTattoo"
 import { useWallet } from "../hooks/useWallet"
 import {
+	isEstablished,
 	loadWishlist,
 	matchSpot,
 	saveWishlist,
@@ -41,6 +42,26 @@ const Explore = () => {
 		[spots.data, wish, onlyOpen],
 	)
 
+	// Igual que en Artistas: estudios de hosts establecidxs y de hosts nuevxs
+	const [established, newcomers] = useMemo(() => {
+		const isEst = (s: (typeof results)[number]) => {
+			const host = hosts.get(s.spot.host)
+			return host ? isEstablished(host) : false
+		}
+		return [results.filter(isEst), results.filter((r) => !isEst(r))]
+	}, [results, hosts])
+
+	const renderSpots = (list: typeof results) =>
+		list.map(({ spot, match }) => (
+			<SpotCard
+				key={spot.id}
+				spot={spot}
+				match={match}
+				host={hosts.get(spot.host)}
+				me={me.data}
+			/>
+		))
+
 	return (
 		<>
 			<PageTitle
@@ -52,7 +73,10 @@ const Explore = () => {
 				<div className="ts-card-body">
 					<div className="split-title" style={{ margin: 0 }}>
 						<h2>Lo que busco</h2>
-						<button className="btn-ghost" onClick={() => setShowForm(!showForm)}>
+						<button
+							className="btn-ghost"
+							onClick={() => setShowForm(!showForm)}
+						>
 							{showForm ? "Ocultar" : "Editar"}
 						</button>
 					</div>
@@ -114,7 +138,9 @@ const Explore = () => {
 				</label>
 			</div>
 
-			{spots.isLoading && <div className="empty-state">Cargando estudios de la blockchain...</div>}
+			{spots.isLoading && (
+				<div className="empty-state">Cargando estudios de la blockchain...</div>
+			)}
 			{spots.error && (
 				<div className="alert alert-error">
 					No pudimos leer el contrato: {(spots.error as Error).message}
@@ -126,15 +152,26 @@ const Explore = () => {
 				</div>
 			)}
 
-			{results.map(({ spot, match }) => (
-				<SpotCard
-					key={spot.id}
-					spot={spot}
-					match={match}
-					host={hosts.get(spot.host)}
-					me={me.data}
-				/>
-			))}
+			{established.length > 0 && (
+				<>
+					<div className="split-title">
+						<h2>★ Estudios establecidos</h2>
+						<span className="hint">Host con 3+ reseñas, promedio 4 o más</span>
+					</div>
+					{renderSpots(established)}
+				</>
+			)}
+			{newcomers.length > 0 && (
+				<>
+					<div className="split-title">
+						<h2>✦ Estudios nuevos</h2>
+						<span className="hint">
+							Su host está construyendo su reputación
+						</span>
+					</div>
+					{renderSpots(newcomers)}
+				</>
+			)}
 		</>
 	)
 }
