@@ -89,6 +89,48 @@ export const useStudioReviews = (studioId?: number) =>
 				.result,
 	})
 
+/** Reviews an artist wrote: about other artists and about studios */
+export const useReviewsBy = (address?: string) => {
+	const artists = useArtists()
+	const studios = useStudios()
+	return useQuery({
+		queryKey: [
+			"reviews-by",
+			address,
+			artists.data?.length,
+			studios.data?.length,
+		],
+		enabled: !!address && !!artists.data && !!studios.data,
+		queryFn: async () => {
+			const [aboutArtists, aboutStudios] = await Promise.all([
+				Promise.all(
+					artists.data!.map(async (a) =>
+						(await tattooGuestSpot.list_reviews({ artist: a.address })).result
+							.filter((r) => r.from === address)
+							.map((review) => ({ review, about: a.name, studio: false })),
+					),
+				),
+				Promise.all(
+					studios.data!.map(async (s) =>
+						(
+							await tattooGuestSpot.list_studio_reviews({ studio_id: s.id })
+						).result
+							.filter((r) => r.from === address)
+							.map((review) => ({
+								review,
+								about: `${s.name} (${s.city})`,
+								studio: true,
+							})),
+					),
+				),
+			])
+			return [...aboutArtists.flat(), ...aboutStudios.flat()].sort(
+				(x, y) => Number(y.review.timestamp) - Number(x.review.timestamp),
+			)
+		},
+	})
+}
+
 export const useArtists = () =>
 	useQuery({
 		queryKey: ["artists"],

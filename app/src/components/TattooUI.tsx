@@ -58,11 +58,19 @@ export const Photo = ({
 }
 
 /** Their own photo (private, from their account), or a sample one */
-export const Avatar = ({ artist, big }: { artist: Artist; big?: boolean }) => {
+export const Avatar = ({
+	artist,
+	big,
+	xl,
+}: {
+	artist: Artist
+	big?: boolean
+	xl?: boolean
+}) => {
 	const own = usePhotoUrl(useProfileOf(artist.address)?.avatar_path)
 	const src = own.data ?? artistPhoto(artist.name)
 	return (
-		<div className={`avatar${big ? " big" : ""}`}>
+		<div className={`avatar${big ? " big" : ""}${xl ? " xl" : ""}`}>
 			<Photo
 				key={src}
 				src={src}

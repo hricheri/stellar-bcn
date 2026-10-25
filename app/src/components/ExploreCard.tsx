@@ -1,5 +1,6 @@
 import { useRef, useState } from "react"
 import { Link } from "react-router-dom"
+import { useAuth } from "../hooks/useAuth"
 import { useStudioImage } from "../hooks/useProfiles"
 import { useSend } from "../hooks/useTattoo"
 import { useWallet } from "../hooks/useWallet"
@@ -12,18 +13,15 @@ import {
 	type MatchResult,
 	type Spot,
 	type Studio,
-	studioAvg,
 	type StudioTier,
 } from "../lib/tattoo"
+import { CardBack } from "./CardBack"
 import { ProposeDates } from "./ProposeDates"
 import {
 	Avatar,
-	BasicsBadge,
 	CalendarIcon,
 	ErrorNotice,
 	Photo,
-	RatingLine,
-	StudioTierBadge,
 	TierBadge,
 	TxNotice,
 } from "./TattooUI"
@@ -86,6 +84,20 @@ export const MaterialsLine = ({ m }: { m: MatchResult }) =>
 		</>
 	)
 
+/** "Sign in to ..." or "Create your profile to ..." */
+const Join = ({ what }: { what: string }) => {
+	const { ready, session } = useAuth()
+	return ready && !session ? (
+		<>
+			<Link to="/entrar">Sign in</Link> to {what}.
+		</>
+	) : (
+		<>
+			<Link to="/perfil">Create your profile</Link> to {what}.
+		</>
+	)
+}
+
 export const ExploreCard = ({
 	c,
 	me,
@@ -108,6 +120,8 @@ export const ExploreCard = ({
 	const city = c.studio?.city ?? c.spots[0]?.city ?? a.city
 	const profile = `/artista/${a.address}`
 	const studioImage = useStudioImage(c.studio)
+	const { session, ready } = useAuth()
+	const signedIn = !ready || !!session
 
 	const onPointerDown = (e: React.PointerEvent<HTMLElement>) => {
 		if ((e.target as HTMLElement).closest("button, a, input, select")) return
@@ -221,8 +235,7 @@ export const ExploreCard = ({
 										{c.studio && (
 											<>
 												{" "}
-												<Link to="/perfil">Create your profile</Link> to ask for
-												a visit.
+												<Join what="ask for a visit" />
 											</>
 										)}
 									</p>
@@ -241,8 +254,7 @@ export const ExploreCard = ({
 										/>
 									) : (
 										<p className="hint">
-											<Link to="/perfil">Create your profile</Link> to request
-											dates.
+											<Join what="request dates" />
 										</p>
 									)
 								) : (
@@ -254,67 +266,16 @@ export const ExploreCard = ({
 				</article>
 
 				{/* Back: the extra info */}
-				<article className="flip-face flip-back ts-card">
-					<div className="flip-back-head">
-						<button className="btn-ghost" onClick={() => setFlipped(false)}>
-							← Back
-						</button>
-						{liked && <span className="pill pill-dark">♥ In favorites</span>}
-					</div>
-					<div className="flip-back-body">
-						<Link to={profile} className="host-name">
-							{a.name}
-						</Link>
-						<div className="meta">
-							{a.instagram} · <RatingLine artist={a} />
-						</div>
-						{c.studio && (
-							<div className="meta" style={{ marginTop: "0.6rem" }}>
-								<b>{c.studio.name}</b> · ⭐ {studioAvg(c.studio)} (
-								{c.studio.review_count}{" "}
-								{c.studio.review_count === 1 ? "review" : "reviews"}) ·{" "}
-								{c.studio.members.length}{" "}
-								{c.studio.members.length === 1 ? "artist" : "artists"}
-								<div className="chips" style={{ marginTop: "0.35rem" }}>
-									{c.tier && <StudioTierBadge tier={c.tier} />}
-									<BasicsBadge spot={c.studio} />
-								</div>
-							</div>
-						)}
-						{c.spots.length > 0 && (
-							<>
-								<div className="section-label">Free dates</div>
-								<div className="chips">
-									{c.spots.map((s) => (
-										<span key={s.id} className="chip chip-has">
-											{formatRange(s.start, s.end)}
-											{s.kind !== "studio" ? " · + home" : ""}
-										</span>
-									))}
-								</div>
-							</>
-						)}
-						{m.extras.length > 0 && (
-							<>
-								<div className="section-label has">Extras</div>
-								<div className="chips">
-									{m.extras.map((id) => (
-										<span key={id} className="chip chip-has">
-											{amenityLabel(id)}
-										</span>
-									))}
-								</div>
-							</>
-						)}
-						<Link
-							to={profile}
-							className="btn-ghost"
-							style={{ marginTop: "auto", alignSelf: "flex-start" }}
-						>
-							See profile and reviews →
-						</Link>
-					</div>
-				</article>
+				<CardBack
+					artist={a}
+					studio={c.studio}
+					tier={c.tier}
+					spots={c.spots}
+					match={m}
+					liked={liked}
+					signedIn={signedIn}
+					onBack={() => setFlipped(false)}
+				/>
 			</div>
 		</div>
 	)
