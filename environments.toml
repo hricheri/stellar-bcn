@@ -75,6 +75,7 @@ STELLAR_ACCOUNT=cata like_artist --from cata --to me
 STELLAR_ACCOUNT=dani like_artist --from dani --to me
 like_artist --from me --to dani
 STELLAR_ACCOUNT=dani send_message --from dani --to me --text 'Hola Hui! Me encantaria ir a tu estudio en noviembre, te propuse fechas'
+STELLAR_ACCOUNT=cata send_message --from cata --to me --text 'Hola Hui! Soy Cata de CDMX, quieres venir de guest en diciembre?'
 """
 
 # Rather than in one list, TOML allows specifying contracts in their own "sections"

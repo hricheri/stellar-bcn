@@ -332,6 +332,32 @@ fn chat_only_between_connected_artists() {
         t.client.send_message(&ana, &bea, &hi);
     }
     assert_eq!(t.client.list_messages(&ana, &bea).len(), CHAT_MAX_MESSAGES);
+    assert_eq!(t.client.list_contacts(&bea), vec![&t.env, ana.clone()]);
+}
+
+#[test]
+fn established_artists_can_write_first() {
+    let t = setup();
+    let ana = artist(&t, "Ana", "Barcelona");
+    let bea = artist(&t, "Bea", "Berlin");
+    let cata = artist(&t, "Cata", "Madrid");
+    let hi = s(&t.env, "Hola! Coordinamos fechas?");
+    // Ana (new) can't write to Cata without a match
+    assert_eq!(
+        t.client.try_send_message(&ana, &cata, &hi),
+        Err(Ok(Error::NotConnected))
+    );
+    // Bea becomes established after three good stays with Ana
+    for _ in 0..3 {
+        stay(&t, &ana, &bea, 5, 5);
+    }
+    assert!(t.client.get_reputation(&bea).home_swap_unlocked);
+    assert!(!t.client.get_reputation(&cata).home_swap_unlocked);
+    t.client.send_message(&bea, &cata, &hi);
+    // ...and Cata, still new, can answer the conversation Bea started
+    t.client.send_message(&cata, &bea, &s(&t.env, "Claro!"));
+    assert_eq!(t.client.list_messages(&cata, &bea).len(), 2);
+    assert!(t.client.list_contacts(&cata).contains(&bea));
 }
 
 #[test]

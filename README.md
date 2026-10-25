@@ -75,7 +75,7 @@ Lxs tatuadorxs viajan para trabajar como *guest artists*, pero:
 | `complete_stay` | host | Cierra la estancia y habilita las reseñas |
 | `review_artist` | host o guest | Reseña mutua: 1 a 5 estrellas, etiquetas y comentario; una por lado. La reseña del guest también suma al estudio |
 | `like_artist` / `list_likes` | artista | Like; si es mutuo, es **match** |
-| `send_message` / `list_messages` | matches | Chat corto (280 caracteres), solo entre matches o artistas con una reserva compartida |
+| `send_message` / `list_messages` | artistas | Chat corto (280 caracteres) entre matches o artistas con una reserva compartida. Lxs **establecidxs** pueden escribir primero sin match, y la otra persona puede responder |
 | `create_client_invite` / `review_by_client` | artista / cliente | QR de un solo uso verificado con Poseidon |
 | `get_reputation` | cualquiera | Promedio, cantidad de reseñas y si desbloqueó estudio + hogar |
 

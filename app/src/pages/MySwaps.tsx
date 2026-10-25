@@ -10,6 +10,7 @@ import { type CalendarEvent, SwapCalendar } from "../components/SwapCalendar"
 import { MatchRing, PageTitle, TierBadge } from "../components/TattooUI"
 import {
 	useAllLikes,
+	useContacts,
 	useArtist,
 	useArtists,
 	useBookings,
@@ -28,6 +29,7 @@ import {
 	loadWishlist,
 	matchSpot,
 	isStudioArtist,
+	isEstablished,
 	pendingActions,
 	promoDeadline,
 	seenCount,
@@ -103,6 +105,7 @@ const MySwaps = ({ section }: { section: Section }) => {
 	const allLikes = useAllLikes(allAddresses)
 	const send = useSend()
 	const studios = useStudios()
+	const contacts = useContacts(address)
 	const [chatOpen, setChatOpen] = useState<string>()
 
 	// ----- Scroll-spy: the side menu follows the section on screen -----
@@ -151,6 +154,10 @@ const MySwaps = ({ section }: { section: Section }) => {
 	const data = useMemo(() => {
 		if (!address) return undefined
 		const mine = new Set(myLikes.data ?? [])
+		const talkedTo = new Set(contacts.data ?? [])
+		const meProfile = (artists.data ?? []).find((a) => a.address === address)
+		// Established artists can write to anyone, without a match
+		const iCanWriteFirst = meProfile ? isEstablished(meProfile) : false
 		const likedMe = new Set(
 			[...(allLikes.data?.entries() ?? [])]
 				.filter(([, likes]) => likes.includes(address))
@@ -174,7 +181,9 @@ const MySwaps = ({ section }: { section: Section }) => {
 					? "liked"
 					: likedMe.has(artist.address)
 						? "likedMe"
-						: undefined
+						: talkedTo.has(artist.address)
+							? "contact"
+							: undefined
 			if (!kind && !booking) continue
 			const spot = (spots.data ?? []).find(
 				(s) => s.host === artist.address && s.status === SPOT_OPEN,
@@ -196,7 +205,11 @@ const MySwaps = ({ section }: { section: Section }) => {
 						)
 					: [],
 				unread: 0,
-				canChat: isMatch || !!booking,
+				canChat:
+					isMatch ||
+					!!booking ||
+					talkedTo.has(artist.address) ||
+					iCanWriteFirst,
 			})
 		}
 		return connections
@@ -209,6 +222,7 @@ const MySwaps = ({ section }: { section: Section }) => {
 		bookings.data,
 		wish,
 		studios.data,
+		contacts.data,
 	])
 
 	// Unread messages per connection
@@ -252,7 +266,11 @@ const MySwaps = ({ section }: { section: Section }) => {
 		.filter((c) => c.kind === "match" || c.booking)
 		.sort((a, b) => urgency(b) - urgency(a))
 	const liked = withUnread
-		.filter((c) => (c.kind === "liked" || c.kind === "likedMe") && !c.booking)
+		.filter(
+			(c) =>
+				(c.kind === "liked" || c.kind === "likedMe" || c.kind === "contact") &&
+				!c.booking,
+		)
 		.sort((a, b) => b.unread - a.unread || (a.kind === "likedMe" ? -1 : 1))
 
 	// ----- Calendar events -----
@@ -359,8 +377,8 @@ const MySwaps = ({ section }: { section: Section }) => {
 					)}
 				/>
 				<div className="split-title">
-					<h2>♡ Likes</h2>
-					<span className="hint">Te gustan o les gustas</span>
+					<h2>♡ Likes y conversaciones</h2>
+					<span className="hint">Primero, los mensajes sin leer</span>
 				</div>
 				<Carousel
 					items={liked}

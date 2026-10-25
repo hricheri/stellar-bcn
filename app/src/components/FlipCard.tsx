@@ -23,7 +23,8 @@ import {
 
 export interface Connection {
 	artist: Artist
-	kind: "match" | "liked" | "likedMe"
+	/** contact: no match, but you have a conversation (an established artist wrote first) */
+	kind: "match" | "liked" | "likedMe" | "contact"
 	/** Their open spot, if any */
 	spot?: Spot
 	booking?: Booking
@@ -121,6 +122,9 @@ export const FlipCard = ({
 							)}
 							{c.kind === "likedMe" && (
 								<span className="pill pill-lima">♥ TE DIO LIKE</span>
+							)}
+							{c.kind === "contact" && (
+								<span className="pill pill-lavender">💬 CONVERSACIÓN</span>
 							)}
 							{c.unread > 0 && (
 								<span className="pill pill-lavender">

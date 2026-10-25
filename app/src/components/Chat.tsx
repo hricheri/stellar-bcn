@@ -52,7 +52,7 @@ export const Chat = ({
 					>
 						{canChat
 							? `Escríbele a ${other.name} para coordinar fechas.`
-							: "Podrán chatear cuando haya match."}
+							: "Podrán chatear cuando haya match. Lxs artistas establecidxs pueden escribir sin match."}
 					</div>
 				)}
 				{messages.data?.map((m, i) => (

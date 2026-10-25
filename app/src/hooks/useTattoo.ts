@@ -66,6 +66,14 @@ export const useSpots = () =>
 		queryFn: async () => (await tattooGuestSpot.list_spots()).result,
 	})
 
+export const useContacts = (address?: string) =>
+	useQuery({
+		queryKey: ["contacts", address],
+		enabled: !!address,
+		queryFn: async () =>
+			(await tattooGuestSpot.list_contacts({ artist: address! })).result,
+	})
+
 export const useStudios = () =>
 	useQuery({
 		queryKey: ["studios"],

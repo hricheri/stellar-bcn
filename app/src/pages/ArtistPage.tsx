@@ -1,4 +1,5 @@
 import { useParams } from "react-router-dom"
+import { Chat } from "../components/Chat"
 import { LikeButton } from "../components/LikeButton"
 import { ProposeDates } from "../components/ProposeDates"
 import { ReviewList } from "../components/ReviewList"
@@ -11,7 +12,7 @@ import {
 } from "../components/TattooUI"
 import { useArtist, useReviews, useSpots } from "../hooks/useTattoo"
 import { useWallet } from "../hooks/useWallet"
-import { SPOT_OPEN } from "../lib/tattoo"
+import { isEstablished, SPOT_OPEN } from "../lib/tattoo"
 
 const ArtistPage = () => {
 	const { address: artistAddress } = useParams()
@@ -77,13 +78,32 @@ const ArtistPage = () => {
 				</>
 			)}
 
-			{me.data && address !== a.address && (
+			{me.data && address && address !== a.address && (
 				<section className="ts-card">
 					<div className="ts-card-body">
 						<ProposeDates host={a.address} />
 					</div>
 				</section>
 			)}
+
+			{me.data &&
+				address &&
+				address !== a.address &&
+				isEstablished(me.data) && (
+					<>
+						<div className="split-title">
+							<h2>Escribirle</h2>
+							<span className="hint">
+								Como establecidx puedes contactar sin match
+							</span>
+						</div>
+						<section className="ts-card">
+							<div className="ts-card-body">
+								<Chat me={address} other={a} canChat />
+							</div>
+						</section>
+					</>
+				)}
 
 			<div className="split-title">
 				<h2>Reseñas on-chain</h2>

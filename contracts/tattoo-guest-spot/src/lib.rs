@@ -46,6 +46,8 @@ pub enum DataKey {
     Studio(u32),
     StudioCount,
     StudioReviews(u32),
+    /// Everyone an artist has a conversation with
+    Contacts(Address),
     /// Conversation between two artists, addresses in ascending order
     Chat(Address, Address),
 }
@@ -720,7 +722,11 @@ impl TattooGuestSpot {
             return Err(Error::NotConnected);
         }
         let key = Self::chat_key(&from, &to);
-        let mut messages = Self::list_messages(env, from.clone(), to);
+        let mut messages = Self::list_messages(env, from.clone(), to.clone());
+        if messages.is_empty() {
+            Self::add_contact(env, &from, &to);
+            Self::add_contact(env, &to, &from);
+        }
         if messages.len() >= CHAT_MAX_MESSAGES {
             messages.pop_front();
         }
@@ -740,12 +746,31 @@ impl TattooGuestSpot {
             .unwrap_or(Vec::new(env))
     }
 
-    /// Matched (mutual like) or sharing a booking
+    /// Everyone this artist has a conversation with
+    pub fn list_contacts(env: &Env, artist: Address) -> Vec<Address> {
+        env.storage()
+            .persistent()
+            .get(&DataKey::Contacts(artist))
+            .unwrap_or(Vec::new(env))
+    }
+
+    /// Can `a` write to `b`? Yes if they matched (mutual like), share a
+    /// booking or already have a conversation. Established artists can also
+    /// contact anyone first, to coordinate dates and trips.
     pub fn can_chat(env: &Env, a: &Address, b: &Address) -> bool {
         if a == b {
             return false;
         }
         if Self::list_likes(env, a.clone()).contains(b) && Self::list_likes(env, b.clone()).contains(a) {
+            return true;
+        }
+        if Self::list_contacts(env, a.clone()).contains(b) {
+            return true;
+        }
+        let established = Self::get_artist(env, a.clone())
+            .map(|p| Self::reputation_of(&p).home_swap_unlocked)
+            .unwrap_or(false);
+        if established && Self::get_artist(env, b.clone()).is_some() {
             return true;
         }
         Self::list_bookings(env, a.clone())
@@ -873,6 +898,14 @@ impl TattooGuestSpot {
             HomeSwapUnlocked { artist }.publish(env);
         }
         Ok(())
+    }
+
+    fn add_contact(env: &Env, artist: &Address, other: &Address) {
+        let mut contacts = Self::list_contacts(env, artist.clone());
+        if !contacts.contains(other) {
+            contacts.push_back(other.clone());
+            Self::save(env, &DataKey::Contacts(artist.clone()), &contacts);
+        }
     }
 
     fn chat_key(a: &Address, b: &Address) -> DataKey {
