@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react"
-import { AmenityPicker } from "../components/AmenityPicker"
+import { Link } from "react-router-dom"
 import { SpotCard } from "../components/SpotCard"
 import { PageTitle } from "../components/TattooUI"
+import { WishlistEditor } from "../components/WishlistEditor"
 import { useArtist, useArtists, useSpots } from "../hooks/useTattoo"
 import { useWallet } from "../hooks/useWallet"
 import {
@@ -18,11 +19,10 @@ const Explore = () => {
 	const artists = useArtists()
 	const me = useArtist(address)
 	const [wish, setWish] = useState<Wishlist>(loadWishlist)
-	const [showForm, setShowForm] = useState(true)
+	const [showForm, setShowForm] = useState(false)
 	const [onlyOpen, setOnlyOpen] = useState(true)
 
-	const update = (patch: Partial<Wishlist>) => {
-		const next = { ...wish, ...patch }
+	const setAndSave = (next: Wishlist) => {
 		setWish(next)
 		saveWishlist(next)
 	}
@@ -59,47 +59,24 @@ const Explore = () => {
 							{showForm ? "Ocultar" : "Editar"}
 						</button>
 					</div>
-					{showForm && (
+					{showForm ? (
 						<div style={{ marginTop: "0.85rem" }}>
-							<div className="field-row">
-								<div className="field" style={{ minWidth: 180 }}>
-									<label htmlFor="city">Ciudad</label>
-									<input
-										id="city"
-										placeholder="Berlín, Lisboa..."
-										value={wish.city}
-										onChange={(e) => update({ city: e.target.value })}
-									/>
-								</div>
-								<div className="field">
-									<label htmlFor="from">Desde</label>
-									<input
-										id="from"
-										type="date"
-										value={wish.from}
-										onChange={(e) => update({ from: e.target.value })}
-									/>
-								</div>
-								<div className="field">
-									<label htmlFor="to">Hasta</label>
-									<input
-										id="to"
-										type="date"
-										value={wish.to}
-										onChange={(e) => update({ to: e.target.value })}
-									/>
-								</div>
-							</div>
-							<AmenityPicker
-								selected={wish.wanted}
-								onChange={(wanted) => update({ wanted })}
-							/>
-							<p className="hint" style={{ marginTop: "0.85rem" }}>
-								Match = ciudad (35%) + fechas que se solapan con tu viaje (35%)
-								+ equipamiento e insumos que buscas (30%).
-							</p>
+							<WishlistEditor wish={wish} onChange={setAndSave} />
+						</div>
+					) : (
+						<div className="chips" style={{ marginTop: "0.6rem" }}>
+							{wish.trips.map((t, i) => (
+								<span key={i} className="chip chip-has">
+									📍 {t.city || "Cualquier ciudad"}
+									{t.from && t.to ? ` · ${t.from} → ${t.to}` : ""}
+								</span>
+							))}
 						</div>
 					)}
+					<p className="hint" style={{ marginTop: "0.6rem" }}>
+						También lo editas en{" "}
+						<Link to="/perfil#lo-que-busco">tu perfil</Link>.
+					</p>
 				</div>
 			</section>
 

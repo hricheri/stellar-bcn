@@ -11,6 +11,8 @@ use error::Error;
 
 /// `spot_id` of a booking made from proposed dates, not from a published spot
 pub const NO_SPOT: u32 = 0;
+/// Reviews a studio needs (with the same average as artists) to be "establecido"
+pub const STUDIO_MIN_REVIEWS: u32 = 3;
 
 /// Reviews an artist needs before unlocking studio + home swaps
 pub const HOME_SWAP_MIN_REVIEWS: u32 = 3;
@@ -23,6 +25,10 @@ const TTL_EXTEND_TO: u32 = 17_280 * 30;
 
 const STUDIO: Symbol = symbol_short!("studio");
 const STUDIO_HOME: Symbol = symbol_short!("home");
+/// Only the artist's home, for trusted artists without a studio
+const HOME_ONLY: Symbol = symbol_short!("homeonly");
+/// `studio_id` of a home-only spot or a booking without a studio
+pub const NO_STUDIO: u32 = 0;
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -37,6 +43,9 @@ pub enum DataKey {
     Reviews(Address),
     Invite(U256),
     Likes(Address),
+    Studio(u32),
+    StudioCount,
+    StudioReviews(u32),
     /// Conversation between two artists, addresses in ascending order
     Chat(Address, Address),
 }
@@ -72,13 +81,42 @@ pub enum SpotStatus {
     Done = 2,
 }
 
+/// A studio has its own reputation, separate from its artists, and can have
+/// several artists. Guests review it after each stay.
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Studio {
+    pub id: u32,
+    pub name: String,
+    pub city: String,
+    /// Artists who work there; any of them can publish dates and answer proposals
+    pub members: Vec<Address>,
+    /// Furniture and supplies the studio offers, e.g. camilla, tinta_negra, second_skin
+    pub amenities: Vec<Symbol>,
+    pub review_count: u32,
+    pub score_sum: u32,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct StudioReputation {
+    pub review_count: u32,
+    /// Average score times 100 (e.g. 467 = 4.67)
+    pub average_x100: u32,
+    /// Its own reviews reach the threshold: "establecido"
+    pub established: bool,
+    /// Base reputation: at least one of its artists is "establecidx"
+    pub backed: bool,
+}
+
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Spot {
     pub id: u32,
+    pub studio_id: u32,
     pub host: Address,
     pub city: String,
-    /// "studio" or "home" (studio + home, only for trusted artists)
+    /// "studio", "home" (studio + home) or "homeonly"; the last two only for trusted artists
     pub kind: Symbol,
     /// Unix timestamps (seconds)
     pub start: u64,
@@ -103,6 +141,8 @@ pub enum BookingStatus {
 pub struct Booking {
     pub id: u32,
     pub spot_id: u32,
+    pub studio_id: u32,
+    /// Studio artist in charge of the stay (any member can answer a proposal)
     pub host: Address,
     pub guest: Address,
     /// Unix timestamps (seconds) of the stay
@@ -258,20 +298,109 @@ impl TattooGuestSpot {
             .unwrap_or(Vec::new(env))
     }
 
+    // ----- Studios -----
+
+    /// Create a studio. You become its first artist.
+    pub fn create_studio(
+        env: &Env,
+        owner: Address,
+        name: String,
+        city: String,
+        amenities: Vec<Symbol>,
+    ) -> Result<u32, Error> {
+        owner.require_auth();
+        Self::get_artist(env, owner.clone()).ok_or(Error::NotAnArtist)?;
+        let id = Self::next_id(env, &DataKey::StudioCount);
+        let studio = Studio {
+            id,
+            name,
+            city,
+            members: vec![env, owner],
+            amenities,
+            review_count: 0,
+            score_sum: 0,
+        };
+        Self::save(env, &DataKey::Studio(id), &studio);
+        Ok(id)
+    }
+
+    /// A studio artist adds another registered artist to the studio
+    pub fn add_studio_artist(
+        env: &Env,
+        member: Address,
+        studio_id: u32,
+        artist: Address,
+    ) -> Result<(), Error> {
+        member.require_auth();
+        let mut studio = Self::member_studio(env, &member, studio_id)?;
+        Self::get_artist(env, artist.clone()).ok_or(Error::NotAnArtist)?;
+        if !studio.members.contains(&artist) {
+            studio.members.push_back(artist);
+            Self::save(env, &DataKey::Studio(studio_id), &studio);
+        }
+        Ok(())
+    }
+
+    /// A studio artist updates the furniture and supplies on offer
+    pub fn update_studio_amenities(
+        env: &Env,
+        member: Address,
+        studio_id: u32,
+        amenities: Vec<Symbol>,
+    ) -> Result<(), Error> {
+        member.require_auth();
+        let mut studio = Self::member_studio(env, &member, studio_id)?;
+        studio.amenities = amenities;
+        Self::save(env, &DataKey::Studio(studio_id), &studio);
+        Ok(())
+    }
+
+    pub fn get_studio(env: &Env, studio_id: u32) -> Option<Studio> {
+        env.storage().persistent().get(&DataKey::Studio(studio_id))
+    }
+
+    pub fn list_studios(env: &Env) -> Vec<Studio> {
+        let count: u32 = env
+            .storage()
+            .instance()
+            .get(&DataKey::StudioCount)
+            .unwrap_or(0);
+        let mut out = Vec::new(env);
+        for id in 1..=count {
+            if let Some(s) = Self::get_studio(env, id) {
+                out.push_back(s);
+            }
+        }
+        out
+    }
+
+    pub fn get_studio_reputation(env: &Env, studio_id: u32) -> Result<StudioReputation, Error> {
+        let studio = Self::get_studio(env, studio_id).ok_or(Error::StudioNotFound)?;
+        Ok(Self::studio_reputation_of(env, &studio))
+    }
+
+    pub fn list_studio_reviews(env: &Env, studio_id: u32) -> Vec<Review> {
+        env.storage()
+            .persistent()
+            .get(&DataKey::StudioReviews(studio_id))
+            .unwrap_or(Vec::new(env))
+    }
+
     // ----- Spots and stays -----
 
-    /// Offer your studio (or studio + home) as a guest spot between two dates
+    /// Offer your studio (or studio + home) as a guest spot between two dates.
+    /// City and supplies come from the studio.
     pub fn publish_spot(
         env: &Env,
         host: Address,
-        city: String,
+        studio_id: u32,
         start: u64,
         end: u64,
         include_home: bool,
-        amenities: Vec<Symbol>,
     ) -> Result<u32, Error> {
         host.require_auth();
         let profile = Self::get_artist(env, host.clone()).ok_or(Error::NotAnArtist)?;
+        let studio = Self::member_studio(env, &host, studio_id)?;
         if end <= start {
             return Err(Error::InvalidDates);
         }
@@ -281,12 +410,46 @@ impl TattooGuestSpot {
         let id = Self::next_id(env, &DataKey::SpotCount);
         let spot = Spot {
             id,
+            studio_id,
             host: host.clone(),
-            city,
+            city: studio.city,
             kind: if include_home { STUDIO_HOME } else { STUDIO },
             start,
             end,
-            amenities,
+            amenities: studio.amenities,
+            status: SpotStatus::Open,
+        };
+        Self::save(env, &DataKey::Spot(id), &spot);
+        SpotPublished { host, spot_id: id }.publish(env);
+        Ok(id)
+    }
+
+    /// Trusted artists without a studio can offer only their home
+    pub fn publish_home(
+        env: &Env,
+        host: Address,
+        city: String,
+        start: u64,
+        end: u64,
+    ) -> Result<u32, Error> {
+        host.require_auth();
+        let profile = Self::get_artist(env, host.clone()).ok_or(Error::NotAnArtist)?;
+        if end <= start {
+            return Err(Error::InvalidDates);
+        }
+        if !Self::reputation_of(&profile).home_swap_unlocked {
+            return Err(Error::NotTrustedEnough);
+        }
+        let id = Self::next_id(env, &DataKey::SpotCount);
+        let spot = Spot {
+            id,
+            studio_id: NO_STUDIO,
+            host: host.clone(),
+            city,
+            kind: HOME_ONLY,
+            start,
+            end,
+            amenities: Vec::new(env),
             status: SpotStatus::Open,
         };
         Self::save(env, &DataKey::Spot(id), &spot);
@@ -325,7 +488,7 @@ impl TattooGuestSpot {
         if spot.host == guest {
             return Err(Error::CannotBookOwnSpot);
         }
-        if spot.kind == STUDIO_HOME && !Self::reputation_of(&guest_profile).home_swap_unlocked {
+        if spot.kind != STUDIO && !Self::reputation_of(&guest_profile).home_swap_unlocked {
             return Err(Error::NotTrustedEnough);
         }
         spot.status = SpotStatus::Booked;
@@ -333,6 +496,7 @@ impl TattooGuestSpot {
         Ok(Self::new_booking(
             env,
             spot_id,
+            spot.studio_id,
             spot.host,
             guest,
             spot.start,
@@ -341,33 +505,39 @@ impl TattooGuestSpot {
         ))
     }
 
-    /// Propose new dates at a host's studio. The host reviews them and
+    /// Propose new dates at a studio. Any of its artists reviews them and
     /// accepts (`confirm_booking`) or declines (`decline_booking`).
     pub fn propose_dates(
         env: &Env,
         guest: Address,
-        host: Address,
+        studio_id: u32,
         start: u64,
         end: u64,
     ) -> Result<u32, Error> {
         guest.require_auth();
         Self::get_artist(env, guest.clone()).ok_or(Error::NotAnArtist)?;
-        Self::get_artist(env, host.clone()).ok_or(Error::NotAnArtist)?;
-        if host == guest {
+        let studio = Self::get_studio(env, studio_id).ok_or(Error::StudioNotFound)?;
+        if studio.members.contains(&guest) {
             return Err(Error::CannotBookOwnSpot);
         }
         if end <= start {
             return Err(Error::InvalidDates);
         }
-        Ok(Self::new_booking(
+        let id = Self::new_booking(
             env,
             NO_SPOT,
-            host,
+            studio_id,
+            studio.members.get_unchecked(0),
             guest,
             start,
             end,
             BookingStatus::Pending,
-        ))
+        );
+        // Every studio artist sees the proposal
+        for m in studio.members.iter().skip(1) {
+            Self::index_booking(env, &m, id);
+        }
+        Ok(id)
     }
 
     /// The host accepts the proposed dates
@@ -378,6 +548,8 @@ impl TattooGuestSpot {
             return Err(Error::WrongBookingStatus);
         }
         booking.status = BookingStatus::Confirmed;
+        // Whoever accepts becomes the host of the stay
+        booking.host = host;
         Self::save(env, &DataKey::Booking(booking_id), &booking);
         Ok(())
     }
@@ -482,6 +654,26 @@ impl TattooGuestSpot {
             return Err(Error::NotPartOfBooking);
         };
         Self::save(env, &DataKey::Booking(booking_id), &booking);
+        if role == ReviewerRole::Guest && booking.studio_id != NO_STUDIO {
+            // The guest also reviews the studio, which keeps its own reputation
+            if let Some(mut studio) = Self::get_studio(env, booking.studio_id) {
+                if (1..=5).contains(&score) {
+                    studio.review_count += 1;
+                    studio.score_sum += score;
+                    Self::save(env, &DataKey::Studio(studio.id), &studio);
+                    let mut reviews = Self::list_studio_reviews(env, studio.id);
+                    reviews.push_back(Review {
+                        from: reviewer.clone(),
+                        role,
+                        score,
+                        tags: tags.clone(),
+                        comment: comment.clone(),
+                        timestamp: env.ledger().timestamp(),
+                    });
+                    Self::save(env, &DataKey::StudioReviews(studio.id), &reviews);
+                }
+            }
+        }
         Self::add_review(env, reviewed, reviewer, role, score, tags, comment)
     }
 
@@ -694,6 +886,7 @@ impl TattooGuestSpot {
     fn new_booking(
         env: &Env,
         spot_id: u32,
+        studio_id: u32,
         host: Address,
         guest: Address,
         start: u64,
@@ -704,6 +897,7 @@ impl TattooGuestSpot {
         let booking = Booking {
             id,
             spot_id,
+            studio_id,
             host: host.clone(),
             guest: guest.clone(),
             start,
@@ -725,12 +919,44 @@ impl TattooGuestSpot {
         id
     }
 
+    /// The booking's host, or any studio artist while a proposal is pending
     fn host_booking(env: &Env, host: &Address, booking_id: u32) -> Result<Booking, Error> {
         let booking = Self::get_booking(env, booking_id).ok_or(Error::BookingNotFound)?;
-        if booking.host != *host {
+        let studio_artist = booking.status == BookingStatus::Pending
+            && Self::get_studio(env, booking.studio_id)
+                .map(|s| s.members.contains(host))
+                .unwrap_or(false);
+        if booking.host != *host && !studio_artist {
             return Err(Error::NotPartOfBooking);
         }
         Ok(booking)
+    }
+
+    fn member_studio(env: &Env, member: &Address, studio_id: u32) -> Result<Studio, Error> {
+        let studio = Self::get_studio(env, studio_id).ok_or(Error::StudioNotFound)?;
+        if !studio.members.contains(member) {
+            return Err(Error::NotStudioArtist);
+        }
+        Ok(studio)
+    }
+
+    fn studio_reputation_of(env: &Env, studio: &Studio) -> StudioReputation {
+        let average_x100 = if studio.review_count == 0 {
+            0
+        } else {
+            studio.score_sum * 100 / studio.review_count
+        };
+        StudioReputation {
+            review_count: studio.review_count,
+            average_x100,
+            established: studio.review_count >= STUDIO_MIN_REVIEWS
+                && studio.score_sum >= HOME_SWAP_MIN_AVG * studio.review_count,
+            backed: studio.members.iter().any(|m| {
+                Self::get_artist(env, m)
+                    .map(|a| Self::reputation_of(&a).home_swap_unlocked)
+                    .unwrap_or(false)
+            }),
+        }
     }
 
     fn reputation_of(p: &Artist) -> Reputation {

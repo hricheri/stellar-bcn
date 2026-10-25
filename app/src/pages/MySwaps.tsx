@@ -15,6 +15,7 @@ import {
 	useBookings,
 	useLikes,
 	useSend,
+	useStudios,
 	useSpots,
 } from "../hooks/useTattoo"
 import { useWallet } from "../hooks/useWallet"
@@ -26,6 +27,7 @@ import {
 	formatRange,
 	loadWishlist,
 	matchSpot,
+	isStudioArtist,
 	pendingActions,
 	promoDeadline,
 	seenCount,
@@ -100,6 +102,7 @@ const MySwaps = ({ section }: { section: Section }) => {
 	)
 	const allLikes = useAllLikes(allAddresses)
 	const send = useSend()
+	const studios = useStudios()
 	const [chatOpen, setChatOpen] = useState<string>()
 
 	// ----- Scroll-spy: the side menu follows the section on screen -----
@@ -185,7 +188,13 @@ const MySwaps = ({ section }: { section: Section }) => {
 				booking,
 				bookingSpot,
 				match: shown ? matchSpot(shown, wish) : undefined,
-				actions: booking ? pendingActions(booking, address) : [],
+				actions: booking
+					? pendingActions(
+							booking,
+							address,
+							isStudioArtist(studios.data, booking.studio_id, address),
+						)
+					: [],
 				unread: 0,
 				canChat: isMatch || !!booking,
 			})
@@ -199,6 +208,7 @@ const MySwaps = ({ section }: { section: Section }) => {
 		spots.data,
 		bookings.data,
 		wish,
+		studios.data,
 	])
 
 	// Unread messages per connection

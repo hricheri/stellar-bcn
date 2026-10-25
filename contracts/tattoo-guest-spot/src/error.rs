@@ -42,4 +42,8 @@ pub enum Error {
     InvalidMessage = 20,
     /// You can only chat with matches or artists you share a booking with
     NotConnected = 21,
+    /// The studio does not exist
+    StudioNotFound = 22,
+    /// Only the studio's artists can do this
+    NotStudioArtist = 23,
 }

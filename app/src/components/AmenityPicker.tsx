@@ -24,12 +24,20 @@ export const AmenityPicker = ({
 				const allOn = items.every((a) => selected.includes(a.id))
 				return (
 					<div key={group}>
-						<div className="section-label" style={{ display: "flex", gap: "0.5rem" }}>
+						<div
+							className="section-label"
+							style={{ display: "flex", gap: "0.5rem" }}
+						>
 							{GROUP_LABELS[group]}
 							<button
 								type="button"
 								className="hint"
-								style={{ border: "none", background: "none", padding: 0, textDecoration: "underline" }}
+								style={{
+									border: "none",
+									background: "none",
+									padding: 0,
+									textDecoration: "underline",
+								}}
 								onClick={() =>
 									onChange(
 										allOn

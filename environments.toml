@@ -37,34 +37,39 @@ client = true
 after_deploy = """
 register_artist --artist me --name Hui --city Barcelona --instagram @hui.tattoo
 STELLAR_ACCOUNT=bea register_artist --artist bea --name Bea --city Berlin --instagram @bea.ink
-STELLAR_ACCOUNT=bea publish_spot --host bea --city Berlin --start 1793491200 --end 1794700800 --include_home false --amenities '["camilla","luz","apoyabrazos","tinta_negra","cups","grip_tape","alcohol","jabon_quirurgico","guantes","film","vaselina","witch_hazel","second_skin"]'
+STELLAR_ACCOUNT=bea create_studio --owner bea --name 'Bea Ink Berlin' --city Berlin --amenities '["camilla","luz","apoyabrazos","tinta_negra","cups","grip_tape","alcohol","jabon_quirurgico","guantes","film","vaselina","witch_hazel","second_skin"]'
+STELLAR_ACCOUNT=bea publish_spot --host bea --studio_id 1 --start 1793491200 --end 1794700800 --include_home false
 STELLAR_ACCOUNT=cata register_artist --artist cata --name Cata --city 'Ciudad de Mexico' --instagram @cata.linework
-STELLAR_ACCOUNT=cata publish_spot --host cata --city 'Ciudad de Mexico' --start 1796083200 --end 1797724800 --include_home false --amenities '["camilla","luz","tinta_negra","cups","guantes","film","tinta_color","agujas"]'
+STELLAR_ACCOUNT=cata create_studio --owner cata --name 'Linea Fina CDMX' --city 'Ciudad de Mexico' --amenities '["camilla","luz","tinta_negra","cups","guantes","film","tinta_color","agujas"]'
+STELLAR_ACCOUNT=cata publish_spot --host cata --studio_id 2 --start 1796083200 --end 1797724800 --include_home false
 STELLAR_ACCOUNT=dani register_artist --artist dani --name Dani --city Lisboa --instagram @dani.blackwork
-STELLAR_ACCOUNT=dani publish_spot --host dani --city Lisboa --start 1790812800 --end 1791590400 --include_home false --amenities '["camilla","luz","apoyabrazos","tinta_negra","cups","grip_tape","alcohol","jabon_quirurgico","guantes","film","vaselina","witch_hazel","second_skin","tinta_color","agujas"]'
+STELLAR_ACCOUNT=dani create_studio --owner dani --name 'Blackwork Lisboa' --city Lisboa --amenities '["camilla","luz","apoyabrazos","tinta_negra","cups","grip_tape","alcohol","jabon_quirurgico","guantes","film","vaselina","witch_hazel","second_skin","tinta_color","agujas"]'
+STELLAR_ACCOUNT=dani publish_spot --host dani --studio_id 3 --start 1790812800 --end 1791590400 --include_home false
 STELLAR_ACCOUNT=cata book_spot --guest cata --spot_id 3
 STELLAR_ACCOUNT=dani mark_promo_sent --artist dani --booking_id 1
 STELLAR_ACCOUNT=cata mark_promo_sent --artist cata --booking_id 1
 STELLAR_ACCOUNT=dani complete_stay --host dani --booking_id 1
 STELLAR_ACCOUNT=cata review_artist --reviewer cata --booking_id 1 --score 5 --tags '["higiene","insumos_ok","responde"]' --comment 'Estudio impecable, todo lo prometido'
 STELLAR_ACCOUNT=dani review_artist --reviewer dani --booking_id 1 --score 5 --tags '["higiene","respetuosx","ordenadx","responde","grafica"]' --comment 'Super respetuosa y ordenada'
-STELLAR_ACCOUNT=dani publish_spot --host dani --city Lisboa --start 1790812800 --end 1791590400 --include_home false --amenities '["camilla","luz","apoyabrazos","tinta_negra","cups","grip_tape","alcohol","jabon_quirurgico","guantes","film","vaselina","witch_hazel","second_skin","tinta_color","agujas"]'
+STELLAR_ACCOUNT=dani publish_spot --host dani --studio_id 3 --start 1790812800 --end 1791590400 --include_home false
 STELLAR_ACCOUNT=cata book_spot --guest cata --spot_id 4
 STELLAR_ACCOUNT=dani mark_promo_sent --artist dani --booking_id 2
 STELLAR_ACCOUNT=cata mark_promo_sent --artist cata --booking_id 2
 STELLAR_ACCOUNT=dani complete_stay --host dani --booking_id 2
 STELLAR_ACCOUNT=cata review_artist --reviewer cata --booking_id 2 --score 5 --tags '["higiene","insumos_ok","responde"]' --comment 'Estudio impecable, todo lo prometido'
 STELLAR_ACCOUNT=dani review_artist --reviewer dani --booking_id 2 --score 5 --tags '["higiene","respetuosx","ordenadx","responde","grafica"]' --comment 'Super respetuosa y ordenada'
-STELLAR_ACCOUNT=dani publish_spot --host dani --city Lisboa --start 1790812800 --end 1791590400 --include_home false --amenities '["camilla","luz","apoyabrazos","tinta_negra","cups","grip_tape","alcohol","jabon_quirurgico","guantes","film","vaselina","witch_hazel","second_skin","tinta_color","agujas"]'
+STELLAR_ACCOUNT=dani publish_spot --host dani --studio_id 3 --start 1790812800 --end 1791590400 --include_home false
 STELLAR_ACCOUNT=cata book_spot --guest cata --spot_id 5
 STELLAR_ACCOUNT=dani mark_promo_sent --artist dani --booking_id 3
 STELLAR_ACCOUNT=cata mark_promo_sent --artist cata --booking_id 3
 STELLAR_ACCOUNT=dani complete_stay --host dani --booking_id 3
 STELLAR_ACCOUNT=cata review_artist --reviewer cata --booking_id 3 --score 5 --tags '["higiene","insumos_ok","responde"]' --comment 'Estudio impecable, todo lo prometido'
 STELLAR_ACCOUNT=dani review_artist --reviewer dani --booking_id 3 --score 5 --tags '["higiene","respetuosx","ordenadx","responde","grafica"]' --comment 'Super respetuosa y ordenada'
-STELLAR_ACCOUNT=dani publish_spot --host dani --city Lisboa --start 1794268800 --end 1795996800 --include_home true --amenities '["camilla","luz","apoyabrazos","tinta_negra","cups","grip_tape","alcohol","jabon_quirurgico","guantes","film","vaselina","witch_hazel","second_skin","tinta_color","agujas"]'
-publish_spot --host me --city Barcelona --start 1794268800 --end 1795996800 --include_home false --amenities '["camilla","luz","apoyabrazos","tinta_negra","cups","grip_tape","alcohol","guantes","film","vaselina","second_skin"]'
-STELLAR_ACCOUNT=dani propose_dates --guest dani --host me --start 1794700800 --end 1795305600
+STELLAR_ACCOUNT=dani publish_spot --host dani --studio_id 3 --start 1794268800 --end 1795996800 --include_home true
+create_studio --owner me --name 'Hui Tattoo Studio' --city Barcelona --amenities '["camilla","luz","apoyabrazos","tinta_negra","cups","grip_tape","alcohol","guantes","film","vaselina","second_skin"]'
+add_studio_artist --member me --studio_id 4 --artist bea
+publish_spot --host me --studio_id 4 --start 1794268800 --end 1795996800 --include_home false
+STELLAR_ACCOUNT=dani propose_dates --guest dani --studio_id 4 --start 1794700800 --end 1795305600
 STELLAR_ACCOUNT=bea like_artist --from bea --to me
 STELLAR_ACCOUNT=cata like_artist --from cata --to me
 STELLAR_ACCOUNT=dani like_artist --from dani --to me

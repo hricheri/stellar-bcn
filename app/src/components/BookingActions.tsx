@@ -1,12 +1,14 @@
 import { useState } from "react"
-import { useSend } from "../hooks/useTattoo"
+import { useSend, useStudios } from "../hooks/useTattoo"
 import {
 	ACTION_LABELS,
+	BK_PENDING,
 	type Artist,
 	type Booking,
 	formatDate,
 	GUEST_TAGS,
 	HOST_TAGS,
+	isStudioArtist,
 	pendingActions,
 	promoDeadline,
 	TAG_LABELS,
@@ -25,8 +27,11 @@ export const BookingActions = ({
 	other?: Artist
 }) => {
 	const send = useSend()
-	const amHost = booking.host === me
-	const actions = pendingActions(booking, me)
+	const studios = useStudios()
+	const studioArtist = isStudioArtist(studios.data, booking.studio_id, me)
+	const amHost =
+		booking.host === me || (studioArtist && booking.status === BK_PENDING)
+	const actions = pendingActions(booking, me, studioArtist)
 
 	const [reviewing, setReviewing] = useState(false)
 	const [score, setScore] = useState(5)

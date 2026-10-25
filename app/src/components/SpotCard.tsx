@@ -1,5 +1,5 @@
-import { useState } from "react"
-import { useSend } from "../hooks/useTattoo"
+import { useMemo, useState } from "react"
+import { useArtists, useSend, useStudios } from "../hooks/useTattoo"
 import { useWallet } from "../hooks/useWallet"
 import {
 	amenityLabel,
@@ -9,6 +9,8 @@ import {
 	type MatchResult,
 	type Spot,
 	SPOT_OPEN,
+	studioAvg,
+	studioTier,
 } from "../lib/tattoo"
 import { LikeButton } from "./LikeButton"
 import {
@@ -16,6 +18,7 @@ import {
 	BasicsBadge,
 	ErrorNotice,
 	MatchRing,
+	StudioTierBadge,
 	TxNotice,
 } from "./TattooUI"
 
@@ -36,7 +39,33 @@ export const SpotCard = ({
 	const [error, setError] = useState<string>()
 	const [hash, setHash] = useState<string>()
 
+	const studios = useStudios()
+	const artists = useArtists()
 	const isHome = spot.kind === "home"
+	const homeOnly = spot.kind === "homeonly"
+	const studio = (studios.data ?? []).find((s) => s.id === spot.studio_id)
+	const tier = useMemo(
+		() =>
+			studio
+				? studioTier(
+						studio,
+						new Map((artists.data ?? []).map((a) => [a.address, a])),
+					)
+				: undefined,
+		[studio, artists.data],
+	)
+	// Studios show their own level; a home-only spot shows its artist's level
+	const tierClass = tier
+		? {
+				establecido: " tier-established",
+				respaldado: " tier-backed",
+				nuevo: " tier-new",
+			}[tier]
+		: host
+			? isEstablished(host)
+				? " tier-established"
+				: " tier-new"
+			: ""
 	const isMine = address === spot.host
 	const open = spot.status === SPOT_OPEN
 
@@ -56,30 +85,17 @@ export const SpotCard = ({
 	}
 
 	return (
-		<article
-			className={`ts-card${host ? (isEstablished(host) ? " tier-established" : " tier-new") : ""}`}
-		>
-			<div className={`spot-cover${isHome ? " home" : ""}`}>
+		<article className={`ts-card${tierClass}`}>
+			<div className={`spot-cover${isHome || homeOnly ? " home" : ""}`}>
 				<div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap" }}>
-					<span className="pill pill-lima">ESTUDIO</span>
+					{homeOnly ? (
+						<span className="pill pill-lavender">SOLO HOGAR</span>
+					) : (
+						<span className="pill pill-lima">ESTUDIO</span>
+					)}
 					{isHome && <span className="pill pill-lavender">+ HOGAR</span>}
-					<BasicsBadge spot={spot} />
-					{host &&
-						(isEstablished(host) ? (
-							<span
-								className="pill pill-lima"
-								title="Su host tiene 3+ reseñas con promedio 4 o más"
-							>
-								★ ESTABLECIDO
-							</span>
-						) : (
-							<span
-								className="pill pill-lavender"
-								title="Su host todavía está construyendo reputación"
-							>
-								✦ NUEVO
-							</span>
-						))}
+					{!homeOnly && <BasicsBadge spot={spot} />}
+					{tier && <StudioTierBadge tier={tier} />}
 					{!open && <span className="pill pill-dark">RESERVADO</span>}
 				</div>
 				{match && <MatchRing percent={match.percent} />}
@@ -88,6 +104,16 @@ export const SpotCard = ({
 
 			<div className="ts-card-body">
 				<div className="meta" style={{ marginBottom: "0.75rem" }}>
+					{studio && (
+						<>
+							🏠 <b>{studio.name}</b> · ⭐ {studioAvg(studio)} (
+							{studio.review_count}{" "}
+							{studio.review_count === 1 ? "reseña" : "reseñas"}) ·{" "}
+							{studio.members.length}{" "}
+							{studio.members.length === 1 ? "artista" : "artistas"}
+							<br />
+						</>
+					)}
 					📅 {formatDate(spot.start)} → {formatDate(spot.end)}
 				</div>
 
@@ -155,7 +181,7 @@ export const SpotCard = ({
 
 				<div className="spot-footer">
 					<span className="hint">
-						{isHome
+						{isHome || homeOnly
 							? "Solo para artistas establecidxs"
 							: "Abierto a todxs lxs artistas"}
 					</span>

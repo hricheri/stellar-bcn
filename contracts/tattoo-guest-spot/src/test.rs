@@ -28,11 +28,16 @@ fn artist(t: &Setup, name: &str, city: &str) -> Address {
     a
 }
 
+fn studio(t: &Setup, owner: &Address) -> u32 {
+    t.client
+        .create_studio(owner, &s(&t.env, "Studio"), &s(&t.env, "BCN"), &Vec::new(&t.env))
+}
+
 /// Runs a full stay between host and guest and has both review each other
 fn stay(t: &Setup, host: &Address, guest: &Address, host_score: u32, guest_score: u32) -> u32 {
     let spot = t
         .client
-        .publish_spot(host, &s(&t.env, "BCN"), &100, &200, &false, &Vec::new(&t.env));
+        .publish_spot(host, &studio(t, host), &100, &200, &false);
     let booking = t.client.book_spot(guest, &spot);
     t.client.complete_stay(host, &booking);
     let tags = vec![&t.env, symbol_short!("limpio")];
@@ -49,15 +54,17 @@ fn full_stay_with_reviews() {
     let host = artist(&t, "Ana", "Barcelona");
     let guest = artist(&t, "Bea", "Berlin");
 
-    let spot = t.client.publish_spot(
+    let studio_id = t.client.create_studio(
         &host,
+        &s(&t.env, "Ana Ink"),
         &s(&t.env, "Barcelona"),
-        &1_000,
-        &2_000,
-        &false,
         &vec![&t.env, Symbol::new(&t.env, "camilla"), Symbol::new(&t.env, "tinta_negra")],
     );
-    assert_eq!(t.client.get_spot(&spot).unwrap().amenities.len(), 2);
+    let spot = t.client.publish_spot(&host, &studio_id, &1_000, &2_000, &false);
+    // City and supplies come from the studio
+    let published = t.client.get_spot(&spot).unwrap();
+    assert_eq!(published.amenities.len(), 2);
+    assert_eq!(published.city, s(&t.env, "Barcelona"));
     let booking = t.client.book_spot(&guest, &spot);
     assert_eq!(t.client.get_spot(&spot).unwrap().status, SpotStatus::Booked);
     // Published dates are confirmed right away, no money involved
@@ -107,7 +114,7 @@ fn cannot_book_own_or_booked_spot() {
     let guest = artist(&t, "Bea", "Berlin");
     let spot = t
         .client
-        .publish_spot(&host, &s(&t.env, "BCN"), &1, &2, &false, &Vec::new(&t.env));
+        .publish_spot(&host, &studio(&t, &host), &1, &2, &false);
     assert_eq!(
         t.client.try_book_spot(&host, &spot),
         Err(Ok(Error::CannotBookOwnSpot))
@@ -127,7 +134,7 @@ fn home_swap_unlocks_with_reputation() {
     let bea = artist(&t, "Bea", "Berlin");
     assert_eq!(
         t.client
-            .try_publish_spot(&ana, &s(&t.env, "BCN"), &1, &2, &true, &Vec::new(&t.env)),
+            .try_publish_spot(&ana, &studio(&t, &ana), &1, &2, &true),
         Err(Ok(Error::NotTrustedEnough))
     );
     for _ in 0..3 {
@@ -137,7 +144,7 @@ fn home_swap_unlocks_with_reputation() {
     assert!(t.client.get_reputation(&bea).home_swap_unlocked);
     let spot = t
         .client
-        .publish_spot(&ana, &s(&t.env, "BCN"), &1, &2, &true, &Vec::new(&t.env));
+        .publish_spot(&ana, &studio(&t, &ana), &1, &2, &true);
     assert_eq!(t.client.get_spot(&spot).unwrap().kind, symbol_short!("home"));
 
     // A new artist without reviews can't book a studio + home
@@ -224,7 +231,7 @@ fn rejects_out_of_range_inputs() {
     let ana = artist(&t, "Ana", "Barcelona");
     assert_eq!(
         t.client
-            .try_publish_spot(&ana, &s(&t.env, "BCN"), &5, &5, &false, &Vec::new(&t.env)),
+            .try_publish_spot(&ana, &studio(&t, &ana), &5, &5, &false),
         Err(Ok(Error::InvalidDates))
     );
     let big = U256::from_be_bytes(
@@ -238,28 +245,29 @@ fn rejects_out_of_range_inputs() {
     assert_eq!(t.client.try_commitment_of(&big), Err(Ok(Error::InvalidSecret)));
     let stranger = Address::generate(&t.env);
     assert_eq!(
-        t.client.try_publish_spot(&stranger, &s(&t.env, "BCN"), &1, &2, &false, &Vec::new(&t.env)),
+        t.client.try_publish_spot(&stranger, &1, &1, &2, &false),
         Err(Ok(Error::NotAnArtist))
     );
 }
 
 #[test]
-fn proposed_dates_need_the_host() {
+fn proposed_dates_need_the_studio() {
     let t = setup();
     let host = artist(&t, "Ana", "Barcelona");
     let guest = artist(&t, "Bea", "Berlin");
+    let st = studio(&t, &host);
 
     assert_eq!(
-        t.client.try_propose_dates(&host, &host, &1, &2),
+        t.client.try_propose_dates(&host, &st, &1, &2),
         Err(Ok(Error::CannotBookOwnSpot))
     );
     assert_eq!(
-        t.client.try_propose_dates(&guest, &host, &5, &5),
+        t.client.try_propose_dates(&guest, &st, &5, &5),
         Err(Ok(Error::InvalidDates))
     );
 
     // The host declines the first proposal
-    let first = t.client.propose_dates(&guest, &host, &1_000, &2_000);
+    let first = t.client.propose_dates(&guest, &st, &1_000, &2_000);
     let b = t.client.get_booking(&first).unwrap();
     assert_eq!(b.status, BookingStatus::Pending);
     assert_eq!(b.spot_id, NO_SPOT);
@@ -278,7 +286,7 @@ fn proposed_dates_need_the_host() {
     );
 
     // ...and accepts the second one
-    let second = t.client.propose_dates(&guest, &host, &3_000, &4_000);
+    let second = t.client.propose_dates(&guest, &st, &3_000, &4_000);
     t.client.confirm_booking(&host, &second);
     t.client.complete_stay(&host, &second);
     assert_eq!(
@@ -324,4 +332,102 @@ fn chat_only_between_connected_artists() {
         t.client.send_message(&ana, &bea, &hi);
     }
     assert_eq!(t.client.list_messages(&ana, &bea).len(), CHAT_MAX_MESSAGES);
+}
+
+#[test]
+fn studio_reputation_is_separate_from_its_artists() {
+    let t = setup();
+    let ana = artist(&t, "Ana", "Barcelona");
+    let bea = artist(&t, "Bea", "Berlin");
+    let cata = artist(&t, "Cata", "Madrid");
+    let st = studio(&t, &ana);
+
+    // Only studio artists can add artists or publish dates there
+    assert_eq!(
+        t.client.try_add_studio_artist(&cata, &st, &cata),
+        Err(Ok(Error::NotStudioArtist))
+    );
+    assert_eq!(
+        t.client.try_publish_spot(&cata, &st, &1, &2, &false),
+        Err(Ok(Error::NotStudioArtist))
+    );
+    t.client.add_studio_artist(&ana, &st, &cata);
+    assert_eq!(t.client.get_studio(&st).unwrap().members.len(), 2);
+
+    let rep = t.client.get_studio_reputation(&st);
+    assert_eq!(rep.review_count, 0);
+    assert!(!rep.established && !rep.backed);
+
+    // Bea stays at the studio three times, hosted by Ana and by Cata
+    for host in [&ana, &cata, &ana] {
+        let spot = t.client.publish_spot(host, &st, &1, &2, &false);
+        let booking = t.client.book_spot(&bea, &spot);
+        t.client.complete_stay(host, &booking);
+        t.client
+            .review_artist(&bea, &booking, &5, &Vec::new(&t.env), &s(&t.env, "top"));
+    }
+    let rep = t.client.get_studio_reputation(&st);
+    assert_eq!(rep.review_count, 3);
+    assert_eq!(rep.average_x100, 500);
+    assert!(rep.established);
+    assert_eq!(t.client.list_studio_reviews(&st).len(), 3);
+    // Each artist keeps their own count
+    assert_eq!(t.client.get_reputation(&ana).review_count, 2);
+    assert_eq!(t.client.get_reputation(&cata).review_count, 1);
+
+    // A new studio starts with a base when one of its artists is established
+    let dani = artist(&t, "Dani", "Lisboa");
+    for _ in 0..3 {
+        stay(&t, &bea, &dani, 5, 5);
+    }
+    assert!(t.client.get_reputation(&bea).home_swap_unlocked);
+    let new_studio = studio(&t, &bea);
+    let rep = t.client.get_studio_reputation(&new_studio);
+    assert!(rep.backed && !rep.established);
+}
+
+#[test]
+fn any_studio_artist_can_answer_a_proposal() {
+    let t = setup();
+    let ana = artist(&t, "Ana", "Barcelona");
+    let cata = artist(&t, "Cata", "Madrid");
+    let bea = artist(&t, "Bea", "Berlin");
+    let st = studio(&t, &ana);
+    t.client.add_studio_artist(&ana, &st, &cata);
+
+    let booking = t.client.propose_dates(&bea, &st, &1, &2);
+    assert_eq!(t.client.list_bookings(&cata).len(), 1);
+    t.client.confirm_booking(&cata, &booking);
+    assert_eq!(t.client.get_booking(&booking).unwrap().host, cata);
+    // Once confirmed, only the host who accepted closes the stay
+    assert_eq!(
+        t.client.try_complete_stay(&ana, &booking),
+        Err(Ok(Error::NotPartOfBooking))
+    );
+    t.client.complete_stay(&cata, &booking);
+}
+
+#[test]
+fn home_only_for_trusted_artists() {
+    let t = setup();
+    let ana = artist(&t, "Ana", "Barcelona");
+    let bea = artist(&t, "Bea", "Berlin");
+    assert_eq!(
+        t.client.try_publish_home(&ana, &s(&t.env, "BCN"), &1, &2),
+        Err(Ok(Error::NotTrustedEnough))
+    );
+    for _ in 0..3 {
+        stay(&t, &bea, &ana, 5, 5);
+    }
+    let spot = t.client.publish_home(&ana, &s(&t.env, "BCN"), &1, &2);
+    let published = t.client.get_spot(&spot).unwrap();
+    assert_eq!(published.kind, symbol_short!("homeonly"));
+    assert_eq!(published.studio_id, NO_STUDIO);
+
+    let newbie = artist(&t, "Dani", "Lima");
+    assert_eq!(
+        t.client.try_book_spot(&newbie, &spot),
+        Err(Ok(Error::NotTrustedEnough))
+    );
+    t.client.book_spot(&bea, &spot);
 }

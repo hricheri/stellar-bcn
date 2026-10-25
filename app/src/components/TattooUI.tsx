@@ -9,6 +9,7 @@ import {
 	missingBasics,
 	reputationOf,
 	type Spot,
+	type StudioTier,
 } from "../lib/tattoo"
 
 // TATTOO APP: piezas visuales compartidas entre pantallas
@@ -43,7 +44,10 @@ export const TierBadge = ({ artist }: { artist: Artist }) =>
 			★ Establecidx
 		</span>
 	) : (
-		<span className="pill pill-lavender" title="Todavía construyendo reputación">
+		<span
+			className="pill pill-lavender"
+			title="Todavía construyendo reputación"
+		>
 			✦ Nuevx
 		</span>
 	)
@@ -57,8 +61,8 @@ export const Stars = ({ score }: { score: number }) => (
 
 export const RatingLine = ({ artist }: { artist: Artist }) => (
 	<span className="meta">
-		<span className="stars">★</span> {formatAvg(artist)} ·{" "}
-		{artist.review_count} {artist.review_count === 1 ? "reseña" : "reseñas"}
+		<span className="stars">★</span> {formatAvg(artist)} · {artist.review_count}{" "}
+		{artist.review_count === 1 ? "reseña" : "reseñas"}
 	</span>
 )
 
@@ -72,7 +76,14 @@ export const ArtistRow = ({
 	<div className="host-row">
 		<Avatar artist={artist} />
 		<div style={{ flex: 1, minWidth: 0 }}>
-			<div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
+			<div
+				style={{
+					display: "flex",
+					gap: "0.5rem",
+					alignItems: "center",
+					flexWrap: "wrap",
+				}}
+			>
 				<Link to={`/artista/${artist.address}`} className="host-name">
 					{artist.name}
 				</Link>
@@ -138,7 +149,12 @@ export const TxNotice = ({ hash, text }: { hash?: string; text: string }) => (
 	<div className="alert alert-ok">
 		{text}{" "}
 		{hash && (
-			<a className="tx-link" href={txLink(hash)} target="_blank" rel="noreferrer">
+			<a
+				className="tx-link"
+				href={txLink(hash)}
+				target="_blank"
+				rel="noreferrer"
+			>
 				Ver transacción en stellar.expert ↗
 			</a>
 		)}
@@ -164,6 +180,37 @@ export const BasicsBadge = ({ spot }: { spot: Spot }) => {
 			title="No declara todo el mobiliario o los insumos básicos: lleva los tuyos"
 		>
 			⚠ FALTAN {missing} BÁSICO{missing > 1 ? "S" : ""}
+		</span>
+	)
+}
+
+const STUDIO_TIERS: Record<
+	StudioTier,
+	{ cls: string; text: string; title: string }
+> = {
+	establecido: {
+		cls: "pill-lima",
+		text: "★ ESTUDIO ESTABLECIDO",
+		title: "Sus propias reseñas: 3 o más con promedio 4 o más",
+	},
+	respaldado: {
+		cls: "pill-backed",
+		text: "◆ ESTUDIO RESPALDADO",
+		title: "Todavía nuevo, pero trabaja ahí al menos unx artista establecidx",
+	},
+	nuevo: {
+		cls: "pill-lavender",
+		text: "✦ ESTUDIO NUEVO",
+		title: "Todavía construyendo su reputación",
+	},
+}
+
+/** The studio's own level, separate from its artists */
+export const StudioTierBadge = ({ tier }: { tier: StudioTier }) => {
+	const t = STUDIO_TIERS[tier]
+	return (
+		<span className={`pill ${t.cls}`} title={t.title}>
+			{t.text}
 		</span>
 	)
 }

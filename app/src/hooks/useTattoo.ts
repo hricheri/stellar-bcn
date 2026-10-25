@@ -26,6 +26,8 @@ const ERROR_MESSAGES: Record<number, string> = {
 	19: "La reserva no está en el estado correcto para esto.",
 	20: "El mensaje tiene que tener entre 1 y 280 caracteres.",
 	21: "Solo puedes escribir a tus matches o a artistas con quienes tienes una reserva.",
+	22: "Ese estudio no existe.",
+	23: "Solo lxs artistas del estudio pueden hacer esto.",
 }
 
 /** Turns a contract `Result` (or a thrown simulation error) into a friendly message */
@@ -62,6 +64,21 @@ export const useSpots = () =>
 	useQuery({
 		queryKey: ["spots"],
 		queryFn: async () => (await tattooGuestSpot.list_spots()).result,
+	})
+
+export const useStudios = () =>
+	useQuery({
+		queryKey: ["studios"],
+		queryFn: async () => (await tattooGuestSpot.list_studios()).result,
+	})
+
+export const useStudioReviews = (studioId?: number) =>
+	useQuery({
+		queryKey: ["studio-reviews", studioId],
+		enabled: !!studioId,
+		queryFn: async () =>
+			(await tattooGuestSpot.list_studio_reviews({ studio_id: studioId! }))
+				.result,
 	})
 
 export const useArtists = () =>

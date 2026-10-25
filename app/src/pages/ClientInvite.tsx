@@ -69,7 +69,11 @@ const ClientInvite = () => {
 								hash <b>Poseidon</b>, así nadie puede inventar reseñas ni
 								reutilizar un QR.
 							</p>
-							<button className="btn-lime" disabled={busy} onClick={() => void create()}>
+							<button
+								className="btn-lime"
+								disabled={busy}
+								onClick={() => void create()}
+							>
 								{busy ? "Generando..." : "Generar QR para un cliente"}
 							</button>
 						</div>
@@ -80,14 +84,25 @@ const ClientInvite = () => {
 								Que tu cliente lo escanee con la cámara del móvil. No necesita
 								wallet ni cuenta.
 							</p>
-							<a href={invite.link} target="_blank" rel="noreferrer" className="tx-link">
+							<a
+								href={invite.link}
+								target="_blank"
+								rel="noreferrer"
+								className="tx-link"
+							>
 								Abrir el link de reseña ↗
 							</a>
-							<TxNotice hash={invite.hash} text="Compromiso registrado on-chain." />
+							<TxNotice
+								hash={invite.hash}
+								text="Compromiso registrado on-chain."
+							/>
 							<code style={{ fontSize: "0.65rem", wordBreak: "break-all" }}>
 								Poseidon(secreto) = 0x{invite.commitment}
 							</code>
-							<button className="btn-ghost" onClick={() => setInvite(undefined)}>
+							<button
+								className="btn-ghost"
+								onClick={() => setInvite(undefined)}
+							>
 								Generar otro
 							</button>
 						</div>
@@ -101,7 +116,9 @@ const ClientInvite = () => {
 					<h3 style={{ marginBottom: "0.5rem" }}>¿Cómo funciona?</h3>
 					<ol className="meta" style={{ paddingLeft: "1.2rem", margin: 0 }}>
 						<li>Tu navegador genera un secreto y calcula Poseidon(secreto).</li>
-						<li>Solo el hash se guarda en el contrato, asociado a tu perfil.</li>
+						<li>
+							Solo el hash se guarda en el contrato, asociado a tu perfil.
+						</li>
 						<li>
 							El cliente revela el secreto al reseñar; el contrato recalcula el
 							hash con la función Poseidon nativa de Stellar (BN254) y lo marca

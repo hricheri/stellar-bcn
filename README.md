@@ -64,13 +64,16 @@ Lxs tatuadorxs viajan para trabajar como *guest artists*, pero:
 | Función | Quién | Qué hace |
 |---|---|---|
 | `register_artist` | artista | Crea el perfil (nombre, ciudad, Instagram) |
-| `publish_spot` | host | Publica (desde su perfil) las fechas en que su estudio queda libre, con equipamiento e insumos y opción **estudio + hogar** (solo si es establecidx) |
+| `create_studio` / `add_studio_artist` / `update_studio_amenities` | artista | Crea un estudio (puede tener varixs artistas), suma artistas y actualiza sus insumos |
+| `get_studio_reputation` | cualquiera | Reputación propia del estudio: *establecido*, *respaldado* (tiene unx artista establecidx) o *nuevo* |
+| `publish_spot` | artista del estudio | Publica (desde su perfil) las fechas en que el estudio queda libre, con opción **estudio + hogar** (solo si es establecidx) |
+| `publish_home` | artista establecidx | Publica **solo su hogar**, para quien no tiene estudio |
 | `book_spot` | guest | Reserva fechas ya publicadas: quedan confirmadas al instante |
-| `propose_dates` | guest | Propone fechas nuevas en el estudio de otrx artista |
+| `propose_dates` | guest | Propone fechas nuevas en un estudio; cualquier artista del estudio responde |
 | `confirm_booking` / `decline_booking` | host | Acepta o rechaza las fechas propuestas |
 | `mark_promo_sent` | host o guest | Marca la gráfica de *guest artist* como publicada |
 | `complete_stay` | host | Cierra la estancia y habilita las reseñas |
-| `review_artist` | host o guest | Reseña mutua: 1 a 5 estrellas, etiquetas y comentario; una por lado |
+| `review_artist` | host o guest | Reseña mutua: 1 a 5 estrellas, etiquetas y comentario; una por lado. La reseña del guest también suma al estudio |
 | `like_artist` / `list_likes` | artista | Like; si es mutuo, es **match** |
 | `send_message` / `list_messages` | matches | Chat corto (280 caracteres), solo entre matches o artistas con una reserva compartida |
 | `create_client_invite` / `review_by_client` | artista / cliente | QR de un solo uso verificado con Poseidon |

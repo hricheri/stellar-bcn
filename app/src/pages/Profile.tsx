@@ -1,5 +1,5 @@
-import { useState } from "react"
-import { Link } from "react-router-dom"
+import { useEffect, useState } from "react"
+import { Link, useLocation } from "react-router-dom"
 import { PublishStudio } from "../components/PublishStudio"
 import { ReviewList } from "../components/ReviewList"
 import { SpotCard } from "../components/SpotCard"
@@ -11,8 +11,18 @@ import {
 	RatingLine,
 	TierBadge,
 } from "../components/TattooUI"
+import { WishlistEditor } from "../components/WishlistEditor"
 import { useArtist, useReviews, useSend, useSpots } from "../hooks/useTattoo"
 import { useWallet } from "../hooks/useWallet"
+import {
+	loadWishlist,
+	reputationOf,
+	saveWishlist,
+	type Wishlist,
+} from "../lib/tattoo"
+
+const scrollTo = (id: string) =>
+	document.getElementById(id)?.scrollIntoView({ behavior: "smooth" })
 
 const RegisterForm = () => {
 	const send = useSend()
@@ -78,7 +88,14 @@ const Profile = () => {
 	const me = useArtist(address)
 	const reviews = useReviews(address)
 	const spots = useSpots()
-	const [publishing, setPublishing] = useState(false)
+	const [wish, setWish] = useState<Wishlist>(loadWishlist)
+	const location = useLocation()
+	// Links like /perfil#lo-que-busco jump to that section once it's rendered
+	const section = location.hash.slice(1)
+	const ready = !!me.data
+	useEffect(() => {
+		if (ready && section) scrollTo(section)
+	}, [ready, section])
 
 	if (!address) {
 		return (
@@ -107,6 +124,9 @@ const Profile = () => {
 
 	const a = me.data
 	const mySpots = (spots.data ?? []).filter((s) => s.host === a.address)
+	const studioSpots = mySpots.filter((s) => s.kind !== "homeonly")
+	const homeSpots = mySpots.filter((s) => s.kind !== "studio")
+	const unlocked = reputationOf(a).home_swap_unlocked
 
 	return (
 		<>
@@ -140,9 +160,27 @@ const Profile = () => {
 						<HomeSwapProgress artist={a} />
 					</div>
 					<div className="field-row" style={{ marginTop: "1rem" }}>
-						<a href="#mi-estudio" style={{ flex: 1 }}>
-							<button className="btn-lime btn-block">Mi estudio</button>
-						</a>
+						<button
+							className="btn-lime btn-block"
+							style={{ flex: 1 }}
+							onClick={() => scrollTo("mi-estudio")}
+						>
+							Mi estudio
+						</button>
+						<button
+							className="btn-ghost btn-block"
+							style={{ flex: 1 }}
+							onClick={() => scrollTo("mi-hogar")}
+						>
+							Mi hogar
+						</button>
+						<button
+							className="btn-ghost btn-block"
+							style={{ flex: 1 }}
+							onClick={() => scrollTo("lo-que-busco")}
+						>
+							Lo que busco
+						</button>
 						<Link to="/clientes" style={{ flex: 1 }}>
 							<button className="btn-ghost btn-block">QR para clientes</button>
 						</Link>
@@ -175,23 +213,59 @@ const Profile = () => {
 
 			<div className="split-title" id="mi-estudio">
 				<h2>Mi estudio</h2>
-				<button
-					className="btn-ghost"
-					onClick={() => setPublishing(!publishing)}
-				>
-					{publishing ? "Cerrar" : "+ Publicar fechas libres"}
-				</button>
+				<span className="hint">Un estudio puede tener varixs artistas</span>
 			</div>
-			{publishing && <PublishStudio me={a} />}
-			{mySpots.length === 0 && !publishing && (
-				<div className="ts-card empty-state">
-					Si tienes estudio, publica las fechas en que queda libre. Si no
-					tienes, igual puedes viajar y reservar.
+			<PublishStudio me={a} />
+			{studioSpots.length > 0 && (
+				<div className="split-title">
+					<h2>Fechas libres de mi estudio</h2>
 				</div>
 			)}
-			{mySpots.map((s) => (
+			{studioSpots.map((s) => (
 				<SpotCard key={s.id} spot={s} host={a} me={a} />
 			))}
+
+			<div className="split-title" id="mi-hogar">
+				<h2>Mi hogar</h2>
+				<span className="hint">Solo para artistas establecidxs</span>
+			</div>
+			<section className="ts-card">
+				<div className="ts-card-body">
+					{unlocked ? (
+						<p style={{ margin: 0 }}>
+							Ya puedes ofrecer tu hogar: junto con tu estudio, o solo tu hogar
+							si no tienes estudio. Elígelo en <b>Publicar fechas libres</b>,
+							arriba.
+						</p>
+					) : (
+						<>
+							<p style={{ marginTop: 0 }}>
+								Ofrecer tu hogar se desbloquea cuando llegas a establecidx.
+							</p>
+							<HomeSwapProgress artist={a} />
+						</>
+					)}
+				</div>
+			</section>
+			{homeSpots.map((s) => (
+				<SpotCard key={s.id} spot={s} host={a} me={a} />
+			))}
+
+			<div className="split-title" id="lo-que-busco">
+				<h2>Lo que busco</h2>
+				<span className="hint">Con esto se calcula el % de match</span>
+			</div>
+			<section className="ts-card">
+				<div className="ts-card-body">
+					<WishlistEditor
+						wish={wish}
+						onChange={(next) => {
+							setWish(next)
+							saveWishlist(next)
+						}}
+					/>
+				</div>
+			</section>
 
 			<div className="split-title">
 				<h2>Mis reseñas</h2>

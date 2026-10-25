@@ -1,4 +1,4 @@
-import  { type Keypair } from "@stellar/stellar-sdk"
+import { type Keypair } from "@stellar/stellar-sdk"
 import {
 	fetchBalances,
 	type MappedBalances,

@@ -21,9 +21,18 @@ export const ReviewList = ({ reviews }: { reviews: Review[] }) => {
 		<div>
 			{[...reviews].reverse().map((r, i) => (
 				<div className="review" key={i}>
-					<div style={{ display: "flex", justifyContent: "space-between", gap: "0.5rem", flexWrap: "wrap" }}>
+					<div
+						style={{
+							display: "flex",
+							justifyContent: "space-between",
+							gap: "0.5rem",
+							flexWrap: "wrap",
+						}}
+					>
 						<Stars score={r.score} />
-						<span className={`pill ${r.role === 2 ? "pill-lima" : "pill-lavender"}`}>
+						<span
+							className={`pill ${r.role === 2 ? "pill-lima" : "pill-lavender"}`}
+						>
 							{ROLE_LABELS[r.role]}
 						</span>
 					</div>

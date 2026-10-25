@@ -277,6 +277,15 @@ h3 {
 	color: white;
 }
 
+.pill-backed {
+	background: var(--lavender-500);
+	color: white;
+}
+
+.ts-card.tier-backed {
+	border: 2px solid var(--lavender-500);
+}
+
 .pill-warn {
 	background: var(--danger-50);
 	color: var(--danger-600);
