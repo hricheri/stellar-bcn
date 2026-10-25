@@ -12,6 +12,7 @@ import {
 	SPOT_OPEN,
 } from "../lib/tattoo"
 import { Chat } from "./Chat"
+import { ProposeDates } from "./ProposeDates"
 import {
 	Avatar,
 	BasicsBadge,
@@ -34,17 +35,27 @@ export interface Connection {
 }
 
 /** Their spots, as a small availability calendar */
-const TheirCalendar = ({ spots, me }: { spots: Spot[]; me?: Artist | null }) => {
+const TheirCalendar = ({
+	spots,
+	me,
+	host,
+}: {
+	spots: Spot[]
+	me?: Artist | null
+	host?: string
+}) => {
 	const send = useSend()
 	const [msg, setMsg] = useState<string>()
-	if (spots.length === 0) {
-		return <div className="hint" style={{ padding: "1rem" }}>No publicó fechas todavía.</div>
-	}
 	return (
 		<div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+			{spots.length === 0 && (
+				<div className="hint">No publicó fechas todavía.</div>
+			)}
 			{spots.map((s) => (
 				<div key={s.id} className="cal-row">
-					<span className={`cal-dot ${s.status === SPOT_OPEN ? "free" : "busy"}`} />
+					<span
+						className={`cal-dot ${s.status === SPOT_OPEN ? "free" : "busy"}`}
+					/>
 					<div style={{ flex: 1 }}>
 						<b>{formatRange(s.start, s.end)}</b>
 						<div className="hint">
@@ -58,16 +69,19 @@ const TheirCalendar = ({ spots, me }: { spots: Spot[]; me?: Artist | null }) => 
 							onClick={(e) => {
 								e.stopPropagation()
 								send((c, guest, o) => c.book_spot({ guest, spot_id: s.id }, o))
-									.then(() => setMsg("¡Fechas propuestas!"))
+									.then(() =>
+										setMsg("¡Reservado! Las fechas quedan confirmadas."),
+									)
 									.catch((err: Error) => setMsg(err.message))
 							}}
 						>
-							Proponer
+							Reservar
 						</button>
 					)}
 				</div>
 			))}
 			{msg && <div className="hint">{msg}</div>}
+			{me && host && <ProposeDates host={host} />}
 		</div>
 	)
 }
@@ -98,11 +112,21 @@ export const FlipCard = ({
 			<div className="flip-inner">
 				{/* Frente */}
 				<div className="flip-face ts-card" onClick={() => open("chat")}>
-					<div className={`spot-cover${c.spot?.kind === "home" ? " home" : ""}`}>
+					<div
+						className={`spot-cover${c.spot?.kind === "home" ? " home" : ""}`}
+					>
 						<div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap" }}>
-							{c.kind === "match" && <span className="pill pill-dark">♥ MATCH</span>}
-							{c.kind === "likedMe" && <span className="pill pill-lima">♥ TE DIO LIKE</span>}
-							{c.unread > 0 && <span className="pill pill-lavender">💬 {c.unread} nuevo{c.unread > 1 ? "s" : ""}</span>}
+							{c.kind === "match" && (
+								<span className="pill pill-dark">♥ MATCH</span>
+							)}
+							{c.kind === "likedMe" && (
+								<span className="pill pill-lima">♥ TE DIO LIKE</span>
+							)}
+							{c.unread > 0 && (
+								<span className="pill pill-lavender">
+									💬 {c.unread} nuevo{c.unread > 1 ? "s" : ""}
+								</span>
+							)}
 							{c.spot && <BasicsBadge spot={c.spot} />}
 						</div>
 						{c.match && <MatchRing percent={c.match.percent} />}
@@ -131,13 +155,19 @@ export const FlipCard = ({
 							</div>
 						)}
 						<div className="card-actions" onClick={(e) => e.stopPropagation()}>
-							<button className="btn-ghost" onClick={() => open("chat")}>💬 Chat</button>
-							<button className="btn-ghost" onClick={() => open("cal")}>📅 Fechas</button>
+							<button className="btn-ghost" onClick={() => open("chat")}>
+								💬 Chat
+							</button>
+							<button className="btn-ghost" onClick={() => open("cal")}>
+								📅 Fechas
+							</button>
 							<Link to={`/artista/${a.address}`}>
 								<button className="btn-ghost">👤 Perfil</button>
 							</Link>
 							{c.kind === "likedMe" && onLike && (
-								<button className="btn-lime" onClick={onLike}>♥ Devolver like</button>
+								<button className="btn-lime" onClick={onLike}>
+									♥ Devolver like
+								</button>
 							)}
 						</div>
 					</div>
@@ -146,15 +176,35 @@ export const FlipCard = ({
 				{/* Dorso */}
 				<div className="flip-face flip-back ts-card">
 					<div className="flip-back-head">
-						<button className="btn-ghost" onClick={() => setFlipped(false)}>← {a.name}</button>
+						<button className="btn-ghost" onClick={() => setFlipped(false)}>
+							← {a.name}
+						</button>
 						<div className="chips">
-							<button className={`chip-toggle${tab === "chat" ? " on" : ""}`} onClick={() => setTab("chat")}>Chat</button>
-							<button className={`chip-toggle${tab === "cal" ? " on" : ""}`} onClick={() => setTab("cal")}>Calendario</button>
+							<button
+								className={`chip-toggle${tab === "chat" ? " on" : ""}`}
+								onClick={() => setTab("chat")}
+							>
+								Chat
+							</button>
+							<button
+								className={`chip-toggle${tab === "cal" ? " on" : ""}`}
+								onClick={() => setTab("cal")}
+							>
+								Calendario
+							</button>
 						</div>
 					</div>
 					<div className="flip-back-body">
-						{flipped && tab === "chat" && <Chat me={me} other={a} canChat={c.canChat} />}
-						{flipped && tab === "cal" && <TheirCalendar spots={theirSpots} me={meProfile} />}
+						{flipped && tab === "chat" && (
+							<Chat me={me} other={a} canChat={c.canChat} />
+						)}
+						{flipped && tab === "cal" && (
+							<TheirCalendar
+								spots={theirSpots}
+								me={meProfile}
+								host={a.address}
+							/>
+						)}
 					</div>
 				</div>
 			</div>

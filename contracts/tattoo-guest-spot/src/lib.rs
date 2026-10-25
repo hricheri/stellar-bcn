@@ -6,9 +6,11 @@ use soroban_sdk::{
 };
 
 mod error;
-mod xlm;
 
 use error::Error;
+
+/// `spot_id` of a booking made from proposed dates, not from a published spot
+pub const NO_SPOT: u32 = 0;
 
 /// Reviews an artist needs before unlocking studio + home swaps
 pub const HOME_SWAP_MIN_REVIEWS: u32 = 3;
@@ -81,8 +83,6 @@ pub struct Spot {
     /// Unix timestamps (seconds)
     pub start: u64,
     pub end: u64,
-    /// Deposit in stroops, held by the contract until the stay is completed
-    pub price: i128,
     /// Furniture and supplies the studio offers, e.g. camilla, tinta_negra, second_skin
     pub amenities: Vec<Symbol>,
     pub status: SpotStatus,
@@ -91,7 +91,7 @@ pub struct Spot {
 #[contracttype]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BookingStatus {
-    /// Waiting for the host to confirm the dates
+    /// New dates proposed by the guest, waiting for the host
     Pending = 0,
     Confirmed = 1,
     Completed = 2,
@@ -105,7 +105,9 @@ pub struct Booking {
     pub spot_id: u32,
     pub host: Address,
     pub guest: Address,
-    pub price: i128,
+    /// Unix timestamps (seconds) of the stay
+    pub start: u64,
+    pub end: u64,
     pub status: BookingStatus,
     /// Each side shares a "guest artist" post on social media before the stay
     pub host_promo_sent: bool,
@@ -199,11 +201,6 @@ pub struct TattooGuestSpot;
 
 #[contractimpl]
 impl TattooGuestSpot {
-    pub fn __constructor(env: &Env, admin: Address) {
-        // Only registers a local XLM contract in unit tests, no-op on testnet
-        xlm::register(env, &admin);
-    }
-
     // ----- Artists -----
 
     /// Create your artist profile
@@ -270,13 +267,12 @@ impl TattooGuestSpot {
         city: String,
         start: u64,
         end: u64,
-        price: i128,
         include_home: bool,
         amenities: Vec<Symbol>,
     ) -> Result<u32, Error> {
         host.require_auth();
         let profile = Self::get_artist(env, host.clone()).ok_or(Error::NotAnArtist)?;
-        if end <= start || price < 0 {
+        if end <= start {
             return Err(Error::InvalidDates);
         }
         if include_home && !Self::reputation_of(&profile).home_swap_unlocked {
@@ -290,7 +286,6 @@ impl TattooGuestSpot {
             kind: if include_home { STUDIO_HOME } else { STUDIO },
             start,
             end,
-            price,
             amenities,
             status: SpotStatus::Open,
         };
@@ -319,7 +314,7 @@ impl TattooGuestSpot {
         out
     }
 
-    /// Book an open spot. The deposit (if any) is held by the contract.
+    /// Take dates the host already published. They are confirmed right away.
     pub fn book_spot(env: &Env, guest: Address, spot_id: u32) -> Result<u32, Error> {
         guest.require_auth();
         let guest_profile = Self::get_artist(env, guest.clone()).ok_or(Error::NotAnArtist)?;
@@ -333,37 +328,46 @@ impl TattooGuestSpot {
         if spot.kind == STUDIO_HOME && !Self::reputation_of(&guest_profile).home_swap_unlocked {
             return Err(Error::NotTrustedEnough);
         }
-        if spot.price > 0 {
-            xlm::token_client(env)
-                .try_transfer(&guest, &env.current_contract_address(), &spot.price)
-                .map_err(|_| Error::DepositFailed)?
-                .map_err(|_| Error::DepositFailed)?;
-        }
         spot.status = SpotStatus::Booked;
         Self::save(env, &DataKey::Spot(spot_id), &spot);
-
-        let id = Self::next_id(env, &DataKey::BookingCount);
-        let booking = Booking {
-            id,
+        Ok(Self::new_booking(
+            env,
             spot_id,
-            host: spot.host.clone(),
-            guest: guest.clone(),
-            price: spot.price,
-            status: BookingStatus::Pending,
-            host_promo_sent: false,
-            guest_promo_sent: false,
-            host_reviewed: false,
-            guest_reviewed: false,
-        };
-        Self::save(env, &DataKey::Booking(id), &booking);
-        Self::index_booking(env, &spot.host, id);
-        Self::index_booking(env, &guest, id);
-        SpotBooked {
+            spot.host,
             guest,
-            booking_id: id,
+            spot.start,
+            spot.end,
+            BookingStatus::Confirmed,
+        ))
+    }
+
+    /// Propose new dates at a host's studio. The host reviews them and
+    /// accepts (`confirm_booking`) or declines (`decline_booking`).
+    pub fn propose_dates(
+        env: &Env,
+        guest: Address,
+        host: Address,
+        start: u64,
+        end: u64,
+    ) -> Result<u32, Error> {
+        guest.require_auth();
+        Self::get_artist(env, guest.clone()).ok_or(Error::NotAnArtist)?;
+        Self::get_artist(env, host.clone()).ok_or(Error::NotAnArtist)?;
+        if host == guest {
+            return Err(Error::CannotBookOwnSpot);
         }
-        .publish(env);
-        Ok(id)
+        if end <= start {
+            return Err(Error::InvalidDates);
+        }
+        Ok(Self::new_booking(
+            env,
+            NO_SPOT,
+            host,
+            guest,
+            start,
+            end,
+            BookingStatus::Pending,
+        ))
     }
 
     /// The host accepts the proposed dates
@@ -378,19 +382,12 @@ impl TattooGuestSpot {
         Ok(())
     }
 
-    /// The host declines: the deposit goes back to the guest and the spot reopens
+    /// The host declines the dates and the spot reopens
     pub fn decline_booking(env: &Env, host: Address, booking_id: u32) -> Result<(), Error> {
         host.require_auth();
         let mut booking = Self::host_booking(env, &host, booking_id)?;
         if booking.status != BookingStatus::Pending {
             return Err(Error::WrongBookingStatus);
-        }
-        if booking.price > 0 {
-            xlm::token_client(env).transfer(
-                &env.current_contract_address(),
-                &booking.guest,
-                &booking.price,
-            );
         }
         booking.status = BookingStatus::Declined;
         Self::save(env, &DataKey::Booking(booking_id), &booking);
@@ -416,7 +413,7 @@ impl TattooGuestSpot {
         Ok(())
     }
 
-    /// The host confirms the stay happened; the deposit is released to them
+    /// The host confirms the stay happened, which opens the reviews
     pub fn complete_stay(env: &Env, host: Address, booking_id: u32) -> Result<(), Error> {
         host.require_auth();
         let mut booking = Self::host_booking(env, &host, booking_id)?;
@@ -425,13 +422,6 @@ impl TattooGuestSpot {
         }
         if booking.status != BookingStatus::Confirmed {
             return Err(Error::WrongBookingStatus);
-        }
-        if booking.price > 0 {
-            xlm::token_client(env).transfer(
-                &env.current_contract_address(),
-                &host,
-                &booking.price,
-            );
         }
         booking.status = BookingStatus::Completed;
         Self::save(env, &DataKey::Booking(booking_id), &booking);
@@ -699,6 +689,40 @@ impl TattooGuestSpot {
         } else {
             DataKey::Chat(b.clone(), a.clone())
         }
+    }
+
+    fn new_booking(
+        env: &Env,
+        spot_id: u32,
+        host: Address,
+        guest: Address,
+        start: u64,
+        end: u64,
+        status: BookingStatus,
+    ) -> u32 {
+        let id = Self::next_id(env, &DataKey::BookingCount);
+        let booking = Booking {
+            id,
+            spot_id,
+            host: host.clone(),
+            guest: guest.clone(),
+            start,
+            end,
+            status,
+            host_promo_sent: false,
+            guest_promo_sent: false,
+            host_reviewed: false,
+            guest_reviewed: false,
+        };
+        Self::save(env, &DataKey::Booking(id), &booking);
+        Self::index_booking(env, &host, id);
+        Self::index_booking(env, &guest, id);
+        SpotBooked {
+            guest,
+            booking_id: id,
+        }
+        .publish(env);
+        id
     }
 
     fn host_booking(env: &Env, host: &Address, booking_id: u32) -> Result<Booking, Error> {

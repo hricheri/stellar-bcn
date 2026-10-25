@@ -19,16 +19,14 @@ export const BookingActions = ({
 	booking,
 	me,
 	other,
-	start,
 }: {
 	booking: Booking
 	me: string
 	other?: Artist
-	start?: bigint
 }) => {
 	const send = useSend()
 	const amHost = booking.host === me
-	const actions = pendingActions(booking, me, start)
+	const actions = pendingActions(booking, me)
 
 	const [reviewing, setReviewing] = useState(false)
 	const [score, setScore] = useState(5)
@@ -70,7 +68,8 @@ export const BookingActions = ({
 							onClick={() =>
 								void run(
 									"confirm",
-									() => send((c, host, o) => c.confirm_booking({ host, ...id }, o)),
+									() =>
+										send((c, host, o) => c.confirm_booking({ host, ...id }, o)),
 									"Fechas confirmadas.",
 								)
 							}
@@ -83,8 +82,9 @@ export const BookingActions = ({
 							onClick={() =>
 								void run(
 									"decline",
-									() => send((c, host, o) => c.decline_booking({ host, ...id }, o)),
-									"Rechazada. Se devolvió el depósito.",
+									() =>
+										send((c, host, o) => c.decline_booking({ host, ...id }, o)),
+									"Propuesta rechazada.",
 								)
 							}
 						>
@@ -93,17 +93,22 @@ export const BookingActions = ({
 					</>
 				)}
 				{actions.includes("esperando_host") && (
-					<span className="pill pill-gray">⏳ {ACTION_LABELS.esperando_host}</span>
+					<span className="pill pill-gray">
+						⏳ {ACTION_LABELS.esperando_host}
+					</span>
 				)}
 				{actions.includes("enviar_grafica") && (
 					<button
 						className="btn-lavender"
 						disabled={!!busy}
-						title={start ? `Antes del ${formatDate(promoDeadline(start))}` : undefined}
+						title={`Antes del ${formatDate(promoDeadline(booking.start))}`}
 						onClick={() =>
 							void run(
 								"promo",
-								() => send((c, artist, o) => c.mark_promo_sent({ artist, ...id }, o)),
+								() =>
+									send((c, artist, o) =>
+										c.mark_promo_sent({ artist, ...id }, o),
+									),
 								"¡Gráfica marcada como enviada!",
 							)
 						}
@@ -146,7 +151,11 @@ export const BookingActions = ({
 								key={t}
 								className={`chip-toggle${tags.includes(t) ? " on" : ""}`}
 								onClick={() =>
-									setTags(tags.includes(t) ? tags.filter((x) => x !== t) : [...tags, t])
+									setTags(
+										tags.includes(t)
+											? tags.filter((x) => x !== t)
+											: [...tags, t],
+									)
 								}
 							>
 								{TAG_LABELS[t]}
@@ -170,7 +179,10 @@ export const BookingActions = ({
 								"review",
 								() =>
 									send((c, reviewer, o) =>
-										c.review_artist({ reviewer, ...id, score, tags, comment }, o),
+										c.review_artist(
+											{ reviewer, ...id, score, tags, comment },
+											o,
+										),
 									),
 								"Reseña guardada on-chain. Ya no se puede borrar ni editar.",
 							)

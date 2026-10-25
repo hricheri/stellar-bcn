@@ -1,37 +1,51 @@
 import { useMemo, useState } from "react"
 import { LikeButton } from "../components/LikeButton"
-import { ArtistRow, PageTitle } from "../components/TattooUI"
-import { useArtists } from "../hooks/useTattoo"
-import { type Artist, isEstablished, reputationOf } from "../lib/tattoo"
-
-const byReputation = (a: Artist, b: Artist) =>
-	reputationOf(b).average_x100 * 10 +
-	b.review_count -
-	(reputationOf(a).average_x100 * 10 + a.review_count)
+import { ArtistRow, MatchRing, PageTitle } from "../components/TattooUI"
+import { useArtists, useSpots } from "../hooks/useTattoo"
+import {
+	isEstablished,
+	loadWishlist,
+	matchSpot,
+	reputationOf,
+	SPOT_OPEN,
+} from "../lib/tattoo"
 
 const Artists = () => {
 	const artists = useArtists()
+	const spots = useSpots()
 	const [query, setQuery] = useState("")
 
-	const [established, newcomers] = useMemo(() => {
+	// Match de cada artista = su estudio disponible que mejor encaja con "Lo que busco"
+	const results = useMemo(() => {
+		const wish = loadWishlist()
+		const best = new Map<string, number>()
+		for (const s of spots.data ?? []) {
+			if (s.status !== SPOT_OPEN) continue
+			const p = matchSpot(s, wish).percent
+			best.set(s.host, Math.max(best.get(s.host) ?? 0, p))
+		}
 		const q = query.toLowerCase()
-		const list = (artists.data ?? []).filter(
-			(a) =>
-				!q ||
-				a.name.toLowerCase().includes(q) ||
-				a.city.toLowerCase().includes(q),
-		)
-		return [
-			list.filter(isEstablished).sort(byReputation),
-			list.filter((a) => !isEstablished(a)).sort(byReputation),
-		]
-	}, [artists.data, query])
+		return (artists.data ?? [])
+			.filter(
+				(a) =>
+					!q ||
+					a.name.toLowerCase().includes(q) ||
+					a.city.toLowerCase().includes(q),
+			)
+			.map((artist) => ({ artist, match: best.get(artist.address) }))
+			.sort(
+				(a, b) =>
+					(b.match ?? -1) - (a.match ?? -1) ||
+					reputationOf(b.artist).average_x100 -
+						reputationOf(a.artist).average_x100,
+			)
+	}, [artists.data, spots.data, query])
 
 	return (
 		<>
 			<PageTitle
 				title="Artistas"
-				subtitle="Su reputación vive en Stellar: reseñas de otrxs artistas y de clientes reales, que nadie puede borrar."
+				subtitle="Ordenadxs por match con lo que buscas. Su reputación vive en Stellar: reseñas de otrxs artistas y de clientes reales, que nadie puede borrar."
 			/>
 			<div className="field">
 				<input
@@ -40,32 +54,44 @@ const Artists = () => {
 					onChange={(e) => setQuery(e.target.value)}
 				/>
 			</div>
-
-			{artists.isLoading && <div className="empty-state">Cargando artistas...</div>}
-
-			<div className="split-title">
-				<h2>★ Establecidxs</h2>
-				<span className="hint">3+ reseñas, promedio 4 o más</span>
+			<div className="chips" style={{ marginBottom: "1rem" }}>
+				<span className="pill pill-lima">
+					★ Establecidx: 3+ reseñas, promedio 4+
+				</span>
+				<span className="pill pill-lavender">
+					✦ Nuevx: construyendo reputación
+				</span>
 			</div>
-			{established.length === 0 && !artists.isLoading && (
-				<div className="ts-card empty-state">Todavía nadie llegó a este nivel.</div>
+
+			{artists.isLoading && (
+				<div className="empty-state">Cargando artistas...</div>
 			)}
-			{established.map((a) => (
-				<div className="ts-card" key={a.address}>
-					<div className="ts-card-body">
-						<ArtistRow artist={a} extra={<LikeButton artist={a.address} />} />
-					</div>
-				</div>
-			))}
 
-			<div className="split-title">
-				<h2>✦ Nuevxs</h2>
-				<span className="hint">Construyendo su reputación</span>
-			</div>
-			{newcomers.map((a) => (
-				<div className="ts-card" key={a.address}>
+			{results.map(({ artist, match }) => (
+				<div
+					className={`ts-card ${isEstablished(artist) ? "tier-established" : "tier-new"}`}
+					key={artist.address}
+				>
 					<div className="ts-card-body">
-						<ArtistRow artist={a} extra={<LikeButton artist={a.address} />} />
+						<ArtistRow
+							artist={artist}
+							extra={
+								<div
+									style={{
+										display: "flex",
+										gap: "0.5rem",
+										alignItems: "center",
+									}}
+								>
+									{match !== undefined ? (
+										<MatchRing percent={match} />
+									) : (
+										<span className="hint">Sin fechas libres</span>
+									)}
+									<LikeButton artist={artist.address} />
+								</div>
+							}
+						/>
 					</div>
 				</div>
 			))}

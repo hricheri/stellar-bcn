@@ -173,6 +173,15 @@ h3 {
 	margin-bottom: 1rem;
 }
 
+/* Diferencia visual entre establecidxs y nuevxs, sin separar las listas */
+.ts-card.tier-established {
+	border: 2px solid var(--lima-400);
+}
+
+.ts-card.tier-new {
+	border: 2px dashed var(--lavender-300);
+}
+
 .ts-card-body {
 	padding: 1.25rem;
 }

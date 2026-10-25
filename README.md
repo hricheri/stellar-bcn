@@ -40,7 +40,7 @@ Lxs tatuadorxs viajan para trabajar como *guest artists*, pero:
 │  · Favoritos/Swaps/Agenda │        │  Likes → Match · Chat entre matches       │
 │  · QR para clientes       │        │  Reseñas host/guest/cliente               │
 │  · Wallet o cuenta prueba │        │  Invitaciones Poseidon (BN254)            │
-└──────────────────────────┘        │  Depósito en XLM vía Stellar Asset Contract│
+└──────────────────────────┘        │  Sin dinero: los swaps no son monetarios  │
                                      └───────────────────────────────────────────┘
 ```
 
@@ -48,7 +48,6 @@ Lxs tatuadorxs viajan para trabajar como *guest artists*, pero:
 |---|---|
 | **Contrato Soroban** (`contracts/tattoo-guest-spot`) | Toda la lógica: perfiles, estudios, reservas, likes y match, chat y reseñas. |
 | **Poseidon nativo (host function BN254, Protocol 25)** | El artista registra `Poseidon(secreto)`, y el secreto solo viaja dentro del QR. Al reseñar, el contrato recalcula el hash on-chain y quema la invitación. No se puede inventar ni reutilizar un QR. Usa el crate oficial [`soroban-poseidon`](https://github.com/stellar/rs-soroban-poseidon), compatible con circomlib (lo validamos en los tests con el vector `Poseidon([1])`). |
-| **Stellar Asset Contract (XLM)** | Depósito opcional al reservar: queda en el contrato, se libera al host cuando confirma la estancia y se devuelve al guest si la rechaza. |
 | **Eventos de contrato** | `SpotPublished`, `SpotBooked`, `ReviewLeft`, `Matched` y `HomeSwapUnlocked`, para rastrear la actividad en exploradores. |
 | **Wallets** | [Stellar Wallets Kit](https://stellarwalletskit.dev/) (Freighter, xBull, etc.) o una **cuenta de prueba** creada en el navegador y fondeada con Friendbot, para que jurado y clientes prueben sin instalar nada. |
 
@@ -65,11 +64,12 @@ Lxs tatuadorxs viajan para trabajar como *guest artists*, pero:
 | Función | Quién | Qué hace |
 |---|---|---|
 | `register_artist` | artista | Crea el perfil (nombre, ciudad, Instagram) |
-| `publish_spot` | host | Publica su estudio libre entre dos fechas, con equipamiento e insumos, depósito opcional y opción **estudio + hogar** (solo si es establecidx) |
-| `book_spot` | guest | Propone fechas reservando el estudio (deja el depósito) |
-| `confirm_booking` / `decline_booking` | host | Acepta las fechas o las rechaza (devuelve el depósito) |
+| `publish_spot` | host | Publica (desde su perfil) las fechas en que su estudio queda libre, con equipamiento e insumos y opción **estudio + hogar** (solo si es establecidx) |
+| `book_spot` | guest | Reserva fechas ya publicadas: quedan confirmadas al instante |
+| `propose_dates` | guest | Propone fechas nuevas en el estudio de otrx artista |
+| `confirm_booking` / `decline_booking` | host | Acepta o rechaza las fechas propuestas |
 | `mark_promo_sent` | host o guest | Marca la gráfica de *guest artist* como publicada |
-| `complete_stay` | host | Cierra la estancia y libera el depósito |
+| `complete_stay` | host | Cierra la estancia y habilita las reseñas |
 | `review_artist` | host o guest | Reseña mutua: 1 a 5 estrellas, etiquetas y comentario; una por lado |
 | `like_artist` / `list_likes` | artista | Like; si es mutuo, es **match** |
 | `send_message` / `list_messages` | matches | Chat corto (280 caracteres), solo entre matches o artistas con una reserva compartida |
@@ -151,7 +151,7 @@ Este proyecto se construyó con asistencia de **Claude (Anthropic)**, siguiendo 
 - Verificación de identidad de clientes (credenciales verificables o pruebas ZK de pertenencia, con BN254).
 - Reportes de conductas peligrosas con moderación comunitaria.
 - Fotos de estudio y hogar, mapa y notificaciones.
-- Mainnet y depósitos en stablecoins (USDC).
+- Mainnet.
 
 ---
 

@@ -36,8 +36,6 @@ pub enum Error {
     InvalidSecret = 16,
     /// Studio + home swaps need a higher reputation
     NotTrustedEnough = 17,
-    /// The XLM deposit could not be transferred
-    DepositFailed = 18,
     /// The booking is not in the right state for this action
     WrongBookingStatus = 19,
     /// Messages must have between 1 and 280 characters

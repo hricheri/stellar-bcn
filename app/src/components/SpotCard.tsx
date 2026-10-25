@@ -5,7 +5,6 @@ import {
 	amenityLabel,
 	type Artist,
 	formatDate,
-	formatXlm,
 	isEstablished,
 	type MatchResult,
 	type Spot,
@@ -57,7 +56,9 @@ export const SpotCard = ({
 	}
 
 	return (
-		<article className="ts-card">
+		<article
+			className={`ts-card${host ? (isEstablished(host) ? " tier-established" : " tier-new") : ""}`}
+		>
 			<div className={`spot-cover${isHome ? " home" : ""}`}>
 				<div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap" }}>
 					<span className="pill pill-lima">ESTUDIO</span>
@@ -87,8 +88,7 @@ export const SpotCard = ({
 
 			<div className="ts-card-body">
 				<div className="meta" style={{ marginBottom: "0.75rem" }}>
-					📅 {formatDate(spot.start)} → {formatDate(spot.end)} · 💶{" "}
-					{formatXlm(spot.price)}
+					📅 {formatDate(spot.start)} → {formatDate(spot.end)}
 				</div>
 
 				{host && (
@@ -175,7 +175,7 @@ export const SpotCard = ({
 				{hash && (
 					<TxNotice
 						hash={hash}
-						text="¡Reservado! El depósito queda en el contrato hasta que el host confirme la estancia."
+						text="¡Reservado! Las fechas publicadas quedan confirmadas."
 					/>
 				)}
 			</div>

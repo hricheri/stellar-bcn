@@ -197,10 +197,6 @@ export const formatDate = (unix: bigint | number) =>
 		timeZone: "UTC",
 	})
 
-export const STROOPS = 10_000_000n
-export const formatXlm = (stroops: bigint) =>
-	stroops === 0n ? "Sin depósito" : `${Number(stroops) / Number(STROOPS)} XLM`
-
 export const TAG_LABELS: Record<string, string> = {
 	higiene: "Higiene y seguridad",
 	limpio: "Limpio",
@@ -278,11 +274,7 @@ export const ACTION_LABELS: Record<PendingAction, string> = {
 }
 
 /** What `me` still has to do (or is waiting for) in a booking */
-export function pendingActions(
-	b: Booking,
-	me: string,
-	spotStart?: bigint,
-): PendingAction[] {
+export function pendingActions(b: Booking, me: string): PendingAction[] {
 	const amHost = b.host === me
 	const out: PendingAction[] = []
 	if (b.status === BK_PENDING)
@@ -290,8 +282,7 @@ export function pendingActions(
 	if (b.status === BK_CONFIRMED) {
 		if (!(amHost ? b.host_promo_sent : b.guest_promo_sent))
 			out.push("enviar_grafica")
-		const started =
-			spotStart === undefined || Date.now() / 1000 >= Number(spotStart)
+		const started = Date.now() / 1000 >= Number(b.start)
 		if (amHost && started) out.push("confirmar_estancia")
 	}
 	if (

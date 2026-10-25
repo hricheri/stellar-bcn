@@ -23,7 +23,6 @@ const ERROR_MESSAGES: Record<number, string> = {
 	15: "Ese QR ya estaba registrado.",
 	16: "Este QR no es válido.",
 	17: "Estudio + hogar se desbloquea con 3 reseñas y promedio 4 o más.",
-	18: "No se pudo transferir el depósito. ¿Tienes XLM suficiente?",
 	19: "La reserva no está en el estado correcto para esto.",
 	20: "El mensaje tiene que tener entre 1 y 280 caracteres.",
 	21: "Solo puedes escribir a tus matches o a artistas con quienes tienes una reserva.",
@@ -112,7 +111,10 @@ export const useAllLikes = (addresses: string[]) =>
 			const entries = await Promise.all(
 				addresses.map(
 					async (a) =>
-						[a, (await tattooGuestSpot.list_likes({ artist: a })).result] as const,
+						[
+							a,
+							(await tattooGuestSpot.list_likes({ artist: a })).result,
+						] as const,
 				),
 			)
 			return new Map(entries)
@@ -154,7 +156,8 @@ export function useSend() {
 				}>
 			}>,
 		) => {
-			if (!address) throw new Error("Conecta tu wallet o usa una cuenta de prueba.")
+			if (!address)
+				throw new Error("Conecta tu wallet o usa una cuenta de prueba.")
 			try {
 				const tx = await build(tattooGuestSpot, address, { publicKey: address })
 				const sent = await tx.signAndSend({ signTransaction })

@@ -1,5 +1,6 @@
 import { useParams } from "react-router-dom"
 import { LikeButton } from "../components/LikeButton"
+import { ProposeDates } from "../components/ProposeDates"
 import { ReviewList } from "../components/ReviewList"
 import { SpotCard } from "../components/SpotCard"
 import {
@@ -21,7 +22,8 @@ const ArtistPage = () => {
 	const spots = useSpots()
 
 	if (artist.isLoading) return <div className="empty-state">Cargando...</div>
-	if (!artist.data) return <div className="empty-state">Este artista no existe.</div>
+	if (!artist.data)
+		return <div className="empty-state">Este artista no existe.</div>
 
 	const a = artist.data
 	const openSpots = (spots.data ?? []).filter(
@@ -36,10 +38,20 @@ const ArtistPage = () => {
 						<Avatar artist={a} big />
 						<div>
 							<h1 style={{ fontSize: "1.8rem" }}>{a.name}</h1>
-							<div className="meta" style={{ color: "var(--lavender-700)", fontWeight: 700 }}>
+							<div
+								className="meta"
+								style={{ color: "var(--lavender-700)", fontWeight: 700 }}
+							>
 								{a.city} · {a.instagram}
 							</div>
-							<div style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginTop: "0.25rem" }}>
+							<div
+								style={{
+									display: "flex",
+									gap: "0.5rem",
+									alignItems: "center",
+									marginTop: "0.25rem",
+								}}
+							>
 								<TierBadge artist={a} />
 								<RatingLine artist={a} />
 							</div>
@@ -63,6 +75,14 @@ const ArtistPage = () => {
 						<SpotCard key={s.id} spot={s} host={a} me={me.data} />
 					))}
 				</>
+			)}
+
+			{me.data && address !== a.address && (
+				<section className="ts-card">
+					<div className="ts-card-body">
+						<ProposeDates host={a.address} />
+					</div>
+				</section>
 			)}
 
 			<div className="split-title">

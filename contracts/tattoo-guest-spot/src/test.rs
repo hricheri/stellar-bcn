@@ -2,23 +2,19 @@
 extern crate std;
 
 use super::*;
-use soroban_sdk::{testutils::Address as _, token::StellarAssetClient, Address, Env};
+use soroban_sdk::{testutils::Address as _, Address, Env};
 
 struct Setup<'a> {
     env: Env,
     client: TattooGuestSpotClient<'a>,
-    sac: StellarAssetClient<'a>,
 }
 
 fn setup<'a>() -> Setup<'a> {
     let env = Env::default();
     env.mock_all_auths();
-    let admin = Address::generate(&env);
-    let id = env.register(TattooGuestSpot, (&admin,));
+    let id = env.register(TattooGuestSpot, ());
     let client = TattooGuestSpotClient::new(&env, &id);
-    let sac_address = env.as_contract(&id, || xlm::contract_id(&env));
-    let sac = StellarAssetClient::new(&env, &sac_address);
-    Setup { env, client, sac }
+    Setup { env, client }
 }
 
 fn s(env: &Env, v: &str) -> String {
@@ -36,9 +32,8 @@ fn artist(t: &Setup, name: &str, city: &str) -> Address {
 fn stay(t: &Setup, host: &Address, guest: &Address, host_score: u32, guest_score: u32) -> u32 {
     let spot = t
         .client
-        .publish_spot(host, &s(&t.env, "BCN"), &100, &200, &0, &false, &Vec::new(&t.env));
+        .publish_spot(host, &s(&t.env, "BCN"), &100, &200, &false, &Vec::new(&t.env));
     let booking = t.client.book_spot(guest, &spot);
-    t.client.confirm_booking(host, &booking);
     t.client.complete_stay(host, &booking);
     let tags = vec![&t.env, symbol_short!("limpio")];
     t.client
@@ -49,26 +44,26 @@ fn stay(t: &Setup, host: &Address, guest: &Address, host_score: u32, guest_score
 }
 
 #[test]
-fn full_stay_with_deposit_and_reviews() {
+fn full_stay_with_reviews() {
     let t = setup();
     let host = artist(&t, "Ana", "Barcelona");
     let guest = artist(&t, "Bea", "Berlin");
-    t.sac.mint(&guest, &xlm::to_stroops(100));
 
     let spot = t.client.publish_spot(
         &host,
         &s(&t.env, "Barcelona"),
         &1_000,
         &2_000,
-        &xlm::to_stroops(20),
         &false,
         &vec![&t.env, Symbol::new(&t.env, "camilla"), Symbol::new(&t.env, "tinta_negra")],
     );
     assert_eq!(t.client.get_spot(&spot).unwrap().amenities.len(), 2);
     let booking = t.client.book_spot(&guest, &spot);
-    let token = soroban_sdk::token::TokenClient::new(&t.env, &t.sac.address);
-    assert_eq!(token.balance(&t.client.address), xlm::to_stroops(20));
     assert_eq!(t.client.get_spot(&spot).unwrap().status, SpotStatus::Booked);
+    // Published dates are confirmed right away, no money involved
+    let b = t.client.get_booking(&booking).unwrap();
+    assert_eq!(b.status, BookingStatus::Confirmed);
+    assert_eq!((b.start, b.end), (1_000, 2_000));
 
     // Nobody can review before the stay is done
     let none = Vec::new(&t.env);
@@ -78,16 +73,9 @@ fn full_stay_with_deposit_and_reviews() {
         Err(Ok(Error::StayNotCompleted))
     );
 
-    // Can't complete before the host confirms the dates
-    assert_eq!(
-        t.client.try_complete_stay(&host, &booking),
-        Err(Ok(Error::WrongBookingStatus))
-    );
-    t.client.confirm_booking(&host, &booking);
     t.client.mark_promo_sent(&guest, &booking);
     assert!(t.client.get_booking(&booking).unwrap().guest_promo_sent);
     t.client.complete_stay(&host, &booking);
-    assert_eq!(token.balance(&host), xlm::to_stroops(20));
 
     t.client
         .review_artist(&guest, &booking, &5, &none, &s(&t.env, "Super limpio"));
@@ -119,7 +107,7 @@ fn cannot_book_own_or_booked_spot() {
     let guest = artist(&t, "Bea", "Berlin");
     let spot = t
         .client
-        .publish_spot(&host, &s(&t.env, "BCN"), &1, &2, &0, &false, &Vec::new(&t.env));
+        .publish_spot(&host, &s(&t.env, "BCN"), &1, &2, &false, &Vec::new(&t.env));
     assert_eq!(
         t.client.try_book_spot(&host, &spot),
         Err(Ok(Error::CannotBookOwnSpot))
@@ -139,7 +127,7 @@ fn home_swap_unlocks_with_reputation() {
     let bea = artist(&t, "Bea", "Berlin");
     assert_eq!(
         t.client
-            .try_publish_spot(&ana, &s(&t.env, "BCN"), &1, &2, &0, &true, &Vec::new(&t.env)),
+            .try_publish_spot(&ana, &s(&t.env, "BCN"), &1, &2, &true, &Vec::new(&t.env)),
         Err(Ok(Error::NotTrustedEnough))
     );
     for _ in 0..3 {
@@ -149,7 +137,7 @@ fn home_swap_unlocks_with_reputation() {
     assert!(t.client.get_reputation(&bea).home_swap_unlocked);
     let spot = t
         .client
-        .publish_spot(&ana, &s(&t.env, "BCN"), &1, &2, &0, &true, &Vec::new(&t.env));
+        .publish_spot(&ana, &s(&t.env, "BCN"), &1, &2, &true, &Vec::new(&t.env));
     assert_eq!(t.client.get_spot(&spot).unwrap().kind, symbol_short!("home"));
 
     // A new artist without reviews can't book a studio + home
@@ -236,7 +224,7 @@ fn rejects_out_of_range_inputs() {
     let ana = artist(&t, "Ana", "Barcelona");
     assert_eq!(
         t.client
-            .try_publish_spot(&ana, &s(&t.env, "BCN"), &5, &5, &0, &false, &Vec::new(&t.env)),
+            .try_publish_spot(&ana, &s(&t.env, "BCN"), &5, &5, &false, &Vec::new(&t.env)),
         Err(Ok(Error::InvalidDates))
     );
     let big = U256::from_be_bytes(
@@ -250,36 +238,54 @@ fn rejects_out_of_range_inputs() {
     assert_eq!(t.client.try_commitment_of(&big), Err(Ok(Error::InvalidSecret)));
     let stranger = Address::generate(&t.env);
     assert_eq!(
-        t.client.try_publish_spot(&stranger, &s(&t.env, "BCN"), &1, &2, &0, &false, &Vec::new(&t.env)),
+        t.client.try_publish_spot(&stranger, &s(&t.env, "BCN"), &1, &2, &false, &Vec::new(&t.env)),
         Err(Ok(Error::NotAnArtist))
     );
 }
 
 #[test]
-fn decline_refunds_and_reopens() {
+fn proposed_dates_need_the_host() {
     let t = setup();
     let host = artist(&t, "Ana", "Barcelona");
     let guest = artist(&t, "Bea", "Berlin");
-    t.sac.mint(&guest, &xlm::to_stroops(50));
-    let spot = t.client.publish_spot(
-        &host,
-        &s(&t.env, "BCN"),
-        &1,
-        &2,
-        &xlm::to_stroops(10),
-        &false,
-        &Vec::new(&t.env),
-    );
-    let booking = t.client.book_spot(&guest, &spot);
-    let token = soroban_sdk::token::TokenClient::new(&t.env, &t.sac.address);
-    assert_eq!(token.balance(&guest), xlm::to_stroops(40));
-    t.client.decline_booking(&host, &booking);
-    assert_eq!(token.balance(&guest), xlm::to_stroops(50));
-    assert_eq!(t.client.get_spot(&spot).unwrap().status, SpotStatus::Open);
+
     assert_eq!(
-        t.client.get_booking(&booking).unwrap().status,
+        t.client.try_propose_dates(&host, &host, &1, &2),
+        Err(Ok(Error::CannotBookOwnSpot))
+    );
+    assert_eq!(
+        t.client.try_propose_dates(&guest, &host, &5, &5),
+        Err(Ok(Error::InvalidDates))
+    );
+
+    // The host declines the first proposal
+    let first = t.client.propose_dates(&guest, &host, &1_000, &2_000);
+    let b = t.client.get_booking(&first).unwrap();
+    assert_eq!(b.status, BookingStatus::Pending);
+    assert_eq!(b.spot_id, NO_SPOT);
+    assert_eq!(
+        t.client.try_complete_stay(&host, &first),
+        Err(Ok(Error::WrongBookingStatus))
+    );
+    assert_eq!(
+        t.client.try_confirm_booking(&guest, &first),
+        Err(Ok(Error::NotPartOfBooking))
+    );
+    t.client.decline_booking(&host, &first);
+    assert_eq!(
+        t.client.get_booking(&first).unwrap().status,
         BookingStatus::Declined
     );
+
+    // ...and accepts the second one
+    let second = t.client.propose_dates(&guest, &host, &3_000, &4_000);
+    t.client.confirm_booking(&host, &second);
+    t.client.complete_stay(&host, &second);
+    assert_eq!(
+        t.client.get_booking(&second).unwrap().status,
+        BookingStatus::Completed
+    );
+    assert_eq!(t.client.list_bookings(&host).len(), 2);
 }
 
 #[test]

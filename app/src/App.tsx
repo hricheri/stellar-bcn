@@ -1,4 +1,4 @@
-import { NavLink, Outlet, Route, Routes } from "react-router-dom"
+import { Navigate, NavLink, Outlet, Route, Routes } from "react-router-dom"
 import ConnectAccount from "./components/ConnectAccount"
 import ArtistPage from "./pages/ArtistPage"
 import Artists from "./pages/Artists"
@@ -8,7 +8,6 @@ import Debug from "./pages/Debug"
 import Explore from "./pages/Explore"
 import MySwaps from "./pages/MySwaps"
 import Profile from "./pages/Profile"
-import Publish from "./pages/Publish"
 
 function App() {
 	return (
@@ -21,7 +20,7 @@ function App() {
 				<Route path="/swaps" element={<MySwaps section="swaps" />} />
 				<Route path="/calendario" element={<MySwaps section="calendario" />} />
 				<Route path="/perfil" element={<Profile />} />
-				<Route path="/publicar" element={<Publish />} />
+				<Route path="/publicar" element={<Navigate to="/perfil" replace />} />
 				<Route path="/clientes" element={<ClientInvite />} />
 				<Route path="/resena/:secret" element={<ClientReview />} />
 				<Route path="/debug" element={<Debug />} />
