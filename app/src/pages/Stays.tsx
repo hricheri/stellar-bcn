@@ -2,6 +2,7 @@ import { useState } from "react"
 import { Link } from "react-router-dom"
 import { BookingActions } from "../components/BookingActions"
 import { Chat } from "../components/Chat"
+import { MyStudioCard } from "../components/MyStudioCard"
 import { Avatar, PageTitle, Photo } from "../components/TattooUI"
 import { OfferDates, requestRange } from "../components/VisitRequest"
 import { useAuth } from "../hooks/useAuth"
@@ -313,6 +314,7 @@ const Stays = ({ side }: { side: Side }) => {
 	return (
 		<>
 			<PageTitle title={copy.title} subtitle={copy.subtitle} />
+			{side === "studio" && <MyStudioCard me={address} />}
 			<VisitRequests side={side} />
 			{mine.length === 0 && (
 				<div className="ts-card empty-state">{copy.empty}</div>
