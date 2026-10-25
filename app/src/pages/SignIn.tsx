@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Navigate } from "react-router-dom"
+import { Navigate, useLocation } from "react-router-dom"
 import { ErrorNotice, PageTitle } from "../components/TattooUI"
 import { useAuth } from "../hooks/useAuth"
 
@@ -14,8 +14,9 @@ const SignIn = () => {
 	const [busy, setBusy] = useState(false)
 	const [error, setError] = useState<string>()
 	const [sent, setSent] = useState<string>()
+	const from = (useLocation().state as { from?: string } | null)?.from
 
-	if (session) return <Navigate to="/perfil" replace />
+	if (session) return <Navigate to={from ?? "/perfil"} replace />
 
 	const submit = async () => {
 		setBusy(true)

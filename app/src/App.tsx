@@ -1,6 +1,7 @@
 import { Navigate, NavLink, Outlet, Route, Routes } from "react-router-dom"
 import ConnectAccount from "./components/ConnectAccount"
 import { NewPassword } from "./components/NewPassword"
+import { RequireLogin } from "./components/RequireLogin"
 import ArtistPage from "./pages/ArtistPage"
 import Calendar from "./pages/Calendar"
 import ClientInvite from "./pages/ClientInvite"
@@ -18,7 +19,14 @@ function App() {
 			<Route element={<AppLayout />}>
 				<Route path="/" element={<Explore />} />
 				<Route path="/artistas" element={<Navigate to="/" replace />} />
-				<Route path="/artista/:address" element={<ArtistPage />} />
+				<Route
+					path="/artista/:address"
+					element={
+						<RequireLogin>
+							<ArtistPage />
+						</RequireLogin>
+					}
+				/>
 				<Route path="/favoritos" element={<Favorites />} />
 				<Route path="/guest" element={<Stays side="guest" />} />
 				<Route path="/studio" element={<Stays side="studio" />} />

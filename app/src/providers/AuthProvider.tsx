@@ -90,6 +90,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 		return () => data.subscription.unsubscribe()
 	}, [])
 
+	// Signed out: no Stellar account either, so nothing can be sent
+	useEffect(() => {
+		if (supabaseReady && !loading && !session) stopDemo()
+	}, [loading, session, stopDemo])
+
 	// Sign Stellar transactions with the account's own key
 	useEffect(() => {
 		if (!userId) return
