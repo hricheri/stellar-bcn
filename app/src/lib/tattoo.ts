@@ -42,6 +42,9 @@ export const AMENITIES: { id: string; label: string; group: AmenityGroup }[] = [
 	{ id: "guantes", label: "Gloves", group: "basicos" },
 	{ id: "film", label: "Film wrap", group: "basicos" },
 	{ id: "vaselina", label: "Vaseline / butter", group: "basicos" },
+	{ id: "stencil_paper", label: "Stencil paper", group: "basicos" },
+	{ id: "thermal_printer", label: "Thermal printer", group: "basicos" },
+	{ id: "thermal_paper", label: "Thermal paper", group: "basicos" },
 	{ id: "witch_hazel", label: "Witch hazel", group: "adicionales" },
 	{ id: "second_skin", label: "Second skin", group: "adicionales" },
 	{ id: "tinta_color", label: "Color inks", group: "adicionales" },
@@ -54,8 +57,21 @@ export const GROUP_LABELS: Record<AmenityGroup, string> = {
 	adicionales: "Extra supplies",
 }
 
+/** Our label, or the artist's own item written back as words */
 export const amenityLabel = (id: string) =>
-	AMENITIES.find((a) => a.id === id)?.label ?? id
+	AMENITIES.find((a) => a.id === id)?.label ??
+	id.charAt(0).toUpperCase() + id.slice(1).replace(/_/g, " ")
+
+/** An artist's own extra item as an id Stellar accepts (letters, digits, _) */
+export const customAmenityId = (text: string) =>
+	text
+		.trim()
+		.toLowerCase()
+		.normalize("NFD")
+		.replace(/[\u0300-\u036f]/g, "")
+		.replace(/[^a-z0-9]+/g, "_")
+		.replace(/^_+|_+$/g, "")
+		.slice(0, 32)
 
 /** By default an artist looks for furniture + basic supplies */
 /** Furniture + basic supplies: the minimum for hygiene and safety */

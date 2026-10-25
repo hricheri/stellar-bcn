@@ -14,7 +14,7 @@ import {
 	TierBadge,
 } from "../components/TattooUI"
 import { useAuth } from "../hooks/useAuth"
-import { useArtist, useReviews, useSend } from "../hooks/useTattoo"
+import { useArtist, useReviews, useSend, useStudios } from "../hooks/useTattoo"
 import { useWallet } from "../hooks/useWallet"
 import { must, type Profile as ProfileRow, supabase } from "../lib/supabase"
 import { loadWishlist, reputationOf, saveWishlist } from "../lib/tattoo"
@@ -155,6 +155,8 @@ const EditAbout = ({
 	onDone: () => void
 }) => {
 	const queryClient = useQueryClient()
+	const [name, setName] = useState(row.name)
+	const [city, setCity] = useState(row.city)
 	const [bio, setBio] = useState(row.bio)
 	const [instagram, setInstagram] = useState(row.instagram)
 	const [busy, setBusy] = useState(false)
@@ -175,7 +177,28 @@ const EditAbout = ({
 				maxSide={800}
 				onUploaded={(avatar_path) => save({ avatar_path })}
 			/>
-			<div className="field" style={{ marginTop: "0.75rem" }}>
+			<div className="field-row" style={{ marginTop: "0.75rem" }}>
+				<div className="field">
+					<label htmlFor="edit-name">Name</label>
+					<input
+						id="edit-name"
+						value={name}
+						maxLength={40}
+						required
+						onChange={(e) => setName(e.target.value)}
+					/>
+				</div>
+				<div className="field">
+					<label htmlFor="edit-city">City</label>
+					<input
+						id="edit-city"
+						value={city}
+						maxLength={60}
+						onChange={(e) => setCity(e.target.value)}
+					/>
+				</div>
+			</div>
+			<div className="field">
 				<label htmlFor="instagram">Instagram</label>
 				<input
 					id="instagram"
@@ -197,11 +220,16 @@ const EditAbout = ({
 			<div className="field-row">
 				<button
 					className="btn-lime"
-					disabled={busy}
+					disabled={busy || !name.trim()}
 					onClick={() => {
 						setBusy(true)
 						setError(undefined)
-						save({ bio: bio.trim(), instagram: instagram.trim() })
+						save({
+							name: name.trim(),
+							city: city.trim(),
+							bio: bio.trim(),
+							instagram: instagram.trim(),
+						})
 							.then(onDone)
 							.catch((e: Error) => setError(e.message))
 							.finally(() => setBusy(false))
@@ -290,6 +318,7 @@ const Profile = () => {
 	const { address } = useWallet()
 	const me = useArtist(address)
 	const reviews = useReviews(address)
+	const studios = useStudios()
 	const queryClient = useQueryClient()
 	const [editing, setEditing] = useState(false)
 	const [wanted, setWanted] = useState(() => loadWishlist().wanted)
@@ -326,6 +355,9 @@ const Profile = () => {
 		)
 
 	const a = me.data
+	const myStudio = (studios.data ?? []).find((s) =>
+		s.members.includes(a.address),
+	)
 	const unlocked = reputationOf(a).home_swap_unlocked
 
 	const saveWanted = (next: string[]) => {
@@ -383,9 +415,11 @@ const Profile = () => {
 			{/* Your studio */}
 			<div className="split-title" id="mi-estudio">
 				<h2>My studio</h2>
-				<Link to="/calendario" className="hint">
-					Free dates are set in the Calendar →
-				</Link>
+				{myStudio && (
+					<Link to="/calendario" className="btn-lime">
+						📅 Add availability
+					</Link>
+				)}
 			</div>
 			<PublishStudio me={a} />
 
@@ -393,12 +427,16 @@ const Profile = () => {
 			<div className="split-title" id="lo-que-busco">
 				<h2>What I need</h2>
 				<span className="hint">
-					Studios show what they're missing from this
+					We'll match you with studios that meet your needs
 				</span>
 			</div>
 			<section className="ts-card">
 				<div className="ts-card-body">
-					<AmenityPicker selected={wanted} onChange={saveWanted} />
+					<AmenityPicker
+						selected={wanted}
+						onChange={saveWanted}
+						copyFrom={myStudio?.amenities}
+					/>
 				</div>
 			</section>
 

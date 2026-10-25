@@ -1,13 +1,24 @@
-import { AMENITIES, type AmenityGroup, GROUP_LABELS } from "../lib/tattoo"
+import { useState } from "react"
+import {
+	AMENITIES,
+	type AmenityGroup,
+	amenityLabel,
+	customAmenityId,
+	GROUP_LABELS,
+} from "../lib/tattoo"
 
 /** Chips to toggle furniture and supplies, grouped like in the Sprint 4 design */
 export const AmenityPicker = ({
 	selected,
 	onChange,
+	copyFrom,
 }: {
 	selected: string[]
 	onChange: (next: string[]) => void
+	/** "Copy from my studio": what my own studio has */
+	copyFrom?: string[]
 }) => {
+	const [custom, setCustom] = useState("")
 	const toggle = (id: string) =>
 		onChange(
 			selected.includes(id)
@@ -16,9 +27,30 @@ export const AmenityPicker = ({
 		)
 
 	const groups = Object.keys(GROUP_LABELS) as AmenityGroup[]
+	const known = new Set(AMENITIES.map((a) => a.id))
+	// The artist's own extra items, besides our list
+	const own = [...new Set([...selected, ...(copyFrom ?? [])])].filter(
+		(id) => !known.has(id),
+	)
+
+	const addCustom = () => {
+		const id = customAmenityId(custom)
+		if (id && !selected.includes(id)) onChange([...selected, id])
+		setCustom("")
+	}
 
 	return (
 		<>
+			{copyFrom && copyFrom.length > 0 && (
+				<button
+					type="button"
+					className="btn-ghost"
+					style={{ marginBottom: "0.5rem" }}
+					onClick={() => onChange([...new Set([...selected, ...copyFrom])])}
+				>
+					⧉ Copy from my studio
+				</button>
+			)}
 			{groups.map((group) => {
 				const items = AMENITIES.filter((a) => a.group === group)
 				const allOn = items.every((a) => selected.includes(a.id))
@@ -50,18 +82,48 @@ export const AmenityPicker = ({
 							</button>
 						</div>
 						<div className="chips">
-							{items.map((a) => (
+							{[
+								...items.map((a) => a.id),
+								...(group === "adicionales" ? own : []),
+							].map((id) => (
 								<button
 									type="button"
-									key={a.id}
-									className={`chip-toggle${selected.includes(a.id) ? " on" : ""}`}
-									onClick={() => toggle(a.id)}
+									key={id}
+									className={`chip-toggle${selected.includes(id) ? " on" : ""}`}
+									onClick={() => toggle(id)}
 								>
-									{selected.includes(a.id) ? "✓ " : ""}
-									{a.label}
+									{selected.includes(id) ? "✓ " : ""}
+									{amenityLabel(id)}
 								</button>
 							))}
 						</div>
+						{group === "adicionales" && (
+							<div className="field-row" style={{ marginTop: "0.5rem" }}>
+								<div className="field" style={{ margin: 0 }}>
+									<input
+										aria-label="Another supply"
+										placeholder="Something else? e.g. Tattoo foam"
+										maxLength={32}
+										value={custom}
+										onChange={(e) => setCustom(e.target.value)}
+										onKeyDown={(e) => {
+											if (e.key === "Enter") {
+												e.preventDefault()
+												addCustom()
+											}
+										}}
+									/>
+								</div>
+								<button
+									type="button"
+									className="btn-ghost"
+									disabled={!customAmenityId(custom)}
+									onClick={addCustom}
+								>
+									+ Add
+								</button>
+							</div>
+						)}
 					</div>
 				)
 			})}
