@@ -9,22 +9,25 @@ export const LikeButton = ({ artist }: { artist: string }) => {
 	const likeArtist = useLike()
 	const [busy, setBusy] = useState(false)
 	const [matched, setMatched] = useState(false)
+	const [error, setError] = useState<string>()
 
 	if (!address || address === artist) return null
 	const liked = likes.data?.includes(artist)
 
 	const like = async () => {
 		setBusy(true)
+		setError(undefined)
 		try {
 			setMatched(await likeArtist(artist))
-		} catch {
-			// the profile may not exist yet; the button just stays as is
+		} catch (e) {
+			setError((e as Error).message)
 		} finally {
 			setBusy(false)
 		}
 	}
 
 	if (matched) return <span className="pill pill-dark">♥ Match!</span>
+	if (error) return <span className="hint">{error}</span>
 	return (
 		<button
 			className={liked ? "btn-ghost" : "btn-lime"}
@@ -35,7 +38,7 @@ export const LikeButton = ({ artist }: { artist: string }) => {
 			}}
 			title={liked ? "You already liked them" : "Like"}
 		>
-			{busy ? "..." : liked ? "♥" : "♡ Like"}
+			{busy ? "..." : liked ? "♥ Saved" : "♡ Like"}
 		</button>
 	)
 }

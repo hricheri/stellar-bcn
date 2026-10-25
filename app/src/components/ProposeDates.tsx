@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useLike, useLikes } from "../hooks/useLikes"
 import { useSend, useSpots, useStudios } from "../hooks/useTattoo"
 import { useTravelDays } from "../hooks/useTrips"
 import { formatRange } from "../lib/tattoo"
@@ -7,14 +8,14 @@ import { DayPicker } from "./DayPicker"
 import { ErrorNotice, TxNotice } from "./TattooUI"
 
 /**
- * "Set dates" from the Sprint 4: their free days are lime, my travel days have
+ * Request dates (the Sprint 4 "Set dates"): their free days are lime, my travel days have
  * a lavender ring, and you pick your range with two taps (first and last day).
  * It's a request: any artist of the studio accepts or declines it.
  */
 export const ProposeDates = ({
 	host,
 	studioId: fixedStudio,
-	label = "📅 Set dates!",
+	label = "📅 Request dates",
 	inline = false,
 }: {
 	host: string
@@ -28,6 +29,8 @@ export const ProposeDates = ({
 	const studios = useStudios()
 	const spots = useSpots()
 	const travelDays = useTravelDays().days
+	const likes = useLikes()
+	const like = useLike()
 	const theirStudios = (studios.data ?? []).filter((s) =>
 		s.members.includes(host),
 	)
@@ -94,6 +97,8 @@ export const ProposeDates = ({
 				),
 			)
 			setHash(hash)
+			// Asking for dates means you're interested: save them to favorites
+			if (!likes.data?.includes(host)) await like(host).catch(() => false)
 			setFrom(undefined)
 			setTo(undefined)
 		} catch (e) {
@@ -108,7 +113,7 @@ export const ProposeDates = ({
 			{!inline && (
 				<div className="split-title" style={{ margin: "0 0 0.5rem" }}>
 					<div className="section-label" style={{ margin: 0 }}>
-						Set dates
+						Request dates
 					</div>
 					<button className="btn-ghost" onClick={() => setOpen(false)}>
 						✕
@@ -153,7 +158,7 @@ export const ProposeDates = ({
 				<div className="cal-foot">
 					<div>
 						<span className="cal-legend">
-							<span className="cal-swatch free" /> Free at the studio
+							<span className="cal-swatch free" /> Available dates
 						</span>
 						{travel.size > 0 && (
 							<span className="cal-legend">

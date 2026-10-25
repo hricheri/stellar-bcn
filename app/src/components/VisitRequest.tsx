@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { Link } from "react-router-dom"
 import { useAuth } from "../hooks/useAuth"
+import { useLike, useLikes } from "../hooks/useLikes"
 import { useProfileOf } from "../hooks/useProfiles"
 import { useSend } from "../hooks/useTattoo"
 import { useTravelDays } from "../hooks/useTrips"
@@ -60,6 +61,8 @@ export const WantToVisit = ({
 	const requests = useVisitRequests()
 	const { send } = useVisitRequestActions()
 	const travel = useTravelDays().days
+	const likes = useLikes()
+	const like = useLike()
 	const [open, setOpen] = useState(false)
 	const [message, setMessage] = useState("")
 	const [busy, setBusy] = useState(false)
@@ -118,6 +121,8 @@ export const WantToVisit = ({
 					: {}),
 			})
 			setSent(true)
+			// Wanting to visit means you're interested: save them to favorites
+			if (!likes.data?.includes(host)) await like(host).catch(() => false)
 		} catch (e) {
 			setError((e as Error).message)
 		} finally {

@@ -82,8 +82,12 @@ export const useLike = () => {
 			if (!userId) throw new Error("Sign in first.")
 			const { error } = await supabase
 				.from("likes")
-				.upsert({ liker: userId, liked: artist }, { ignoreDuplicates: true })
-			if (error) throw new Error(error.message)
+				.insert({ liker: userId, liked: artist })
+			// 23505: already liked
+			if (error && error.code !== "23505")
+				throw new Error(
+					error.code === "23503" ? "First create your profile." : error.message,
+				)
 			await queryClient.invalidateQueries({ queryKey: ["likes"] })
 			// A match: they had liked me before
 			const them = profiles.data?.get(artist)

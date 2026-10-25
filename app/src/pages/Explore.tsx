@@ -36,7 +36,8 @@ interface Filter {
 
 const loadFilter = (): Filter => {
 	try {
-		const saved = JSON.parse(localStorage.getItem(FILTER_KEY) ?? "null") as
+		// Only for this visit: a new visit starts with everyone
+		const saved = JSON.parse(sessionStorage.getItem(FILTER_KEY) ?? "null") as
 			| Filter
 			| string
 			| null
@@ -50,7 +51,7 @@ const loadFilter = (): Filter => {
 
 const saveFilter = (f: Filter) => {
 	try {
-		localStorage.setItem(FILTER_KEY, JSON.stringify(f))
+		sessionStorage.setItem(FILTER_KEY, JSON.stringify(f))
 	} catch {
 		// no storage
 	}
@@ -322,7 +323,7 @@ const Explore = () => {
 						>
 							{filter.mode === "city" && filter.city
 								? `📍 ${filter.city}`
-								: "By city ▾"}
+								: "Filter by city ▾"}
 						</button>
 						{cityMenu && (
 							<div className="filter-menu">
@@ -470,7 +471,7 @@ const MatchPopup = ({
 			<h2 id="match-title">It's a match! 🎨</h2>
 			<p>{them.name} likes you too. Pick your dates or say hi in the chat.</p>
 			<Link to="/favoritos" className="btn-lime btn-block">
-				📅 Set dates!
+				📅 Request dates
 			</Link>
 			<button className="btn-ghost btn-block" onClick={onClose}>
 				Keep exploring

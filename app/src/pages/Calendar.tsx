@@ -360,10 +360,10 @@ const Calendar = () => {
 									<span className="cal-swatch new" /> Not published yet
 								</span>
 								<span className="cal-legend">
-									<span className="cal-swatch travel" /> Travel
+									<span className="cal-swatch travel" /> I want to travel
 								</span>
 								<span className="cal-legend">
-									<span className="cal-swatch confirmed" /> Confirmed guest
+									<span className="cal-swatch confirmed" /> Confirmed stay
 								</span>
 								<span className="cal-legend">
 									<span className="cal-swatch proposed" /> Requested
