@@ -112,21 +112,30 @@ create policy "own trips" on public.trips
 -- ---------------------------------------------------------------------------
 -- Likes (favorites). You see your likes and who liked you, nobody else's.
 -- ---------------------------------------------------------------------------
+-- liked is a Stellar address, so you can save any artist with a studio on
+-- Stellar, even one that hasn't made an account yet.
 create table public.likes (
 	liker uuid not null references public.profiles (id) on delete cascade,
-	liked uuid not null references public.profiles (id) on delete cascade,
+	liked text not null check (liked ~ '^G[A-Z2-7]{55}$'),
 	created_at timestamptz not null default now(),
-	primary key (liker, liked),
-	check (liker <> liked)
+	primary key (liker, liked)
 );
 
 create index likes_liked on public.likes (liked);
 alter table public.likes enable row level security;
 
+-- My Stellar address (null until claimed)
+create function public.my_address() returns text
+language sql stable security definer set search_path = '' as $$
+	select stellar_address from public.profiles where id = auth.uid()
+$$;
+
 create policy "see my likes" on public.likes
-	for select to authenticated using (liker = auth.uid() or liked = auth.uid());
+	for select to authenticated
+	using (liker = auth.uid() or liked = public.my_address());
 create policy "like" on public.likes
-	for insert to authenticated with check (liker = auth.uid());
+	for insert to authenticated
+	with check (liker = auth.uid() and liked is distinct from public.my_address());
 create policy "unlike" on public.likes
 	for delete to authenticated using (liker = auth.uid());
 

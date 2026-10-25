@@ -10,14 +10,9 @@ import {
 	TierBadge,
 } from "../components/TattooUI"
 import { useAuth } from "../hooks/useAuth"
+import { useLikes } from "../hooks/useLikes"
 import { useProfiles } from "../hooks/useProfiles"
-import {
-	useArtist,
-	useArtists,
-	useLikes,
-	useReviews,
-	useSpots,
-} from "../hooks/useTattoo"
+import { useArtist, useArtists, useReviews, useSpots } from "../hooks/useTattoo"
 import { useAllTrips } from "../hooks/useTrips"
 import { useWallet } from "../hooks/useWallet"
 import { type Artist, formatRange, type Spot, SPOT_OPEN } from "../lib/tattoo"
@@ -181,7 +176,7 @@ const Favorites = () => {
 	const { ready, session } = useAuth()
 	const me = useArtist(address)
 	const artists = useArtists()
-	const likes = useLikes(address)
+	const likes = useLikes()
 	const spots = useSpots()
 	const profiles = useProfiles()
 	const allTrips = useAllTrips()

@@ -1,12 +1,12 @@
 import { useState } from "react"
-import { useLikes, useSend } from "../hooks/useTattoo"
+import { useLike, useLikes } from "../hooks/useLikes"
 import { useWallet } from "../hooks/useWallet"
 
 /** ♥ an artist. Mutual likes become a match (and unlock the chat). */
 export const LikeButton = ({ artist }: { artist: string }) => {
 	const { address } = useWallet()
-	const likes = useLikes(address)
-	const send = useSend()
+	const likes = useLikes()
+	const likeArtist = useLike()
 	const [busy, setBusy] = useState(false)
 	const [matched, setMatched] = useState(false)
 
@@ -16,10 +16,7 @@ export const LikeButton = ({ artist }: { artist: string }) => {
 	const like = async () => {
 		setBusy(true)
 		try {
-			const { value } = await send((c, from, o) =>
-				c.like_artist({ from, to: artist }, o),
-			)
-			setMatched(Boolean(value))
+			setMatched(await likeArtist(artist))
 		} catch {
 			// the profile may not exist yet; the button just stays as is
 		} finally {

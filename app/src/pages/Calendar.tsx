@@ -3,11 +3,11 @@ import { Link } from "react-router-dom"
 import { DAY, daysBetween, DayPicker, toRanges } from "../components/DayPicker"
 import { ErrorNotice, PageTitle, TxNotice } from "../components/TattooUI"
 import { useAuth } from "../hooks/useAuth"
+import { useLikes } from "../hooks/useLikes"
 import {
 	useArtist,
 	useArtists,
 	useBookings,
-	useLikes,
 	useSend,
 	useSpots,
 	useStudios,
@@ -72,7 +72,7 @@ const Calendar = () => {
 	const studios = useStudios()
 	const spots = useSpots()
 	const bookings = useBookings(address)
-	const likes = useLikes(address)
+	const likes = useLikes()
 	const travel = useTravelDays()
 	const send = useSend()
 

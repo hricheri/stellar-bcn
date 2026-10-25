@@ -2,15 +2,8 @@ import { useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import { type Candidate, ExploreCard } from "../components/ExploreCard"
 import { Avatar, PageTitle } from "../components/TattooUI"
-import {
-	useAllLikes,
-	useArtist,
-	useArtists,
-	useLikes,
-	useSend,
-	useSpots,
-	useStudios,
-} from "../hooks/useTattoo"
+import { useLike, useLikedMe, useLikes } from "../hooks/useLikes"
+import { useArtist, useArtists, useSpots, useStudios } from "../hooks/useTattoo"
 import { useTravelDays } from "../hooks/useTrips"
 import { useWallet } from "../hooks/useWallet"
 import {
@@ -103,13 +96,13 @@ const Explore = () => {
 	const studios = useStudios()
 	const spots = useSpots()
 	const me = useArtist(address)
-	const likes = useLikes(address)
+	const likes = useLikes()
 	const allAddresses = useMemo(
 		() => (artists.data ?? []).map((a) => a.address),
 		[artists.data],
 	)
-	const allLikes = useAllLikes(allAddresses)
-	const send = useSend()
+	const likedMe = useLikedMe(allAddresses).data ?? new Set<string>()
+	const likeArtist = useLike()
 
 	const wish = useMemo(loadWishlist, [])
 	const travel = useTravelDays().days
@@ -217,11 +210,6 @@ const Explore = () => {
 				.sort((a, b) => a.localeCompare(b)),
 		[candidates],
 	)
-	const likedMe = new Set(
-		[...(allLikes.data?.entries() ?? [])]
-			.filter(([, l]) => !!address && l.includes(address))
-			.map(([a]) => a),
-	)
 
 	const liked = new Set([...(likes.data ?? []), ...justLiked])
 	const shown = candidates.filter((c) => {
@@ -286,10 +274,7 @@ const Explore = () => {
 		setJustLiked((l) => [...l, who.address])
 		setNotice(`♥ ${who.name} is in your favorites.`)
 		try {
-			const { value } = await send((c, from, o) =>
-				c.like_artist({ from, to: who.address }, o),
-			)
-			if (value) {
+			if (await likeArtist(who.address)) {
 				setNotice(undefined)
 				setMatched(who)
 			}

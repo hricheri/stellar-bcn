@@ -119,33 +119,6 @@ export const useBookings = (address?: string) =>
 			(await tattooGuestSpot.list_bookings({ artist: address! })).result,
 	})
 
-export const useLikes = (address?: string) =>
-	useQuery({
-		queryKey: ["likes", address],
-		enabled: !!address,
-		queryFn: async () =>
-			(await tattooGuestSpot.list_likes({ artist: address! })).result,
-	})
-
-/** Every artist's likes, to know who liked me */
-export const useAllLikes = (addresses: string[]) =>
-	useQuery({
-		queryKey: ["all-likes", addresses],
-		enabled: addresses.length > 0,
-		queryFn: async () => {
-			const entries = await Promise.all(
-				addresses.map(
-					async (a) =>
-						[
-							a,
-							(await tattooGuestSpot.list_likes({ artist: a })).result,
-						] as const,
-				),
-			)
-			return new Map(entries)
-		},
-	})
-
 export const useMessages = (me?: string, other?: string, live = false) =>
 	useQuery({
 		queryKey: ["messages", me, other],
