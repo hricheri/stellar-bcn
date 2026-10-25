@@ -1229,17 +1229,6 @@ button.chip-toggle.on {
 	box-sizing: border-box;
 }
 
-.explore-filter {
-	display: flex;
-	flex-direction: column;
-	gap: 0.6rem;
-	margin-bottom: 1rem;
-}
-
-.explore-filter > button {
-	align-self: flex-start;
-}
-
 /* Sprint 4 day picker: availability and "Set dates" */
 .cal-day:disabled {
 	cursor: default;
@@ -1308,4 +1297,166 @@ button.chip-toggle.on {
 .propose {
 	width: 100%;
 	margin-top: 0.5rem;
+}
+
+/* Explore filters (Sprint 4 new-addons) */
+.explore-filters {
+	padding: 1rem;
+	margin-bottom: 1rem;
+	overflow: visible;
+}
+
+.filter-grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 0.5rem;
+}
+
+.filter-city {
+	position: relative;
+}
+
+.filter-btn {
+	width: 100%;
+	border: none;
+	border-radius: 0.75rem;
+	padding: 0.6rem 0.75rem;
+	font-size: 0.8rem;
+	font-weight: 800;
+	background: var(--gray-100);
+	color: var(--gray-500);
+	transition: background 0.15s;
+}
+
+.filter-btn:hover:not(:disabled) {
+	background: var(--gray-200);
+}
+
+.filter-btn.on,
+.filter-btn.on:hover:not(:disabled) {
+	background: var(--lima-300);
+	color: var(--gray-900);
+}
+
+.filter-btn:disabled {
+	opacity: 0.45;
+}
+
+.filter-menu {
+	position: absolute;
+	right: 0;
+	top: calc(100% + 0.4rem);
+	width: 12rem;
+	max-height: 14rem;
+	overflow-y: auto;
+	background: white;
+	border: 1px solid var(--gray-100);
+	border-radius: 0.75rem;
+	box-shadow: 0 10px 25px rgb(0 0 0 / 0.12);
+	z-index: 20;
+	padding: 0.3rem;
+}
+
+.filter-menu button {
+	display: block;
+	width: 100%;
+	text-align: left;
+	border: none;
+	background: none;
+	padding: 0.5rem 0.75rem;
+	border-radius: 0.5rem;
+	font-size: 0.85rem;
+	color: var(--gray-700);
+}
+
+.filter-menu button:hover {
+	background: var(--gray-50);
+}
+
+.filter-menu .hint {
+	margin: 0.5rem 0.75rem;
+}
+
+/* "It's a match!" pop-up */
+.modal-backdrop {
+	position: fixed;
+	inset: 0;
+	background: rgb(30 20 50 / 0.45);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 1rem;
+	z-index: 100;
+	animation: fade-in 0.2s ease-out;
+}
+
+.modal {
+	background: white;
+	border-radius: 1.5rem;
+	padding: 1.75rem 1.5rem;
+	width: 100%;
+	max-width: 22rem;
+	text-align: center;
+	box-shadow: 0 20px 50px rgb(0 0 0 / 0.25);
+	display: flex;
+	flex-direction: column;
+	gap: 0.6rem;
+	animation: pop-in 0.35s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+
+.modal h2 {
+	font-size: 1.6rem;
+	font-weight: 900;
+	margin: 0.25rem 0 0;
+}
+
+.modal p {
+	margin: 0 0 0.5rem;
+	color: var(--gray-500);
+}
+
+.modal a.btn-lime {
+	text-decoration: none;
+	display: block;
+}
+
+.match-modal {
+	background: linear-gradient(
+		160deg,
+		var(--lima-100),
+		white 45%,
+		var(--lavender-50)
+	);
+}
+
+.match-avatars {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.75rem;
+}
+
+.match-heart {
+	font-size: 1.8rem;
+	color: var(--lavender-700);
+	animation: beat 1s ease-in-out infinite;
+}
+
+@keyframes fade-in {
+	from {
+		opacity: 0;
+	}
+}
+
+@keyframes pop-in {
+	from {
+		opacity: 0;
+		transform: scale(0.8);
+	}
+}
+
+@keyframes beat {
+	50% {
+		transform: scale(1.25);
+	}
 }

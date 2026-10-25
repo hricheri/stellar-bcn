@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import { type Candidate, ExploreCard } from "../components/ExploreCard"
-import { PageTitle } from "../components/TattooUI"
+import { Avatar, PageTitle } from "../components/TattooUI"
 import {
+	useAllLikes,
 	useArtist,
 	useArtists,
 	useLikes,
@@ -12,6 +13,7 @@ import {
 } from "../hooks/useTattoo"
 import { useWallet } from "../hooks/useWallet"
 import {
+	type Artist,
 	isEstablished,
 	loadWishlist,
 	type MatchResult,
@@ -22,9 +24,9 @@ import {
 	type Wishlist,
 } from "../lib/tattoo"
 
-// TATTOO APP: Explorar como en el Sprint 4. "Lo que busco" (ciudades, fechas y
-// materiales) se edita en el perfil; aquí un botón filtra las tarjetas con eso.
-// Tarjetas de a una, ordenadas por match. Like = favoritos. Reservar fechas.
+// TATTOO APP: Explore as in the Sprint 4. One card at a time, sorted by match.
+// Four filters on top: everyone, what I'm looking for (edited in the profile),
+// who liked me and one city. A mutual like opens the "It's a match!" pop-up.
 
 const DISMISSED_KEY = "tattoo-dismissed"
 const FILTER_KEY = "tattoo-explore-filter"
@@ -33,6 +35,34 @@ const FILTER_KEY = "tattoo-explore-filter"
 const fitsMyTrips = (m: MatchResult) =>
 	(!!m.trip.city && m.cityOk) ||
 	(!!m.trip.from && !!m.trip.to && m.dateOverlap > 0)
+
+type FilterMode = "all" | "wish" | "likedMe" | "city"
+
+interface Filter {
+	mode: FilterMode
+	city?: string
+}
+
+const loadFilter = (): Filter => {
+	try {
+		const saved = JSON.parse(localStorage.getItem(FILTER_KEY) ?? "null") as
+			| Filter
+			| string
+			| null
+		if (saved && typeof saved === "object") return saved
+	} catch {
+		// no storage, or an older "on" / "off" value
+	}
+	return { mode: "all" }
+}
+
+const saveFilter = (f: Filter) => {
+	try {
+		localStorage.setItem(FILTER_KEY, JSON.stringify(f))
+	} catch {
+		// no storage
+	}
+}
 
 const hasTrips = (w: Wishlist) =>
 	w.trips.some((t) => t.city || (t.from && t.to))
@@ -53,6 +83,26 @@ const saveDismissed = (list: string[]) => {
 	}
 }
 
+const FilterButton = ({
+	on,
+	disabled,
+	onClick,
+	children,
+}: {
+	on: boolean
+	disabled?: boolean
+	onClick: () => void
+	children: React.ReactNode
+}) => (
+	<button
+		className={`filter-btn${on ? " on" : ""}`}
+		disabled={disabled}
+		onClick={onClick}
+	>
+		{children}
+	</button>
+)
+
 const Explore = () => {
 	const { address } = useWallet()
 	const artists = useArtists()
@@ -60,27 +110,25 @@ const Explore = () => {
 	const spots = useSpots()
 	const me = useArtist(address)
 	const likes = useLikes(address)
+	const allAddresses = useMemo(
+		() => (artists.data ?? []).map((a) => a.address),
+		[artists.data],
+	)
+	const allLikes = useAllLikes(allAddresses)
 	const send = useSend()
 
 	const wish = useMemo(loadWishlist, [])
-	const [filtered, setFiltered] = useState(() => {
-		try {
-			return localStorage.getItem(FILTER_KEY) !== "off"
-		} catch {
-			return true
-		}
-	})
-	const toggleFilter = () => {
-		setFiltered(!filtered)
-		try {
-			localStorage.setItem(FILTER_KEY, filtered ? "off" : "on")
-		} catch {
-			// no storage
-		}
+	const [filter, setFilterState] = useState<Filter>(loadFilter)
+	const [cityMenu, setCityMenu] = useState(false)
+	const setFilter = (f: Filter) => {
+		setFilterState(f)
+		saveFilter(f)
+		setCityMenu(false)
 	}
 	const [dismissed, setDismissed] = useState<string[]>(loadDismissed)
 	const [justLiked, setJustLiked] = useState<string[]>([])
 	const [notice, setNotice] = useState<React.ReactNode>()
+	const [matched, setMatched] = useState<Artist>()
 	const canFilter = hasTrips(wish)
 
 	const candidates = useMemo<Candidate[]>(() => {
@@ -138,10 +186,40 @@ const Explore = () => {
 		)
 	}, [artists.data, studios.data, spots.data, address, wish])
 
-	const liked = new Set([...(likes.data ?? []), ...justLiked])
-	const shown = candidates.filter(
-		(c) => !filtered || !canFilter || fitsMyTrips(c.match),
+	// Cities with at least one studio or published home, A to Z
+	const cities = useMemo(
+		() =>
+			[
+				...new Set(
+					candidates.map((c) => (c.studio?.city ?? c.artist.city).trim()),
+				),
+			]
+				.filter(Boolean)
+				.sort((a, b) => a.localeCompare(b)),
+		[candidates],
 	)
+	const likedMe = new Set(
+		[...(allLikes.data?.entries() ?? [])]
+			.filter(([, l]) => !!address && l.includes(address))
+			.map(([a]) => a),
+	)
+
+	const liked = new Set([...(likes.data ?? []), ...justLiked])
+	const shown = candidates.filter((c) => {
+		switch (filter.mode) {
+			case "wish":
+				return !canFilter || fitsMyTrips(c.match)
+			case "likedMe":
+				return likedMe.has(c.artist.address)
+			case "city":
+				return (
+					!filter.city ||
+					(c.studio?.city ?? c.artist.city).trim() === filter.city
+				)
+			default:
+				return true
+		}
+	})
 	const deck = shown.filter(
 		(c) =>
 			!liked.has(c.artist.address) && !dismissed.includes(c.artist.address),
@@ -159,31 +237,28 @@ const Explore = () => {
 	const like = async () => {
 		if (!current) return
 		if (!address) {
-			setNotice("Toca «Entrar» arriba para guardar favoritos.")
+			setNotice("Tap «Sign in» at the top to save favorites.")
 			return
 		}
 		if (!me.data) {
 			setNotice(
 				<>
-					Primero <Link to="/perfil">crea tu perfil</Link> para dar likes.
+					First <Link to="/perfil">create your profile</Link> to like artists.
 				</>,
 			)
 			return
 		}
 		const who = current.artist
 		setJustLiked((l) => [...l, who.address])
-		setNotice(`♥ ${who.name} quedó en tus favoritos.`)
+		setNotice(`♥ ${who.name} is in your favorites.`)
 		try {
 			const { value } = await send((c, from, o) =>
 				c.like_artist({ from, to: who.address }, o),
 			)
-			if (value)
-				setNotice(
-					<>
-						¡Match con {who.name}! Ya pueden escribirse desde{" "}
-						<Link to="/favoritos">Favoritos</Link>.
-					</>,
-				)
+			if (value) {
+				setNotice(undefined)
+				setMatched(who)
+			}
 		} catch (e) {
 			setJustLiked((l) => l.filter((x) => x !== who.address))
 			setNotice((e as Error).message)
@@ -196,54 +271,102 @@ const Explore = () => {
 	return (
 		<>
 			<PageTitle
-				title="Explorar"
-				subtitle="Artistas y sus estudios, ordenados por match con lo que buscas."
+				title="Explore"
+				subtitle="Artists and their studios, sorted by how well they match what you're looking for."
 			/>
 
-			<div className="explore-filter">
-				<button
-					className={filtered && canFilter ? "btn-primary" : "btn-ghost"}
-					onClick={toggleFilter}
-					disabled={!canFilter}
-				>
-					{filtered && canFilter
-						? "✓ Filtrado por lo que busco"
-						: "Filtrar por lo que busco"}
-				</button>
-				<div className="chips">
-					{wish.trips
-						.filter((t) => t.city || (t.from && t.to))
-						.map((t, i) => (
-							<span key={i} className="pill pill-gray">
-								📍 {t.city || "Cualquier ciudad"}
-								{t.from && t.to
-									? ` · ${t.from.slice(5)} → ${t.to.slice(5)}`
-									: ""}
-							</span>
-						))}
-					<Link to="/perfil#lo-que-busco" className="hint">
-						{canFilter
-							? "Editar en mi perfil"
-							: "Dinos a dónde quieres ir, en tu perfil →"}
-					</Link>
+			<div className="ts-card explore-filters">
+				<div className="filter-grid">
+					<FilterButton
+						on={filter.mode === "all"}
+						onClick={() => setFilter({ mode: "all" })}
+					>
+						See everyone
+					</FilterButton>
+					<FilterButton
+						on={filter.mode === "wish"}
+						onClick={() => setFilter({ mode: "wish" })}
+						disabled={!canFilter}
+					>
+						What I'm looking for
+					</FilterButton>
+					<FilterButton
+						on={filter.mode === "likedMe"}
+						onClick={() => setFilter({ mode: "likedMe" })}
+					>
+						Liked me
+					</FilterButton>
+					<div className="filter-city">
+						<button
+							className={`filter-btn${filter.mode === "city" ? " on" : ""}`}
+							onClick={() => setCityMenu(!cityMenu)}
+							aria-expanded={cityMenu}
+						>
+							{filter.mode === "city" && filter.city
+								? `📍 ${filter.city}`
+								: "By city ▾"}
+						</button>
+						{cityMenu && (
+							<div className="filter-menu">
+								{cities.length === 0 ? (
+									<p className="hint">No cities yet</p>
+								) : (
+									cities.map((city) => (
+										<button
+											key={city}
+											onClick={() => setFilter({ mode: "city", city })}
+										>
+											{city}
+										</button>
+									))
+								)}
+							</div>
+						)}
+					</div>
 				</div>
+				{filter.mode === "wish" && canFilter && (
+					<div className="chips" style={{ marginTop: "0.6rem" }}>
+						{wish.trips
+							.filter((t) => t.city || (t.from && t.to))
+							.map((t, i) => (
+								<span key={i} className="pill pill-gray">
+									📍 {t.city || "Any city"}
+									{t.from && t.to
+										? ` · ${t.from.slice(5)} → ${t.to.slice(5)}`
+										: ""}
+								</span>
+							))}
+						<Link to="/perfil#lo-que-busco" className="hint">
+							Edit in my profile
+						</Link>
+					</div>
+				)}
+				{!canFilter && (
+					<Link
+						to="/perfil#lo-que-busco"
+						className="hint"
+						style={{ display: "block", marginTop: "0.6rem" }}
+					>
+						Tell us where you want to go, in your profile →
+					</Link>
+				)}
 			</div>
 
 			<div className="legend" style={{ margin: "0 0 1rem" }}>
-				<span className="pill pill-lima">ESTUDIO</span>
-				<span className="pill pill-lavender">HOGAR</span>
-				<span className="pill pill-dark">★ Establecidx</span>
-				<span className="pill pill-outline">✦ Nuevx</span>
-				<span className="chip chip-has">Tiene</span>
-				<span className="chip chip-missing">Falta</span>
+				<span className="pill pill-lima">STUDIO</span>
+				<span className="pill pill-lavender">HOME</span>
+				<span className="pill pill-dark">★ Established</span>
+				<span className="pill pill-outline">✦ New</span>
 			</div>
 
 			{loading && (
-				<div className="empty-state">Cargando artistas de la blockchain...</div>
+				<div className="empty-state">
+					Loading artists from the blockchain...
+				</div>
 			)}
 			{error && (
 				<div className="alert alert-error">
-					No pudimos leer el contrato: {(error as Error).message}
+					We couldn't read the contract: {(error as Error).message}
 				</div>
 			)}
 
@@ -260,24 +383,26 @@ const Explore = () => {
 							/>
 							<div className="deck-actions">
 								<button className="btn-ghost" onClick={nope}>
-									✕ Descartar
+									✕ Discard
 								</button>
 								<button className="btn-lime" onClick={() => void like()}>
 									♥ Like
 								</button>
 							</div>
 							<p className="hint deck-count">
-								{shown.length - deck.length + 1} de {shown.length} · desliza la
-								tarjeta o usa los botones
+								{shown.length - deck.length + 1} of {shown.length} · swipe the
+								card or use the buttons
 							</p>
 						</>
 					) : (
 						<div className="ts-card empty-state">
 							{candidates.length === 0
-								? "Todavía no hay estudios publicados."
+								? "No studios published yet."
 								: shown.length === 0
-									? "Nadie coincide con tus ciudades o fechas. Quita el filtro para ver a todxs."
-									: "Ya viste todas las tarjetas."}
+									? filter.mode === "likedMe"
+										? "Nobody new liked you yet. Keep exploring!"
+										: "Nobody matches this filter. Try See everyone."
+									: "You've seen every card."}
 							{dismissed.length > 0 && (
 								<div style={{ marginTop: "0.75rem" }}>
 									<button
@@ -287,7 +412,7 @@ const Explore = () => {
 											saveDismissed([])
 										}}
 									>
-										Volver a ver las descartadas
+										Show the discarded ones again
 									</button>
 								</div>
 							)}
@@ -300,8 +425,51 @@ const Explore = () => {
 					)}
 				</div>
 			)}
+
+			{matched && me.data && (
+				<MatchPopup
+					me={me.data}
+					them={matched}
+					onClose={() => setMatched(undefined)}
+				/>
+			)}
 		</>
 	)
 }
+
+/** "It's a match!": both liked each other */
+const MatchPopup = ({
+	me,
+	them,
+	onClose,
+}: {
+	me: Artist
+	them: Artist
+	onClose: () => void
+}) => (
+	<div className="modal-backdrop" onClick={onClose}>
+		<div
+			className="modal match-modal"
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="match-title"
+			onClick={(e) => e.stopPropagation()}
+		>
+			<div className="match-avatars">
+				<Avatar artist={me} big />
+				<span className="match-heart">♥</span>
+				<Avatar artist={them} big />
+			</div>
+			<h2 id="match-title">It's a match! 🎨</h2>
+			<p>{them.name} likes you too. Pick your dates or say hi in the chat.</p>
+			<Link to="/swaps" className="btn-lime btn-block">
+				📅 Set dates!
+			</Link>
+			<button className="btn-ghost btn-block" onClick={onClose}>
+				Keep exploring
+			</button>
+		</div>
+	</div>
+)
 
 export default Explore

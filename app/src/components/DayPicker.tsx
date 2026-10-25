@@ -60,8 +60,7 @@ export const DayPicker = ({
 	const initial = (() => {
 		if (!startMonth) return 0
 		const d = new Date(startMonth * 1000)
-		const diff =
-			(d.getUTCFullYear() - first.y) * 12 + d.getUTCMonth() - first.m
+		const diff = (d.getUTCFullYear() - first.y) * 12 + d.getUTCMonth() - first.m
 		return Math.max(0, Math.min(MAX_MONTHS, diff))
 	})()
 	const [offset, setOffset] = useState(initial)
