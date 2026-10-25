@@ -1,13 +1,15 @@
 import { Navigate, NavLink, Outlet, Route, Routes } from "react-router-dom"
 import ConnectAccount from "./components/ConnectAccount"
 import ArtistPage from "./pages/ArtistPage"
+import Calendar from "./pages/Calendar"
 import ClientInvite from "./pages/ClientInvite"
 import ClientReview from "./pages/ClientReview"
 import Debug from "./pages/Debug"
 import Explore from "./pages/Explore"
-import MySwaps from "./pages/MySwaps"
+import Favorites from "./pages/Favorites"
 import Profile from "./pages/Profile"
 import SignIn from "./pages/SignIn"
+import Stays from "./pages/Stays"
 
 function App() {
 	return (
@@ -16,9 +18,11 @@ function App() {
 				<Route path="/" element={<Explore />} />
 				<Route path="/artistas" element={<Navigate to="/" replace />} />
 				<Route path="/artista/:address" element={<ArtistPage />} />
-				<Route path="/favoritos" element={<MySwaps section="favoritos" />} />
-				<Route path="/swaps" element={<MySwaps section="swaps" />} />
-				<Route path="/calendario" element={<MySwaps section="calendario" />} />
+				<Route path="/favoritos" element={<Favorites />} />
+				<Route path="/guest" element={<Stays side="guest" />} />
+				<Route path="/studio" element={<Stays side="studio" />} />
+				<Route path="/swaps" element={<Navigate to="/guest" replace />} />
+				<Route path="/calendario" element={<Calendar />} />
 				<Route path="/perfil" element={<Profile />} />
 				<Route path="/entrar" element={<SignIn />} />
 				<Route path="/publicar" element={<Navigate to="/perfil" replace />} />
@@ -48,6 +52,7 @@ const icons: Record<string, React.ReactNode> = {
 	calendar: (
 		<path d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
 	),
+	studio: <path d="M2.25 21h19.5M3.75 21V8.25L12 3l8.25 5.25V21M9 21v-6h6v6" />,
 	publish: <path d="M12 4.5v15m7.5-7.5h-15" />,
 	qr: (
 		<path d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5zM6.75 6.75h.75v.75h-.75v-.75zM6.75 16.5h.75v.75h-.75v-.75zM16.5 6.75h.75v.75h-.75v-.75zM13.5 13.5h.75v.75h-.75v-.75zM13.5 19.5h.75v.75h-.75v-.75zM19.5 13.5h.75v.75h-.75v-.75zM19.5 19.5h.75v.75h-.75v-.75zM16.5 16.5h.75v.75h-.75v-.75z" />
@@ -60,8 +65,9 @@ const icons: Record<string, React.ReactNode> = {
 const dock = [
 	{ to: "/", icon: "explore", label: "Explore" },
 	{ to: "/favoritos", icon: "favorites", label: "Favorites" },
-	{ to: "/swaps", icon: "swaps", label: "Swaps" },
 	{ to: "/calendario", icon: "calendar", label: "Calendar" },
+	{ to: "/guest", icon: "swaps", label: "Guest" },
+	{ to: "/studio", icon: "studio", label: "Studio" },
 	{ to: "/perfil", icon: "profile", label: "Profile" },
 ]
 
