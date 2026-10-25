@@ -6,7 +6,9 @@ import {
 	HOME_SWAP_MIN_AVG,
 	HOME_SWAP_MIN_REVIEWS,
 	isEstablished,
+	missingBasics,
 	reputationOf,
+	type Spot,
 } from "../lib/tattoo"
 
 // TATTOO APP: piezas visuales compartidas entre pantallas
@@ -145,3 +147,23 @@ export const TxNotice = ({ hash, text }: { hash?: string; text: string }) => (
 
 export const ErrorNotice = ({ error }: { error?: string }) =>
 	error ? <div className="alert alert-error">{error}</div> : null
+
+/** Distingue de un vistazo los estudios que cumplen los requisitos básicos */
+export const BasicsBadge = ({ spot }: { spot: Spot }) => {
+	const missing = missingBasics(spot).length
+	return missing === 0 ? (
+		<span
+			className="pill pill-ok"
+			title="Declara todo el mobiliario y los insumos básicos de higiene y seguridad"
+		>
+			✓ CUMPLE BÁSICOS
+		</span>
+	) : (
+		<span
+			className="pill pill-warn"
+			title="No declara todo el mobiliario o los insumos básicos: lleva los tuyos"
+		>
+			⚠ FALTAN {missing} BÁSICO{missing > 1 ? "S" : ""}
+		</span>
+	)
+}

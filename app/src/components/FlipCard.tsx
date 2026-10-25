@@ -12,7 +12,13 @@ import {
 	SPOT_OPEN,
 } from "../lib/tattoo"
 import { Chat } from "./Chat"
-import { Avatar, MatchRing, RatingLine, TierBadge } from "./TattooUI"
+import {
+	Avatar,
+	BasicsBadge,
+	MatchRing,
+	RatingLine,
+	TierBadge,
+} from "./TattooUI"
 
 export interface Connection {
 	artist: Artist
@@ -97,6 +103,7 @@ export const FlipCard = ({
 							{c.kind === "match" && <span className="pill pill-dark">♥ MATCH</span>}
 							{c.kind === "likedMe" && <span className="pill pill-lima">♥ TE DIO LIKE</span>}
 							{c.unread > 0 && <span className="pill pill-lavender">💬 {c.unread} nuevo{c.unread > 1 ? "s" : ""}</span>}
+							{c.spot && <BasicsBadge spot={c.spot} />}
 						</div>
 						{c.match && <MatchRing percent={c.match.percent} />}
 						<div className="spot-city">{a.city}</div>

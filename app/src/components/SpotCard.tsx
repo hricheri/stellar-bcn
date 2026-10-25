@@ -12,7 +12,13 @@ import {
 	SPOT_OPEN,
 } from "../lib/tattoo"
 import { LikeButton } from "./LikeButton"
-import { ArtistRow, ErrorNotice, MatchRing, TxNotice } from "./TattooUI"
+import {
+	ArtistRow,
+	BasicsBadge,
+	ErrorNotice,
+	MatchRing,
+	TxNotice,
+} from "./TattooUI"
 
 export const SpotCard = ({
 	spot,
@@ -56,6 +62,7 @@ export const SpotCard = ({
 				<div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap" }}>
 					<span className="pill pill-lima">ESTUDIO</span>
 					{isHome && <span className="pill pill-lavender">+ HOGAR</span>}
+					<BasicsBadge spot={spot} />
 					{host &&
 						(isEstablished(host) ? (
 							<span

@@ -56,6 +56,15 @@ export const amenityLabel = (id: string) =>
 	AMENITIES.find((a) => a.id === id)?.label ?? id
 
 /** By default an artist looks for furniture + basic supplies */
+/** Mobiliario + insumos básicos: lo mínimo de higiene y seguridad */
+export const BASIC_REQUIREMENTS = AMENITIES.filter(
+	(a) => a.group !== "adicionales",
+).map((a) => a.id)
+
+/** Requisitos básicos que el estudio no declara tener */
+export const missingBasics = (spot: Spot) =>
+	BASIC_REQUIREMENTS.filter((id) => !spot.amenities.includes(id))
+
 export const DEFAULT_WANTED = AMENITIES.filter(
 	(a) => a.group !== "adicionales",
 ).map((a) => a.id)

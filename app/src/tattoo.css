@@ -263,6 +263,17 @@ h3 {
 	color: var(--gray-500);
 }
 
+.pill-ok {
+	background: var(--lima-700);
+	color: white;
+}
+
+.pill-warn {
+	background: var(--danger-50);
+	color: var(--danger-600);
+	border: 1px solid var(--danger-600);
+}
+
 .chips {
 	display: flex;
 	flex-wrap: wrap;
