@@ -1,20 +1,29 @@
 import { useQueryClient } from "@tanstack/react-query"
 import { useMemo, useState } from "react"
 import { useAuth } from "../hooks/useAuth"
-import { useStudioImage, useStudioPhotoPath } from "../hooks/useProfiles"
+import {
+	usePhotoUrl,
+	useStudioImage,
+	useStudioPhotoPath,
+} from "../hooks/useProfiles"
+import { useSaveStudioAddress } from "../hooks/useStudioPlace"
 import { useArtists, useSend, useStudios } from "../hooks/useTattoo"
 import { must, supabase } from "../lib/supabase"
 import {
 	amenityLabel,
 	type Artist,
 	DEFAULT_WANTED,
-	reputationOf,
 	type Studio,
 	studioAvg,
 	studioTier,
 } from "../lib/tattoo"
 import { AmenityPicker } from "./AmenityPicker"
 import { PhotoPicker } from "./PhotoPicker"
+import {
+	AddressInput,
+	type CheckedAddress,
+	StudioAddress,
+} from "./StudioAddress"
 import { ErrorNotice, Photo, StudioTierBadge, TxNotice } from "./TattooUI"
 
 /** Runs a contract call and keeps its busy / error / tx state */
@@ -106,6 +115,9 @@ const StudioPanel = ({
 					The studio has its own reputation, built from guests' reviews,
 					separate from each artist's.
 				</div>
+
+				<div className="section-label">Where it is</div>
+				<StudioAddress studioId={studio.id} city={studio.city} />
 
 				<div className="section-label">Studio artists</div>
 				<div className="chips">
@@ -203,55 +215,108 @@ const StudioPanel = ({
 	)
 }
 
+/** Saves a studio photo row, so the studio's artists show it */
+const useSaveStudioPhoto = () => {
+	const { userId } = useAuth()
+	const queryClient = useQueryClient()
+	return async (studioId: number, path: string) => {
+		must(
+			await supabase.from("studio_photos").upsert({
+				studio_id: studioId,
+				uploaded_by: userId!,
+				photo_path: path,
+				updated_at: new Date().toISOString(),
+			}),
+		)
+		await queryClient.invalidateQueries({ queryKey: ["studio-photos"] })
+	}
+}
+
 const CreateStudio = ({ me }: { me: Artist }) => {
 	const send = useSend()
-	const action = useAction()
+	const savePhoto = useSaveStudioPhoto()
+	const saveAddress = useSaveStudioAddress()
 	const [amenities, setAmenities] = useState<string[]>(DEFAULT_WANTED)
+	const [city, setCity] = useState(me.city)
+	const [photo, setPhoto] = useState<string>()
+	const preview = usePhotoUrl(photo)
+	const [address, setAddress] = useState<CheckedAddress>()
+	const [busy, setBusy] = useState(false)
+	const [error, setError] = useState<string>()
+	const [hash, setHash] = useState<string>()
+
+	const create = async (name: string) => {
+		setBusy(true)
+		setError(undefined)
+		try {
+			const { value: id, hash } = await send((c, owner, o) =>
+				c.create_studio({ owner, name, city: city.trim(), amenities }, o),
+			)
+			const studioId = Number(id)
+			if (photo) await savePhoto(studioId, photo)
+			if (address) await saveAddress(studioId, address.address, address.place)
+			setHash(hash)
+		} catch (e) {
+			setError((e as Error).message)
+		} finally {
+			setBusy(false)
+		}
+	}
+
 	return (
 		<section className="ts-card">
+			{preview.data && (
+				<div className="card-photo card-photo-studio">
+					<img src={preview.data} alt="Your studio" />
+				</div>
+			)}
 			<form
 				className="ts-card-body"
-				action={(form) =>
-					action.run(() =>
-						send((c, owner, o) =>
-							c.create_studio(
-								{
-									owner,
-									name: String(form.get("name")).trim(),
-									city: String(form.get("city")).trim(),
-									amenities,
-								},
-								o,
-							),
-						),
-					)
-				}
+				action={(form) => create(String(form.get("name")).trim())}
 			>
 				<h2 style={{ marginBottom: "0.85rem" }}>Create my studio</h2>
-				<div className="field-row">
+				<PhotoPicker
+					name="studio-new"
+					previous={photo}
+					label={photo ? "📷 Change the photo" : "📷 Add a studio photo"}
+					onUploaded={setPhoto}
+				/>
+				<div className="field-row" style={{ marginTop: "0.75rem" }}>
 					<div className="field">
 						<label htmlFor="name">Studio name</label>
 						<input id="name" name="name" required />
 					</div>
 					<div className="field">
 						<label htmlFor="city">City</label>
-						<input id="city" name="city" required defaultValue={me.city} />
+						<input
+							id="city"
+							required
+							value={city}
+							onChange={(e) => setCity(e.target.value)}
+						/>
 					</div>
 				</div>
+				<AddressInput city={city} onChecked={setAddress} />
 				<div className="section-label">What does your studio offer?</div>
 				<AmenityPicker selected={amenities} onChange={setAmenities} />
 				<button
 					className="btn-lime btn-block"
 					style={{ marginTop: "1rem" }}
-					disabled={action.busy}
+					disabled={busy || !photo || !address}
 				>
-					{action.busy ? "Creating..." : "Create studio"}
+					{busy
+						? "Creating..."
+						: !photo
+							? "Add a photo to continue"
+							: !address
+								? "Check the address on the map to continue"
+								: "Create studio"}
 				</button>
-				<ErrorNotice error={action.error} />
-				{action.hash && (
+				<ErrorNotice error={error} />
+				{hash && (
 					<TxNotice
-						hash={action.hash}
-						text="Studio created! You can now publish its free dates and add other artists."
+						hash={hash}
+						text="Studio created! Now add its availability in the Calendar."
 					/>
 				)}
 			</form>
@@ -277,14 +342,11 @@ export const PublishStudio = ({ me }: { me: Artist }) => {
 			{mine.map((s) => (
 				<StudioPanel key={s.id} studio={s} me={me} artists={byAddress} />
 			))}
-			{mine.length === 0 && !creating && (
-				<div className="ts-card empty-state">
-					Do you have a studio? Create it to publish its free dates. If you
-					don't, you can still travel and book
-					{reputationOf(me).home_swap_unlocked
-						? ", or publish only your home."
-						: "."}
-				</div>
+			{mine.length === 0 && (
+				<p className="section-sub">
+					Want to share your studio with the community? Create it here and set
+					its availability!
+				</p>
 			)}
 			{creating || mine.length === 0 ? (
 				<CreateStudio me={me} />

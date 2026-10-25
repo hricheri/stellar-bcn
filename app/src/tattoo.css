@@ -1913,3 +1913,12 @@ a.btn-lavender {
 	color: var(--lavender-700);
 	font-size: 0.85rem;
 }
+
+.section-sub {
+	margin: -0.4rem 0 0.85rem;
+	color: var(--gray-500);
+}
+
+.back-who a {
+	text-decoration: none;
+}
