@@ -21,10 +21,10 @@ import {
 } from "../hooks/useTattoo"
 import { useWallet } from "../hooks/useWallet"
 import {
-	ACTION_LABELS,
 	BK_CONFIRMED,
 	BK_DECLINED,
 	BK_PENDING,
+	formatDate,
 	formatRange,
 	loadWishlist,
 	matchSpot,
@@ -59,7 +59,7 @@ const Carousel = ({
 			<button
 				className="carousel-arrow"
 				onClick={() => setI(idx - 1)}
-				aria-label="Anterior"
+				aria-label="Previous"
 				disabled={items.length < 2}
 			>
 				‹
@@ -72,7 +72,7 @@ const Carousel = ({
 			<button
 				className="carousel-arrow"
 				onClick={() => setI(idx + 1)}
-				aria-label="Siguiente"
+				aria-label="Next"
 				disabled={items.length < 2}
 			>
 				›
@@ -87,6 +87,72 @@ const Carousel = ({
 					/>
 				))}
 			</div>
+		</div>
+	)
+}
+
+type SwapGroup = "new" | "requests" | "sent" | "confirmed"
+
+const SWAP_GROUPS: { id: SwapGroup; title: string; hint: string }[] = [
+	{ id: "new", title: "🎉 New matches", hint: "Pick your dates" },
+	{ id: "requests", title: "Swap requests for you", hint: "Accept or decline" },
+	{ id: "sent", title: "Sent requests", hint: "Waiting for their answer" },
+	{ id: "confirmed", title: "📅 Confirmed swaps", hint: "Get ready!" },
+]
+
+/** Which block of Swaps a connection goes in */
+const swapGroup = (c: Connection): SwapGroup => {
+	const b = c.booking
+	if (!b) return "new"
+	if (b.status === BK_PENDING)
+		return c.actions.includes("confirmar_fechas") ? "requests" : "sent"
+	return "confirmed"
+}
+
+/** "View details" of a confirmed swap: dates, place, contact and what to do next */
+const SwapDetails = ({
+	c,
+	me,
+	city,
+	studioName,
+}: {
+	c: Connection
+	me: string
+	city: string
+	studioName?: string
+}) => {
+	const [open, setOpen] = useState(false)
+	const b = c.booking!
+	if (!open)
+		return (
+			<button className="btn-ghost" onClick={() => setOpen(true)}>
+				View details
+			</button>
+		)
+	return (
+		<div className="swap-details">
+			<div>
+				<b>Where:</b> {studioName ? `${studioName}, ${city}` : city}
+			</div>
+			<div>
+				<b>When:</b> {formatRange(b.start, b.end)}
+			</div>
+			<div>
+				<b>Contact:</b> {c.artist.name} · {c.artist.instagram || "chat"}
+			</div>
+			<p className="hint">
+				The exact address and how to get in are shared privately in the chat:
+				everything on Stellar is public, so we never store them there.
+			</p>
+			<div className="alert alert-info">
+				📸 Send a photo of one of your tattoos within 48 h so they can announce
+				your guest spot on social media. Graphic deadline:{" "}
+				{formatDate(promoDeadline(b.start))}.
+			</div>
+			<BookingActions booking={b} me={me} other={c.artist} />
+			<button className="btn-ghost" onClick={() => setOpen(false)}>
+				Hide details
+			</button>
 		</div>
 	)
 }
@@ -283,7 +349,7 @@ const MySwaps = ({ section }: { section: Section }) => {
 					kind: "available",
 					start: Number(s.start),
 					end: Number(s.end),
-					label: `Tu estudio libre en ${s.city}`,
+					label: `Your studio is free in ${s.city}`,
 				})
 			}
 		}
@@ -291,7 +357,7 @@ const MySwaps = ({ section }: { section: Section }) => {
 			const b = c.booking
 			const s = c.bookingSpot
 			const city =
-				s?.city ?? (b?.host === address ? "tu estudio" : c.artist.city)
+				s?.city ?? (b?.host === address ? "your studio" : c.artist.city)
 			if (b && b.status === BK_CONFIRMED) {
 				const amHost = b.host === address
 				out.push({
@@ -299,8 +365,8 @@ const MySwaps = ({ section }: { section: Section }) => {
 					start: Number(b.start),
 					end: Number(b.end),
 					label: amHost
-						? `${c.artist.name} en tu estudio`
-						: `Vas al estudio de ${c.artist.name} (${city})`,
+						? `${c.artist.name} at your studio`
+						: `You go to ${c.artist.name}'s studio (${city})`,
 				})
 				if (!(amHost ? b.host_promo_sent : b.guest_promo_sent)) {
 					const d = promoDeadline(b.start)
@@ -308,7 +374,7 @@ const MySwaps = ({ section }: { section: Section }) => {
 						kind: "deadline",
 						start: d,
 						end: d,
-						label: `Enviar gráfica de guest artist (${c.artist.name})`,
+						label: `Post the guest artist graphic (${c.artist.name})`,
 					})
 				}
 			} else if (b && b.status === BK_PENDING) {
@@ -316,14 +382,14 @@ const MySwaps = ({ section }: { section: Section }) => {
 					kind: "proposed",
 					start: Number(b.start),
 					end: Number(b.end),
-					label: `Propuesta con ${c.artist.name} (${city})`,
+					label: `Proposal with ${c.artist.name} (${city})`,
 				})
 			} else if (!b && c.kind === "match" && c.spot) {
 				out.push({
 					kind: "proposed",
 					start: Number(c.spot.start),
 					end: Number(c.spot.end),
-					label: `${c.artist.name} libre en ${c.spot.city}`,
+					label: `${c.artist.name} free in ${c.spot.city}`,
 				})
 			}
 		}
@@ -333,15 +399,15 @@ const MySwaps = ({ section }: { section: Section }) => {
 	if (!address || !me.data) {
 		return (
 			<>
-				<PageTitle title="Mis swaps" />
+				<PageTitle title="My swaps" />
 				<div className="alert alert-info">
 					{address ? (
 						<>
-							Primero <Link to="/perfil">crea tu perfil</Link>.
+							First <Link to="/perfil">create your profile</Link>.
 						</>
 					) : (
 						<>
-							Conecta tu wallet o toca <b>Probar sin wallet</b> arriba.
+							Tap <b>Sign in</b> at the top.
 						</>
 					)}
 				</div>
@@ -353,20 +419,113 @@ const MySwaps = ({ section }: { section: Section }) => {
 		void send((cl, from, o) => cl.like_artist({ from, to }, o)).catch(() => {})
 	const spotsOf = (a: string) => (spots.data ?? []).filter((s) => s.host === a)
 
+	const swapRow = (c: Connection, group: SwapGroup) => {
+		const s = c.bookingSpot ?? c.spot
+		const city = s?.city ?? c.artist.city
+		const b = c.booking
+		const amHost = b?.host === address
+		return (
+			<div key={c.artist.address} className="swap-row">
+				{group === "confirmed" && b && (
+					<div className="swap-headline">
+						{amHost
+							? `🏠 ${c.artist.name} is coming to your studio!`
+							: `✈️ You're going to ${city}!`}
+					</div>
+				)}
+				<div className="swap-main">
+					{c.match ? (
+						<MatchRing percent={c.match.percent} />
+					) : (
+						<div style={{ width: 64 }} />
+					)}
+					<div style={{ flex: 1, minWidth: 0 }}>
+						<div className="swap-city">{city}</div>
+						<div className="host-name">
+							{c.artist.name} <TierBadge artist={c.artist} />
+						</div>
+						<div className="meta">
+							{b
+								? `📅 ${formatRange(b.start, b.end)}`
+								: s
+									? `📅 Free ${formatRange(s.start, s.end)}`
+									: "No dates yet"}
+							{group === "sent" && " · waiting for response"}
+						</div>
+					</div>
+					<div className="swap-icons">
+						<button
+							className={`icon-btn${c.unread ? " has-unread" : ""}`}
+							title="Chat"
+							onClick={() =>
+								setChatOpen(
+									chatOpen === c.artist.address ? undefined : c.artist.address,
+								)
+							}
+						>
+							💬
+							{c.unread > 0 && <span className="badge">{c.unread}</span>}
+						</button>
+						<Link
+							to={`/artista/${c.artist.address}`}
+							className="icon-btn"
+							title="Profile"
+						>
+							👤
+						</Link>
+					</div>
+				</div>
+				<div className="swap-actions">
+					{group === "new" && c.spot && (
+						<button
+							className="btn-lime"
+							onClick={() =>
+								void send((cl, guest, o) =>
+									cl.book_spot({ guest, spot_id: c.spot!.id }, o),
+								).catch(() => {})
+							}
+						>
+							Book these dates
+						</button>
+					)}
+					{group === "new" && <ProposeDates host={c.artist.address} />}
+					{b && group !== "confirmed" && (
+						<BookingActions booking={b} me={address} other={c.artist} />
+					)}
+					{b && group === "confirmed" && (
+						<SwapDetails
+							c={c}
+							me={address}
+							city={city}
+							studioName={
+								(studios.data ?? []).find((st) => st.id === b.studio_id)?.name
+							}
+						/>
+					)}
+				</div>
+				{chatOpen === c.artist.address && (
+					<div style={{ marginTop: "0.75rem" }}>
+						<Chat me={address} other={c.artist} canChat={c.canChat} />
+					</div>
+				)}
+			</div>
+		)
+	}
+
 	return (
 		<div className="unified">
 			<section id="favoritos" ref={refs.favoritos} className="unified-section">
 				<PageTitle
-					title="Favoritos"
-					subtitle="Toca una tarjeta para darla vuelta y chatear."
+					title="Favorites"
+					subtitle="Tap a card to flip it and chat."
 				/>
 				<div className="split-title">
 					<h2>♥ Matches</h2>
-					<span className="hint">Primero, los que tienen algo pendiente</span>
+					<span className="hint">Those with something to do come first</span>
 				</div>
 				<Carousel
 					items={matches}
-					empty="Todavía no tienes matches. Dale like a artistas en Explorar."
+					empty="No matches yet. Like some artists in Explore."
 					render={(c) => (
 						<FlipCard
 							c={c}
@@ -377,12 +536,12 @@ const MySwaps = ({ section }: { section: Section }) => {
 					)}
 				/>
 				<div className="split-title">
-					<h2>♡ Likes y conversaciones</h2>
-					<span className="hint">Primero, los mensajes sin leer</span>
+					<h2>♡ Likes and conversations</h2>
+					<span className="hint">Unread messages come first</span>
 				</div>
 				<Carousel
 					items={liked}
-					empty="Sin likes pendientes."
+					empty="No pending likes."
 					render={(c) => (
 						<FlipCard
 							c={c}
@@ -398,103 +557,28 @@ const MySwaps = ({ section }: { section: Section }) => {
 			<section id="swaps" ref={refs.swaps} className="unified-section">
 				<PageTitle
 					title="Swaps"
-					subtitle="Tus matches en lista, con lo que falta hacer en cada uno."
+					subtitle="Your matches, step by step: set dates, answer, travel."
 				/>
 				{matches.length === 0 && (
-					<div className="ts-card empty-state">Sin swaps todavía.</div>
+					<div className="ts-card empty-state">No swaps yet.</div>
 				)}
-				<div className="ts-card">
-					{matches.map((c) => {
-						const s = c.bookingSpot ?? c.spot
-						return (
-							<div key={c.artist.address} className="swap-row">
-								<div className="swap-main">
-									{c.match ? (
-										<MatchRing percent={c.match.percent} />
-									) : (
-										<div style={{ width: 64 }} />
-									)}
-									<div style={{ flex: 1, minWidth: 0 }}>
-										<div className="swap-city">{s?.city ?? c.artist.city}</div>
-										<div className="host-name">
-											{c.artist.name} <TierBadge artist={c.artist} />
-										</div>
-										<div className="meta">
-											{c.booking
-												? `📅 ${formatRange(c.booking.start, c.booking.end)}`
-												: s
-													? `📅 Libre ${formatRange(s.start, s.end)}`
-													: "Sin fechas propuestas"}
-											{c.booking?.status === BK_PENDING &&
-												" · esperando respuesta"}
-											{c.booking?.status === BK_CONFIRMED && " · ✓ confirmado"}
-										</div>
-									</div>
-									<div className="swap-icons">
-										<button
-											className={`icon-btn${c.unread ? " has-unread" : ""}`}
-											title="Chat"
-											onClick={() =>
-												setChatOpen(
-													chatOpen === c.artist.address
-														? undefined
-														: c.artist.address,
-												)
-											}
-										>
-											💬
-											{c.unread > 0 && (
-												<span className="badge">{c.unread}</span>
-											)}
-										</button>
-										<Link
-											to={`/artista/${c.artist.address}`}
-											className="icon-btn"
-											title="Perfil"
-										>
-											👤
-										</Link>
-									</div>
-								</div>
-								<div className="swap-actions">
-									{c.booking ? (
-										<BookingActions
-											booking={c.booking}
-											me={address}
-											other={c.artist}
-										/>
-									) : c.spot ? (
-										<button
-											className="btn-lime"
-											onClick={() =>
-												void send((cl, guest, o) =>
-													cl.book_spot({ guest, spot_id: c.spot!.id }, o),
-												).catch(() => {})
-											}
-										>
-											Reservar estas fechas
-										</button>
-									) : null}
-									{!c.booking && <ProposeDates host={c.artist.address} />}
-									{c.actions.length === 0 && c.booking && (
-										<span className="hint">Nada pendiente ✓</span>
-									)}
-									{c.actions.length > 0 && (
-										<span className="hint">
-											Pendiente:{" "}
-											{c.actions.map((a) => ACTION_LABELS[a]).join(" · ")}
-										</span>
-									)}
-								</div>
-								{chatOpen === c.artist.address && (
-									<div style={{ marginTop: "0.75rem" }}>
-										<Chat me={address} other={c.artist} canChat={c.canChat} />
-									</div>
-								)}
+				{SWAP_GROUPS.map((g) => {
+					const items = matches.filter((c) => swapGroup(c) === g.id)
+					if (items.length === 0) return null
+					return (
+						<div key={g.id}>
+							<div className="split-title">
+								<h2>{g.title}</h2>
+								<span className="hint">{g.hint}</span>
 							</div>
-						)
-					})}
-				</div>
+							<div
+								className={`ts-card${g.id === "confirmed" ? " swap-confirmed" : ""}`}
+							>
+								{items.map((c) => swapRow(c, g.id))}
+							</div>
+						</div>
+					)
+				})}
 			</section>
 
 			<section
@@ -503,8 +587,8 @@ const MySwaps = ({ section }: { section: Section }) => {
 				className="unified-section"
 			>
 				<PageTitle
-					title="Calendario"
-					subtitle="Tu disponibilidad, swaps confirmados, propuestas de tus matches y deadlines."
+					title="Calendar"
+					subtitle="Your availability, confirmed swaps, your matches' proposals and deadlines."
 				/>
 				<div className="ts-card">
 					<div className="ts-card-body">

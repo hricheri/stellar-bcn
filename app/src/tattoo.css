@@ -1466,3 +1466,27 @@ button.chip-toggle.on {
 		transform: scale(1.25);
 	}
 }
+
+/* Swaps: confirmed block, as in the Sprint 4 */
+.swap-confirmed {
+	background: var(--lima-100);
+}
+
+.swap-headline {
+	font-weight: 900;
+	font-size: 1.15rem;
+	margin-bottom: 0.5rem;
+}
+
+.swap-details {
+	display: flex;
+	flex-direction: column;
+	gap: 0.4rem;
+	background: white;
+	border-radius: 1rem;
+	padding: 0.85rem 1rem;
+}
+
+.swap-details .hint {
+	margin: 0;
+}
