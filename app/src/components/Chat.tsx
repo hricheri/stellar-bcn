@@ -51,8 +51,8 @@ export const Chat = ({
 						style={{ textAlign: "center", padding: "1rem" }}
 					>
 						{canChat
-							? `Escríbele a ${other.name} para coordinar fechas.`
-							: "Podrán chatear cuando haya match. Lxs artistas establecidxs pueden escribir sin match."}
+							? `Write to ${other.name} to sort out dates.`
+							: "You can chat once you match. Established artists can write without a match."}
 					</div>
 				)}
 				{messages.data?.map((m, i) => (
@@ -73,12 +73,12 @@ export const Chat = ({
 					<input
 						value={text}
 						maxLength={280}
-						placeholder="Escribe un mensaje..."
+						placeholder="Write a message..."
 						onChange={(e) => setText(e.target.value)}
 						onClick={(e) => e.stopPropagation()}
 					/>
 					<button className="btn-lime" disabled={busy || !text.trim()}>
-						{busy ? "..." : "Enviar"}
+						{busy ? "..." : "Send"}
 					</button>
 				</form>
 			)}

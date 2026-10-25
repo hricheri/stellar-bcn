@@ -61,14 +61,14 @@ const StudioPanel = ({
 				</div>
 				<div className="meta">
 					{studio.city} · ⭐ {studioAvg(studio)} ({studio.review_count}{" "}
-					{studio.review_count === 1 ? "reseña" : "reseñas"} del estudio)
+					{studio.review_count === 1 ? "review" : "reviews"} of the studio)
 				</div>
 				<div className="hint" style={{ marginTop: "0.35rem" }}>
-					La reputación del estudio es propia: la construyen las reseñas de lxs
-					guests, aparte de la de cada artista.
+					The studio has its own reputation, built from guests' reviews,
+					separate from each artist's.
 				</div>
 
-				<div className="section-label">Artistas del estudio</div>
+				<div className="section-label">Studio artists</div>
 				<div className="chips">
 					{studio.members.map((m) => (
 						<span key={m} className="chip chip-has">
@@ -79,11 +79,11 @@ const StudioPanel = ({
 				<div className="field-row" style={{ marginTop: "0.5rem" }}>
 					<div className="field">
 						<select
-							aria-label="Agregar artista"
+							aria-label="Add an artist"
 							value={newArtist}
 							onChange={(e) => setNewArtist(e.target.value)}
 						>
-							<option value="">Agregar otrx artista...</option>
+							<option value="">Add another artist...</option>
 							{others.map((a) => (
 								<option key={a.address} value={a.address}>
 									{a.name} ({a.city})
@@ -105,11 +105,11 @@ const StudioPanel = ({
 							)
 						}
 					>
-						Agregar
+						Add
 					</button>
 				</div>
 
-				<div className="section-label">Mobiliario e insumos</div>
+				<div className="section-label">Furniture and supplies</div>
 				{editing ? (
 					<>
 						<AmenityPicker selected={amenities} onChange={setAmenities} />
@@ -130,7 +130,7 @@ const StudioPanel = ({
 									.then(() => setEditing(false))
 							}
 						>
-							Guardar insumos
+							Save supplies
 						</button>
 					</>
 				) : (
@@ -147,17 +147,16 @@ const StudioPanel = ({
 							style={{ marginTop: "0.5rem" }}
 							onClick={() => setEditing(true)}
 						>
-							Editar insumos
+							Edit supplies
 						</button>
 					</>
 				)}
 				<ErrorNotice error={action.error} />
-				{action.hash && (
-					<TxNotice hash={action.hash} text="Estudio actualizado." />
-				)}
+				{action.hash && <TxNotice hash={action.hash} text="Studio updated." />}
 				{me.address !== studio.members[0] && (
 					<div className="hint" style={{ marginTop: "0.5rem" }}>
-						Te sumó {artists.get(studio.members[0]!)?.name ?? "otrx artista"}.
+						Added by {artists.get(studio.members[0]!)?.name ?? "another artist"}
+						.
 					</div>
 				)}
 			</div>
@@ -189,31 +188,31 @@ const CreateStudio = ({ me }: { me: Artist }) => {
 					)
 				}
 			>
-				<h2 style={{ marginBottom: "0.85rem" }}>Crear mi estudio</h2>
+				<h2 style={{ marginBottom: "0.85rem" }}>Create my studio</h2>
 				<div className="field-row">
 					<div className="field">
-						<label htmlFor="name">Nombre del estudio</label>
+						<label htmlFor="name">Studio name</label>
 						<input id="name" name="name" required />
 					</div>
 					<div className="field">
-						<label htmlFor="city">Ciudad</label>
+						<label htmlFor="city">City</label>
 						<input id="city" name="city" required defaultValue={me.city} />
 					</div>
 				</div>
-				<div className="section-label">¿Qué ofrece tu estudio?</div>
+				<div className="section-label">What does your studio offer?</div>
 				<AmenityPicker selected={amenities} onChange={setAmenities} />
 				<button
 					className="btn-lime btn-block"
 					style={{ marginTop: "1rem" }}
 					disabled={action.busy}
 				>
-					{action.busy ? "Creando..." : "Crear estudio"}
+					{action.busy ? "Creating..." : "Create studio"}
 				</button>
 				<ErrorNotice error={action.error} />
 				{action.hash && (
 					<TxNotice
 						hash={action.hash}
-						text="¡Estudio creado! Ya puedes publicar sus fechas libres y sumar a otrxs artistas."
+						text="Studio created! You can now publish its free dates and add other artists."
 					/>
 				)}
 			</form>
@@ -221,7 +220,7 @@ const CreateStudio = ({ me }: { me: Artist }) => {
 	)
 }
 
-/** "Mi estudio" inside the profile */
+/** "My studio" inside the profile */
 export const PublishStudio = ({ me }: { me: Artist }) => {
 	const studios = useStudios()
 	const artists = useArtists()
@@ -241,10 +240,10 @@ export const PublishStudio = ({ me }: { me: Artist }) => {
 			))}
 			{mine.length === 0 && !creating && (
 				<div className="ts-card empty-state">
-					¿Tienes estudio? Créalo para publicar sus fechas libres. Si no tienes,
-					igual puedes viajar y reservar
+					Do you have a studio? Create it to publish its free dates. If you
+					don't, you can still travel and book
 					{reputationOf(me).home_swap_unlocked
-						? ", o publicar solo tu hogar."
+						? ", or publish only your home."
 						: "."}
 				</div>
 			)}
@@ -252,7 +251,7 @@ export const PublishStudio = ({ me }: { me: Artist }) => {
 				<CreateStudio me={me} />
 			) : (
 				<button className="btn-ghost" onClick={() => setCreating(true)}>
-					+ Crear otro estudio
+					+ Create another studio
 				</button>
 			)}
 			<AvailabilityCalendar me={me} studios={mine} />

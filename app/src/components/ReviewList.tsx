@@ -4,9 +4,9 @@ import { formatDate, ROLE_LABELS, type Review, TAG_LABELS } from "../lib/tattoo"
 import { Stars } from "./TattooUI"
 
 const ROLE_TEXT = [
-	"como host (le prestó su estudio)",
-	"como guest (trabajó en su estudio)",
-	"como cliente (verificado con QR)",
+	"as host (lent them their studio)",
+	"as guest (worked at their studio)",
+	"as client (verified with a QR)",
 ]
 
 export const ReviewList = ({ reviews }: { reviews: Review[] }) => {
@@ -14,7 +14,7 @@ export const ReviewList = ({ reviews }: { reviews: Review[] }) => {
 	const names = new Map((artists.data ?? []).map((a) => [a.address, a.name]))
 
 	if (reviews.length === 0) {
-		return <div className="empty-state">Todavía no tiene reseñas.</div>
+		return <div className="empty-state">No reviews yet.</div>
 	}
 
 	return (

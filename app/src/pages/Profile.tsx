@@ -54,14 +54,14 @@ const RegisterForm = () => {
 	return (
 		<section className="ts-card">
 			<form className="ts-card-body" action={submit}>
-				<h2 style={{ marginBottom: "0.85rem" }}>Crea tu perfil de artista</h2>
+				<h2 style={{ marginBottom: "0.85rem" }}>Create your artist profile</h2>
 				<div className="field">
-					<label htmlFor="name">Nombre artístico</label>
+					<label htmlFor="name">Artist name</label>
 					<input id="name" name="name" required maxLength={40} />
 				</div>
 				<div className="field-row">
 					<div className="field">
-						<label htmlFor="city">Ciudad de tu estudio</label>
+						<label htmlFor="city">City of your studio</label>
 						<input id="city" name="city" required maxLength={40} />
 					</div>
 					<div className="field">
@@ -75,7 +75,7 @@ const RegisterForm = () => {
 					</div>
 				</div>
 				<button className="btn-lime btn-block" disabled={busy}>
-					{busy ? "Creando..." : "Crear perfil en Stellar"}
+					{busy ? "Creating..." : "Create profile on Stellar"}
 				</button>
 				<ErrorNotice error={error} />
 			</form>
@@ -100,22 +100,21 @@ const Profile = () => {
 	if (!address) {
 		return (
 			<>
-				<PageTitle title="Mi perfil" />
+				<PageTitle title="My profile" />
 				<div className="alert alert-info">
-					Conecta tu wallet o toca <b>Probar sin wallet</b> arriba para crear tu
-					perfil en testnet.
+					Tap <b>Sign in</b> at the top to create your profile on testnet.
 				</div>
 			</>
 		)
 	}
 
-	if (me.isLoading) return <div className="empty-state">Cargando...</div>
+	if (me.isLoading) return <div className="empty-state">Loading...</div>
 	if (!me.data) {
 		return (
 			<>
 				<PageTitle
-					title="Bienvenidx"
-					subtitle="Tu perfil y tu reputación quedan guardados en Stellar."
+					title="Welcome"
+					subtitle="Your profile and reputation are stored on Stellar."
 				/>
 				<RegisterForm />
 			</>
@@ -165,27 +164,34 @@ const Profile = () => {
 							style={{ flex: 1 }}
 							onClick={() => scrollTo("mi-estudio")}
 						>
-							Mi estudio
+							My studio
+						</button>
+						<button
+							className="btn-ghost btn-block"
+							style={{ flex: 1 }}
+							onClick={() => scrollTo("availability")}
+						>
+							Availability
 						</button>
 						<button
 							className="btn-ghost btn-block"
 							style={{ flex: 1 }}
 							onClick={() => scrollTo("mi-hogar")}
 						>
-							Mi hogar
+							My home
 						</button>
 						<button
 							className="btn-ghost btn-block"
 							style={{ flex: 1 }}
 							onClick={() => scrollTo("lo-que-busco")}
 						>
-							Lo que busco
+							What I'm looking for
 						</button>
 						<Link to="/clientes" style={{ flex: 1 }}>
-							<button className="btn-ghost btn-block">QR para clientes</button>
+							<button className="btn-ghost btn-block">Client QR</button>
 						</Link>
 						<Link to={`/artista/${a.address}`} style={{ flex: 1 }}>
-							<button className="btn-ghost btn-block">Vista pública</button>
+							<button className="btn-ghost btn-block">Public view</button>
 						</Link>
 					</div>
 				</div>
@@ -203,22 +209,22 @@ const Profile = () => {
 					}}
 				>
 					<span>
-						Tus matches, swaps, chats y calendario están en un solo lugar.
+						Your matches, swaps, chats and calendar are all in one place.
 					</span>
 					<Link to="/swaps">
-						<button className="btn-lavender">Ir a mis swaps</button>
+						<button className="btn-lavender">Go to my swaps</button>
 					</Link>
 				</div>
 			</div>
 
 			<div className="split-title" id="mi-estudio">
-				<h2>Mi estudio</h2>
-				<span className="hint">Un estudio puede tener varixs artistas</span>
+				<h2>My studio</h2>
+				<span className="hint">A studio can have several artists</span>
 			</div>
 			<PublishStudio me={a} />
 			{studioSpots.length > 0 && (
 				<div className="split-title">
-					<h2>Fechas libres de mi estudio</h2>
+					<h2>My studio's free dates</h2>
 				</div>
 			)}
 			{studioSpots.map((s) => (
@@ -226,21 +232,21 @@ const Profile = () => {
 			))}
 
 			<div className="split-title" id="mi-hogar">
-				<h2>Mi hogar</h2>
-				<span className="hint">Solo para artistas establecidxs</span>
+				<h2>My home</h2>
+				<span className="hint">Only for established artists</span>
 			</div>
 			<section className="ts-card">
 				<div className="ts-card-body">
 					{unlocked ? (
 						<p style={{ margin: 0 }}>
-							Ya puedes ofrecer tu hogar: junto con tu estudio, o solo tu hogar
-							si no tienes estudio. Elígelo en <b>Publicar fechas libres</b>,
-							arriba.
+							You can now offer your home: with your studio, or only your home
+							if you don't have a studio. Choose it in <b>Availability</b>,
+							above.
 						</p>
 					) : (
 						<>
 							<p style={{ marginTop: 0 }}>
-								Ofrecer tu hogar se desbloquea cuando llegas a establecidx.
+								Offering your home unlocks once you're established.
 							</p>
 							<HomeSwapProgress artist={a} />
 						</>
@@ -252,8 +258,8 @@ const Profile = () => {
 			))}
 
 			<div className="split-title" id="lo-que-busco">
-				<h2>Lo que busco</h2>
-				<span className="hint">Con esto se calcula el % de match</span>
+				<h2>What I'm looking for</h2>
+				<span className="hint">This is what the match % is based on</span>
 			</div>
 			<section className="ts-card">
 				<div className="ts-card-body">
@@ -268,10 +274,8 @@ const Profile = () => {
 			</section>
 
 			<div className="split-title">
-				<h2>Mis reseñas</h2>
-				<span className="hint">
-					Guardadas en Stellar, nadie puede borrarlas
-				</span>
+				<h2>My reviews</h2>
+				<span className="hint">Stored on Stellar, nobody can delete them</span>
 			</div>
 			<section className="ts-card">
 				<div className="ts-card-body">

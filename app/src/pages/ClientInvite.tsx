@@ -22,9 +22,9 @@ const ClientInvite = () => {
 	if (!me.data) {
 		return (
 			<>
-				<PageTitle title="Reseñas de clientes" />
+				<PageTitle title="Client reviews" />
 				<div className="alert alert-info">
-					Primero <Link to="/perfil">crea tu perfil</Link>.
+					First <Link to="/perfil">create your profile</Link>.
 				</div>
 			</>
 		)
@@ -56,8 +56,8 @@ const ClientInvite = () => {
 	return (
 		<>
 			<PageTitle
-				title="Reseñas de clientes"
-				subtitle="Al terminar una sesión, muéstrale este QR a tu cliente. Solo sirve una vez."
+				title="Client reviews"
+				subtitle="When a session ends, show this QR to your client. It works only once."
 			/>
 
 			<section className="ts-card">
@@ -65,24 +65,24 @@ const ClientInvite = () => {
 					{!invite ? (
 						<div className="qr-box">
 							<p>
-								Cada QR lleva un secreto aleatorio. En Stellar solo guardamos su
-								hash <b>Poseidon</b>, así nadie puede inventar reseñas ni
-								reutilizar un QR.
+								Each QR carries a random secret. On Stellar we only store its{" "}
+								<b>Poseidon</b> hash, so nobody can make up reviews or reuse a
+								QR.
 							</p>
 							<button
 								className="btn-lime"
 								disabled={busy}
 								onClick={() => void create()}
 							>
-								{busy ? "Generando..." : "Generar QR para un cliente"}
+								{busy ? "Generating..." : "Generate a QR for a client"}
 							</button>
 						</div>
 					) : (
 						<div className="qr-box">
-							<img src={invite.qr} alt="QR para dejar una reseña" />
+							<img src={invite.qr} alt="QR to leave a review" />
 							<p style={{ margin: 0 }}>
-								Que tu cliente lo escanee con la cámara del móvil. No necesita
-								wallet ni cuenta.
+								Your client scans it with their phone camera. No wallet or
+								account needed.
 							</p>
 							<a
 								href={invite.link}
@@ -90,20 +90,17 @@ const ClientInvite = () => {
 								rel="noreferrer"
 								className="tx-link"
 							>
-								Abrir el link de reseña ↗
+								Open the review link ↗
 							</a>
-							<TxNotice
-								hash={invite.hash}
-								text="Compromiso registrado on-chain."
-							/>
+							<TxNotice hash={invite.hash} text="Commitment stored on-chain." />
 							<code style={{ fontSize: "0.65rem", wordBreak: "break-all" }}>
-								Poseidon(secreto) = 0x{invite.commitment}
+								Poseidon(secret) = 0x{invite.commitment}
 							</code>
 							<button
 								className="btn-ghost"
 								onClick={() => setInvite(undefined)}
 							>
-								Generar otro
+								Generate another
 							</button>
 						</div>
 					)}
@@ -113,16 +110,16 @@ const ClientInvite = () => {
 
 			<section className="ts-card">
 				<div className="ts-card-body">
-					<h3 style={{ marginBottom: "0.5rem" }}>¿Cómo funciona?</h3>
+					<h3 style={{ marginBottom: "0.5rem" }}>How does it work?</h3>
 					<ol className="meta" style={{ paddingLeft: "1.2rem", margin: 0 }}>
-						<li>Tu navegador genera un secreto y calcula Poseidon(secreto).</li>
+						<li>Your browser makes a secret and computes Poseidon(secret).</li>
 						<li>
-							Solo el hash se guarda en el contrato, asociado a tu perfil.
+							Only the hash is stored in the contract, linked to your profile.
 						</li>
 						<li>
-							El cliente revela el secreto al reseñar; el contrato recalcula el
-							hash con la función Poseidon nativa de Stellar (BN254) y lo marca
-							como usado.
+							The client reveals the secret when reviewing; the contract
+							recomputes the hash with Stellar's native Poseidon function
+							(BN254) and marks it as used.
 						</li>
 					</ol>
 				</div>

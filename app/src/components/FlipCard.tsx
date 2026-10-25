@@ -52,7 +52,7 @@ const TheirCalendar = ({
 	return (
 		<div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
 			{spots.length === 0 && (
-				<div className="hint">No publicó fechas todavía.</div>
+				<div className="hint">No dates published yet.</div>
 			)}
 			{spots.map((s) => (
 				<div key={s.id} className="cal-row">
@@ -62,8 +62,8 @@ const TheirCalendar = ({
 					<div style={{ flex: 1 }}>
 						<b>{formatRange(s.start, s.end)}</b>
 						<div className="hint">
-							{s.city} · {s.status === SPOT_OPEN ? "Disponible" : "Reservado"}
-							{s.kind === "home" ? " · estudio + hogar" : ""}
+							{s.city} · {s.status === SPOT_OPEN ? "Available" : "Booked"}
+							{s.kind === "home" ? " · studio + home" : ""}
 						</div>
 					</div>
 					{s.status === SPOT_OPEN && me && (
@@ -72,13 +72,11 @@ const TheirCalendar = ({
 							onClick={(e) => {
 								e.stopPropagation()
 								send((c, guest, o) => c.book_spot({ guest, spot_id: s.id }, o))
-									.then(() =>
-										setMsg("¡Reservado! Las fechas quedan confirmadas."),
-									)
+									.then(() => setMsg("Booked! The dates are confirmed."))
 									.catch((err: Error) => setMsg(err.message))
 							}}
 						>
-							Reservar
+							Book
 						</button>
 					)}
 				</div>
@@ -117,7 +115,7 @@ export const FlipCard = ({
 	return (
 		<div className={`flip${flipped ? " flipped" : ""}`}>
 			<div className="flip-inner">
-				{/* Frente */}
+				{/* Front */}
 				<div className="flip-face ts-card" onClick={() => open("chat")}>
 					<Cover
 						kind={c.spot?.kind === "homeonly" ? "home" : "studio"}
@@ -128,7 +126,7 @@ export const FlipCard = ({
 						}
 						title={
 							c.spot?.kind === "homeonly"
-								? `Hogar de ${a.name}`
+								? `${a.name}'s home`
 								: (studio?.name ?? a.city)
 						}
 						subtitle={studio?.city ?? a.city}
@@ -142,15 +140,13 @@ export const FlipCard = ({
 							<span className="pill pill-dark">♥ Match</span>
 						)}
 						{c.kind === "likedMe" && (
-							<span className="pill pill-outline-dark">♥ Te dio like</span>
+							<span className="pill pill-outline-dark">♥ Liked you</span>
 						)}
 						{c.kind === "contact" && (
-							<span className="pill pill-outline">💬 Conversación</span>
+							<span className="pill pill-outline">💬 Conversation</span>
 						)}
 						{c.unread > 0 && (
-							<span className="pill pill-dark">
-								💬 {c.unread} nuevo{c.unread > 1 ? "s" : ""}
-							</span>
+							<span className="pill pill-dark">💬 {c.unread} new</span>
 						)}
 						{c.spot && <BasicsBadge spot={c.spot} />}
 					</div>
@@ -164,7 +160,7 @@ export const FlipCard = ({
 						</div>
 						{c.spot && (
 							<div className="meta" style={{ marginTop: "0.6rem" }}>
-								📅 Libre {formatRange(c.spot.start, c.spot.end)}
+								📅 Free {formatRange(c.spot.start, c.spot.end)}
 							</div>
 						)}
 						{c.actions.length > 0 && (
@@ -181,21 +177,21 @@ export const FlipCard = ({
 								💬 Chat
 							</button>
 							<button className="btn-ghost" onClick={() => open("cal")}>
-								📅 Fechas
+								📅 Dates
 							</button>
 							<Link to={`/artista/${a.address}`}>
-								<button className="btn-ghost">👤 Perfil</button>
+								<button className="btn-ghost">👤 Profile</button>
 							</Link>
 							{c.kind === "likedMe" && onLike && (
 								<button className="btn-lime" onClick={onLike}>
-									♥ Devolver like
+									♥ Like back
 								</button>
 							)}
 						</div>
 					</div>
 				</div>
 
-				{/* Dorso */}
+				{/* Back */}
 				<div className="flip-face flip-back ts-card">
 					<div className="flip-back-head">
 						<button className="btn-ghost" onClick={() => setFlipped(false)}>
@@ -212,7 +208,7 @@ export const FlipCard = ({
 								className={`chip-toggle${tab === "cal" ? " on" : ""}`}
 								onClick={() => setTab("cal")}
 							>
-								Calendario
+								Calendar
 							</button>
 						</div>
 					</div>

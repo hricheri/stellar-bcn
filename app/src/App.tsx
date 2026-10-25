@@ -29,7 +29,7 @@ function App() {
 	)
 }
 
-// Iconos del dock (heroicons outline, como en el diseño del Sprint 4)
+// Dock icons (heroicons outline, as in the Sprint 4 design)
 const icons: Record<string, React.ReactNode> = {
 	explore: (
 		<>
@@ -56,15 +56,15 @@ const icons: Record<string, React.ReactNode> = {
 }
 
 const dock = [
-	{ to: "/", icon: "explore", label: "Explorar" },
-	{ to: "/favoritos", icon: "favorites", label: "Favoritos" },
+	{ to: "/", icon: "explore", label: "Explore" },
+	{ to: "/favoritos", icon: "favorites", label: "Favorites" },
 	{ to: "/swaps", icon: "swaps", label: "Swaps" },
-	{ to: "/calendario", icon: "calendar", label: "Agenda" },
-	{ to: "/perfil", icon: "profile", label: "Perfil" },
+	{ to: "/calendario", icon: "calendar", label: "Calendar" },
+	{ to: "/perfil", icon: "profile", label: "Profile" },
 ]
 
 const Dock = () => (
-	<nav className="dock" aria-label="Navegación">
+	<nav className="dock" aria-label="Navigation">
 		{dock.map((d) => (
 			<NavLink
 				key={d.to}

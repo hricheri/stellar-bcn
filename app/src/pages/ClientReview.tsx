@@ -45,15 +45,15 @@ const ClientReview = () => {
 
 	if (secret === undefined) {
 		return (
-			<div className="alert alert-error">Este link de reseña no es válido.</div>
+			<div className="alert alert-error">This review link isn't valid.</div>
 		)
 	}
 	if (invite.isLoading)
-		return <div className="empty-state">Verificando el QR...</div>
+		return <div className="empty-state">Checking the QR...</div>
 	if (!invite.data) {
 		return (
 			<div className="alert alert-error">
-				Este QR no está registrado en Stellar.
+				This QR isn't registered on Stellar.
 			</div>
 		)
 	}
@@ -77,8 +77,8 @@ const ClientReview = () => {
 	return (
 		<>
 			<PageTitle
-				title="¿Cómo fue tu tatuaje?"
-				subtitle="Tu reseña queda guardada en la blockchain de Stellar y ayuda a cuidar a la comunidad."
+				title="How was your tattoo?"
+				subtitle="Your review is stored on the Stellar blockchain and helps keep the community safe."
 			/>
 			<section className="ts-card">
 				<div className="ts-card-body">
@@ -86,12 +86,12 @@ const ClientReview = () => {
 
 					{invite.data.used && !sent ? (
 						<div className="alert alert-info">
-							Este QR ya se usó para dejar una reseña.
+							This QR was already used to leave a review.
 						</div>
 					) : sent ? (
 						<TxNotice
 							hash={hash}
-							text="¡Gracias! Tu reseña ya es parte del perfil del artista."
+							text="Thank you! Your review is now part of the artist's profile."
 						/>
 					) : !address ? (
 						<div style={{ marginTop: "1rem" }}>
@@ -100,11 +100,11 @@ const ClientReview = () => {
 								disabled={isPending}
 								onClick={() => void startDemo()}
 							>
-								{isPending ? "Preparando..." : "Empezar (sin registrarte)"}
+								{isPending ? "Getting ready..." : "Start (no sign-up)"}
 							</button>
 							<p className="hint">
-								Creamos una cuenta anónima de testnet en tu navegador para
-								firmar la reseña.
+								We create an anonymous testnet account in your browser to sign
+								the review.
 							</p>
 						</div>
 					) : (
@@ -114,7 +114,7 @@ const ClientReview = () => {
 								<textarea
 									rows={3}
 									maxLength={200}
-									placeholder="Cuéntanos tu experiencia: trato, higiene, resultado..."
+									placeholder="Tell us about it: care, hygiene, result..."
 									value={comment}
 									onChange={(e) => setComment(e.target.value)}
 								/>
@@ -124,7 +124,7 @@ const ClientReview = () => {
 								disabled={busy}
 								onClick={() => void submit()}
 							>
-								{busy ? "Enviando..." : "Publicar reseña"}
+								{busy ? "Sending..." : "Post review"}
 							</button>
 						</div>
 					)}

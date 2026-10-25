@@ -27,7 +27,7 @@ export const LikeButton = ({ artist }: { artist: string }) => {
 		}
 	}
 
-	if (matched) return <span className="pill pill-dark">♥ ¡Match!</span>
+	if (matched) return <span className="pill pill-dark">♥ Match!</span>
 	return (
 		<button
 			className={liked ? "btn-ghost" : "btn-lime"}
@@ -36,7 +36,7 @@ export const LikeButton = ({ artist }: { artist: string }) => {
 				e.preventDefault()
 				void like()
 			}}
-			title={liked ? "Ya le diste like" : "Dar like"}
+			title={liked ? "You already liked them" : "Like"}
 		>
 			{busy ? "..." : liked ? "♥" : "♡ Like"}
 		</button>

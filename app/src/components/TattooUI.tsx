@@ -13,7 +13,7 @@ import {
 	type StudioTier,
 } from "../lib/tattoo"
 
-// TATTOO APP: piezas visuales compartidas entre pantallas
+// TATTOO APP: visual pieces shared between screens
 
 export const PageTitle = ({
 	title,
@@ -100,7 +100,7 @@ export const Cover = ({
 		<span
 			className={`pill ${kind === "studio" ? "pill-lima" : "pill-lavender"}`}
 		>
-			{kind === "studio" ? "ESTUDIO" : "HOGAR"}
+			{kind === "studio" ? "STUDIO" : "HOME"}
 		</span>
 		{children}
 	</div>
@@ -109,17 +109,17 @@ export const Cover = ({
 /** Reputation is always black and white, so it never reads as studio or home */
 export const TierBadge = ({ artist }: { artist: Artist }) =>
 	isEstablished(artist) ? (
-		<span className="pill pill-dark" title="3+ reseñas con promedio 4 o más">
-			★ Establecidx
+		<span className="pill pill-dark" title="3+ reviews averaging 4 or more">
+			★ Established
 		</span>
 	) : (
-		<span className="pill pill-outline" title="Todavía construyendo reputación">
-			✦ Nuevx
+		<span className="pill pill-outline" title="Still building their reputation">
+			✦ New
 		</span>
 	)
 
 export const Stars = ({ score }: { score: number }) => (
-	<span className="stars" aria-label={`${score} de 5`}>
+	<span className="stars" aria-label={`${score} of 5`}>
 		{"★".repeat(score)}
 		<span style={{ color: "var(--gray-200)" }}>{"★".repeat(5 - score)}</span>
 	</span>
@@ -128,7 +128,7 @@ export const Stars = ({ score }: { score: number }) => (
 export const RatingLine = ({ artist }: { artist: Artist }) => (
 	<span className="meta">
 		<span className="stars">★</span> {formatAvg(artist)} · {artist.review_count}{" "}
-		{artist.review_count === 1 ? "reseña" : "reseñas"}
+		{artist.review_count === 1 ? "review" : "reviews"}
 	</span>
 )
 
@@ -164,13 +164,13 @@ export const ArtistRow = ({
 	</div>
 )
 
-/** Progress towards "estudio + hogar" */
+/** Progress towards "studio + home" */
 export const HomeSwapProgress = ({ artist }: { artist: Artist }) => {
 	const rep = reputationOf(artist)
 	if (rep.home_swap_unlocked) {
 		return (
 			<div className="alert alert-ok">
-				🏠 Estudio + hogar desbloqueado: ya puedes intercambiar también tu casa.
+				🏠 Studio + home unlocked: you can now offer your home too.
 			</div>
 		)
 	}
@@ -178,9 +178,8 @@ export const HomeSwapProgress = ({ artist }: { artist: Artist }) => {
 	return (
 		<div>
 			<div className="meta" style={{ marginBottom: "0.35rem" }}>
-				🔒 Estudio + hogar: {Math.min(rep.review_count, HOME_SWAP_MIN_REVIEWS)}{" "}
-				de {HOME_SWAP_MIN_REVIEWS} reseñas, con promedio {HOME_SWAP_MIN_AVG} o
-				más
+				🔒 Studio + home: {Math.min(rep.review_count, HOME_SWAP_MIN_REVIEWS)} of{" "}
+				{HOME_SWAP_MIN_REVIEWS} reviews, averaging {HOME_SWAP_MIN_AVG} or more
 			</div>
 			<div className="progress">
 				<div style={{ width: `${pct}%` }} />
@@ -195,7 +194,7 @@ export const MatchRing = ({ percent }: { percent: number }) => {
 		<div
 			className="match-ring"
 			style={{ "--p": percent, "--ring": ring } as React.CSSProperties}
-			title="Match entre lo que buscas y este estudio"
+			title="Match between what you're looking for and this studio"
 		>
 			<div>
 				<span>
@@ -216,7 +215,7 @@ export const TxNotice = ({ hash, text }: { hash?: string; text: string }) => (
 				target="_blank"
 				rel="noreferrer"
 			>
-				Ver transacción en stellar.expert ↗
+				See the transaction on stellar.expert ↗
 			</a>
 		)}
 	</div>
@@ -225,22 +224,22 @@ export const TxNotice = ({ hash, text }: { hash?: string; text: string }) => (
 export const ErrorNotice = ({ error }: { error?: string }) =>
 	error ? <div className="alert alert-error">{error}</div> : null
 
-/** Distingue de un vistazo los estudios que cumplen los requisitos básicos */
+/** Shows at a glance which studios meet the basic requirements */
 export const BasicsBadge = ({ spot }: { spot: { amenities: string[] } }) => {
 	const missing = missingBasics(spot).length
 	return missing === 0 ? (
 		<span
 			className="pill pill-outline"
-			title="Declara todo el mobiliario y los insumos básicos de higiene y seguridad"
+			title="Declares all the basic furniture and hygiene and safety supplies"
 		>
-			✓ Cumple básicos
+			✓ Meets basics
 		</span>
 	) : (
 		<span
 			className="pill pill-warn"
-			title="No declara todo el mobiliario o los insumos básicos: lleva los tuyos"
+			title="Doesn't declare all the basic furniture or supplies: bring your own"
 		>
-			⚠ Faltan {missing} básico{missing > 1 ? "s" : ""}
+			⚠ {missing} basic{missing > 1 ? "s" : ""} missing
 		</span>
 	)
 }
@@ -251,18 +250,18 @@ const STUDIO_TIERS: Record<
 > = {
 	establecido: {
 		cls: "pill-dark",
-		text: "★ Estudio establecido",
-		title: "Sus propias reseñas: 3 o más con promedio 4 o más",
+		text: "★ Established studio",
+		title: "Its own reviews: 3 or more averaging 4 or more",
 	},
 	respaldado: {
 		cls: "pill-outline-dark",
-		text: "◆ Estudio respaldado",
-		title: "Todavía nuevo, pero trabaja ahí al menos unx artista establecidx",
+		text: "◆ Backed studio",
+		title: "Still new, but at least one established artist works there",
 	},
 	nuevo: {
 		cls: "pill-outline",
-		text: "✦ Estudio nuevo",
-		title: "Todavía construyendo su reputación",
+		text: "✦ New studio",
+		title: "Still building its reputation",
 	},
 }
 

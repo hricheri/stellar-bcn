@@ -83,9 +83,7 @@ export const SpotCard = ({
 						: studioPhoto(studio?.name ?? "")
 				}
 				title={
-					homeOnly
-						? `Hogar de ${host?.name ?? ""}`
-						: (studio?.name ?? "Estudio")
+					homeOnly ? `${host?.name ?? ""}'s home` : (studio?.name ?? "Studio")
 				}
 				subtitle={spot.city}
 			>
@@ -99,7 +97,7 @@ export const SpotCard = ({
 				<Cover
 					kind="home"
 					src={homePhoto(host?.name ?? "")}
-					title={`Hogar de ${host?.name ?? ""}`}
+					title={`${host?.name ?? ""}'s home`}
 					subtitle={spot.city}
 				/>
 			)}
@@ -108,16 +106,16 @@ export const SpotCard = ({
 				<div className="chips" style={{ marginBottom: "0.6rem" }}>
 					{!homeOnly && <BasicsBadge spot={spot} />}
 					{tier && <StudioTierBadge tier={tier} />}
-					{!open && <span className="pill pill-dark">Reservado</span>}
+					{!open && <span className="pill pill-dark">Booked</span>}
 				</div>
 				<div className="meta" style={{ marginBottom: "0.75rem" }}>
 					{studio && (
 						<>
 							🏠 <b>{studio.name}</b> · ⭐ {studioAvg(studio)} (
 							{studio.review_count}{" "}
-							{studio.review_count === 1 ? "reseña" : "reseñas"}) ·{" "}
+							{studio.review_count === 1 ? "review" : "reviews"}) ·{" "}
 							{studio.members.length}{" "}
-							{studio.members.length === 1 ? "artista" : "artistas"}
+							{studio.members.length === 1 ? "artist" : "artists"}
 							<br />
 						</>
 					)}
@@ -135,14 +133,14 @@ export const SpotCard = ({
 					<>
 						{match.missing.length === 0 ? (
 							<div className="chips" style={{ marginTop: "0.85rem" }}>
-								<span className="pill pill-lima">
-									✓ Tiene todo lo que buscas
+								<span className="chip chip-full">
+									✓ 100% match on your must-haves
 								</span>
 							</div>
 						) : (
 							<>
 								<div className="section-label missing">
-									Falta ({match.missing.length})
+									Missing ({match.missing.length})
 								</div>
 								<div className="chips">
 									{match.missing.map((a) => (
@@ -167,15 +165,15 @@ export const SpotCard = ({
 						)}
 						{(!match.cityOk || match.dateOverlap < 1) && (
 							<div className="hint" style={{ marginTop: "0.6rem" }}>
-								{!match.cityOk && "Otra ciudad. "}
+								{!match.cityOk && "Another city. "}
 								{match.dateOverlap < 1 &&
-									`Cubre el ${Math.round(match.dateOverlap * 100)}% de tus fechas.`}
+									`Covers ${Math.round(match.dateOverlap * 100)}% of your dates.`}
 							</div>
 						)}
 					</>
 				) : (
 					<>
-						<div className="section-label has">Ofrece</div>
+						<div className="section-label has">Offers</div>
 						<div className="chips">
 							{spot.amenities.map((a) => (
 								<span key={a} className="chip chip-has">
@@ -189,26 +187,26 @@ export const SpotCard = ({
 				<div className="spot-footer">
 					<span className="hint">
 						{isHome || homeOnly
-							? "Solo para artistas establecidxs"
-							: "Abierto a todxs lxs artistas"}
+							? "Only for established artists"
+							: "Open to every artist"}
 					</span>
 					{open && !isMine && (
 						<button
 							className="btn-lime"
 							onClick={() => void book()}
 							disabled={busy || !address || !me}
-							title={!me ? "Crea tu perfil para reservar" : undefined}
+							title={!me ? "Create your profile to book" : undefined}
 						>
-							{busy ? "Reservando..." : "Reservar"}
+							{busy ? "Booking..." : "Book"}
 						</button>
 					)}
-					{isMine && <span className="pill pill-gray">Tu estudio</span>}
+					{isMine && <span className="pill pill-gray">Your studio</span>}
 				</div>
 				<ErrorNotice error={error} />
 				{hash && (
 					<TxNotice
 						hash={hash}
-						text="¡Reservado! Las fechas publicadas quedan confirmadas."
+						text="Booked! The published dates are confirmed."
 					/>
 				)}
 			</div>

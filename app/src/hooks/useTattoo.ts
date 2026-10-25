@@ -3,31 +3,31 @@ import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useCallback } from "react"
 import { useWallet } from "./useWallet"
 
-// TATTOO APP: lecturas y escrituras del contrato tattoo_guest_spot
+// TATTOO APP: reads and writes of the tattoo_guest_spot contract
 
 const ERROR_MESSAGES: Record<number, string> = {
-	1: "Primero crea tu perfil de artista.",
-	2: "Ya tienes un perfil creado.",
-	3: "Ese estudio no existe.",
-	4: "Ese estudio ya está reservado.",
-	5: "No puedes reservar tu propio estudio.",
-	6: "Esa reserva no existe.",
-	7: "Solo quienes participaron de la estancia pueden hacer esto.",
-	8: "La estancia tiene que estar completada antes de reseñar.",
-	9: "La estancia ya estaba completada.",
-	10: "Ya dejaste tu reseña para esta estancia.",
-	11: "El puntaje tiene que ser de 1 a 5.",
-	12: "La fecha de fin tiene que ser posterior a la de inicio.",
-	13: "Este QR no es válido.",
-	14: "Este QR ya se usó para dejar una reseña.",
-	15: "Ese QR ya estaba registrado.",
-	16: "Este QR no es válido.",
-	17: "Estudio + hogar se desbloquea con 3 reseñas y promedio 4 o más.",
-	19: "La reserva no está en el estado correcto para esto.",
-	20: "El mensaje tiene que tener entre 1 y 280 caracteres.",
-	21: "Solo puedes escribir a tus matches o a artistas con quienes tienes una reserva.",
-	22: "Ese estudio no existe.",
-	23: "Solo lxs artistas del estudio pueden hacer esto.",
+	1: "First create your artist profile.",
+	2: "You already have a profile.",
+	3: "That studio doesn't exist.",
+	4: "That studio is already booked.",
+	5: "You can't book your own studio.",
+	6: "That booking doesn't exist.",
+	7: "Only those who took part in the stay can do this.",
+	8: "The stay has to be completed before reviewing.",
+	9: "The stay was already completed.",
+	10: "You already reviewed this stay.",
+	11: "The score has to be from 1 to 5.",
+	12: "The end date has to be after the start date.",
+	13: "This QR isn't valid.",
+	14: "This QR was already used to leave a review.",
+	15: "That QR was already registered.",
+	16: "This QR isn't valid.",
+	17: "Studio + home unlocks with 3 reviews averaging 4 or more.",
+	19: "The booking isn't in the right state for this.",
+	20: "Messages must have between 1 and 280 characters.",
+	21: "You can only write to your matches or to artists you have a booking with.",
+	22: "That studio doesn't exist.",
+	23: "Only the studio's artists can do this.",
 }
 
 /** Turns a contract `Result` (or a thrown simulation error) into a friendly message */
@@ -181,8 +181,7 @@ export function useSend() {
 				}>
 			}>,
 		) => {
-			if (!address)
-				throw new Error("Conecta tu wallet o usa una cuenta de prueba.")
+			if (!address) throw new Error("Sign in first.")
 			try {
 				const tx = await build(tattooGuestSpot, address, { publicKey: address })
 				const sent = await tx.signAndSend({ signTransaction })

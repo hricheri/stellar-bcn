@@ -20,50 +20,50 @@ export type {
 /** Mirrors the contract's enums (numbers on the wire) */
 export const SPOT_OPEN = 0
 export const SPOT_BOOKED = 1
-export const ROLE_LABELS = ["Host", "Guest", "Cliente"] as const
+export const ROLE_LABELS = ["Host", "Guest", "Client"] as const
 export const BK_PENDING = 0
 export const BK_CONFIRMED = 1
 export const BK_COMPLETED = 2
 export const BK_DECLINED = 3
 
-// ----- Equipamiento e insumos de un estudio -----
+// ----- Furniture and supplies of a studio -----
 
 export type AmenityGroup = "mobiliario" | "basicos" | "adicionales"
 
 export const AMENITIES: { id: string; label: string; group: AmenityGroup }[] = [
-	{ id: "camilla", label: "Camilla", group: "mobiliario" },
-	{ id: "luz", label: "Luz", group: "mobiliario" },
-	{ id: "apoyabrazos", label: "Apoyabrazos", group: "mobiliario" },
-	{ id: "tinta_negra", label: "Tinta negra", group: "basicos" },
-	{ id: "cups", label: "Cups", group: "basicos" },
+	{ id: "camilla", label: "Tattoo bed", group: "mobiliario" },
+	{ id: "luz", label: "Lamp", group: "mobiliario" },
+	{ id: "apoyabrazos", label: "Armrest", group: "mobiliario" },
+	{ id: "tinta_negra", label: "Black ink", group: "basicos" },
+	{ id: "cups", label: "Ink cups", group: "basicos" },
 	{ id: "grip_tape", label: "Grip tape", group: "basicos" },
-	{ id: "alcohol", label: "Alcohol / desinfectante", group: "basicos" },
-	{ id: "jabon_quirurgico", label: "Jabón quirúrgico", group: "basicos" },
-	{ id: "guantes", label: "Guantes", group: "basicos" },
+	{ id: "alcohol", label: "Alcohol / disinfectant", group: "basicos" },
+	{ id: "jabon_quirurgico", label: "Surgical soap", group: "basicos" },
+	{ id: "guantes", label: "Gloves", group: "basicos" },
 	{ id: "film", label: "Film wrap", group: "basicos" },
-	{ id: "vaselina", label: "Vaselina / butter", group: "basicos" },
+	{ id: "vaselina", label: "Vaseline / butter", group: "basicos" },
 	{ id: "witch_hazel", label: "Witch hazel", group: "adicionales" },
 	{ id: "second_skin", label: "Second skin", group: "adicionales" },
-	{ id: "tinta_color", label: "Tintas de color", group: "adicionales" },
-	{ id: "agujas", label: "Agujas", group: "adicionales" },
+	{ id: "tinta_color", label: "Color inks", group: "adicionales" },
+	{ id: "agujas", label: "Needles", group: "adicionales" },
 ]
 
 export const GROUP_LABELS: Record<AmenityGroup, string> = {
-	mobiliario: "Mobiliario básico",
-	basicos: "Insumos básicos",
-	adicionales: "Insumos adicionales",
+	mobiliario: "Basic furniture",
+	basicos: "Basic supplies",
+	adicionales: "Extra supplies",
 }
 
 export const amenityLabel = (id: string) =>
 	AMENITIES.find((a) => a.id === id)?.label ?? id
 
 /** By default an artist looks for furniture + basic supplies */
-/** Mobiliario + insumos básicos: lo mínimo de higiene y seguridad */
+/** Furniture + basic supplies: the minimum for hygiene and safety */
 export const BASIC_REQUIREMENTS = AMENITIES.filter(
 	(a) => a.group !== "adicionales",
 ).map((a) => a.id)
 
-/** Requisitos básicos que el estudio no declara tener */
+/** Basic requirements the studio doesn't declare */
 export const missingBasics = (place: { amenities: string[] }) =>
 	BASIC_REQUIREMENTS.filter((id) => !place.amenities.includes(id))
 
@@ -71,7 +71,7 @@ export const DEFAULT_WANTED = AMENITIES.filter(
 	(a) => a.group !== "adicionales",
 ).map((a) => a.id)
 
-// ----- Match entre lo que busco y un estudio -----
+// ----- Match between what I'm looking for and a studio -----
 
 /** A city I want to travel to, and when */
 export interface Trip {
@@ -81,7 +81,7 @@ export interface Trip {
 	to: string
 }
 
-/** "Lo que busco": my trips plus the furniture and supplies I need */
+/** "What I'm looking for": my trips plus the furniture and supplies I need */
 export interface Wishlist {
 	trips: Trip[]
 	wanted: string[]
@@ -197,7 +197,7 @@ export function matchTrip(
 	return { percent, trip, cityOk, dateOverlap, has, missing, extras }
 }
 
-// ----- Reputación -----
+// ----- Reputation -----
 
 export const HOME_SWAP_MIN_REVIEWS = 3
 export const HOME_SWAP_MIN_AVG = 4
@@ -214,11 +214,11 @@ export function reputationOf(artist: Artist): Reputation {
 	}
 }
 
-/** "establecidx" once the artist reached the same bar that unlocks home swaps */
+/** "established" once the artist reached the same bar that unlocks home swaps */
 export const isEstablished = (artist: Artist) =>
 	reputationOf(artist).home_swap_unlocked
 
-// ----- Estudios: reputación propia, separada de la de sus artistas -----
+// ----- Studios: their own reputation, separate from their artists' -----
 
 /** Same thresholds as the contract */
 export const STUDIO_MIN_REVIEWS = 3
@@ -263,24 +263,24 @@ export const formatAvg = (artist: Artist) =>
 		? (reputationOf(artist).average_x100 / 100).toFixed(1)
 		: "–"
 
-// ----- Formato -----
+// ----- Formatting -----
 
 export const formatDate = (unix: bigint | number) =>
-	new Date(Number(unix) * 1000).toLocaleDateString("es-ES", {
+	new Date(Number(unix) * 1000).toLocaleDateString("en-GB", {
 		day: "numeric",
 		month: "short",
 		timeZone: "UTC",
 	})
 
 export const TAG_LABELS: Record<string, string> = {
-	higiene: "Higiene y seguridad",
-	limpio: "Limpio",
-	insumos_ok: "Insumos prometidos",
-	responde: "Responde a tiempo",
-	promocion: "Promocionó mi visita",
-	respetuosx: "Respetuosx",
-	ordenadx: "Ordenadx",
-	grafica: "Hizo su gráfica a tiempo",
+	higiene: "Hygiene and safety",
+	limpio: "Clean",
+	insumos_ok: "Supplies as promised",
+	responde: "Replies on time",
+	promocion: "Promoted my visit",
+	respetuosx: "Respectful",
+	ordenadx: "Tidy",
+	grafica: "Posted their graphic on time",
 }
 export const HOST_TAGS = ["higiene", "insumos_ok", "responde", "promocion"]
 /** About the place itself, when the guest reviews the studio */
@@ -293,7 +293,7 @@ export const GUEST_TAGS = [
 	"grafica",
 ]
 
-// ----- Invitaciones para clientes (Poseidon) -----
+// ----- Client invites (Poseidon) -----
 
 /** BN254 scalar field modulus, secrets must be smaller */
 const BN254_R =
@@ -314,20 +314,20 @@ export const commitmentOf = (secret: bigint) => poseidon1([secret])
 export const inviteLink = (secret: bigint) =>
 	`${window.location.origin}${window.location.pathname}#/resena/${secret.toString(16)}`
 
-// ----- Fechas de swaps -----
+// ----- Swap dates -----
 
 const DAY = 86_400
 
-/** "2 – 7 nov (6 días)" */
+/** "2 – 7 Nov (6 days)" */
 export function formatRange(start: bigint | number, end: bigint | number) {
 	const s = new Date(Number(start) * 1000)
 	const e = new Date(Number(end) * 1000)
 	const days = Math.round((Number(end) - Number(start)) / DAY) + 1
 	const month = (d: Date) =>
-		d.toLocaleDateString("es-ES", { month: "short", timeZone: "UTC" })
+		d.toLocaleDateString("en-GB", { month: "short", timeZone: "UTC" })
 	const sameMonth = month(s) === month(e)
 	const left = sameMonth ? `${s.getUTCDate()}` : `${s.getUTCDate()} ${month(s)}`
-	return `${left} – ${e.getUTCDate()} ${month(e)} (${days} ${days === 1 ? "día" : "días"})`
+	return `${left} – ${e.getUTCDate()} ${month(e)} (${days} ${days === 1 ? "day" : "days"})`
 }
 
 /** Post a "guest artist" graphic one week before the stay */
@@ -343,11 +343,11 @@ export type PendingAction =
 	| "resenar"
 
 export const ACTION_LABELS: Record<PendingAction, string> = {
-	confirmar_fechas: "Confirmar fechas",
-	esperando_host: "Esperando confirmación",
-	enviar_grafica: "Enviar gráfica a redes",
-	confirmar_estancia: "Confirmar estancia",
-	resenar: "Dejar reseña",
+	confirmar_fechas: "Answer the proposal",
+	esperando_host: "Waiting for response",
+	enviar_grafica: "Post the graphic",
+	confirmar_estancia: "Confirm the stay",
+	resenar: "Leave a review",
 }
 
 /** What `me` still has to do (or is waiting for) in a booking */

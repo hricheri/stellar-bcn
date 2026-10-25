@@ -84,11 +84,11 @@ export const BookingActions = ({
 									"confirm",
 									() =>
 										send((c, host, o) => c.confirm_booking({ host, ...id }, o)),
-									"Fechas confirmadas.",
+									"Dates confirmed.",
 								)
 							}
 						>
-							{busy === "confirm" ? "..." : "✓ Confirmar fechas"}
+							{busy === "confirm" ? "..." : "✓ Accept"}
 						</button>
 						<button
 							className="btn-ghost"
@@ -98,11 +98,11 @@ export const BookingActions = ({
 									"decline",
 									() =>
 										send((c, host, o) => c.decline_booking({ host, ...id }, o)),
-									"Propuesta rechazada.",
+									"Proposal declined.",
 								)
 							}
 						>
-							Rechazar
+							Decline
 						</button>
 					</>
 				)}
@@ -115,7 +115,7 @@ export const BookingActions = ({
 					<button
 						className="btn-lavender"
 						disabled={!!busy}
-						title={`Antes del ${formatDate(promoDeadline(booking.start))}`}
+						title={`Before ${formatDate(promoDeadline(booking.start))}`}
 						onClick={() =>
 							void run(
 								"promo",
@@ -123,11 +123,11 @@ export const BookingActions = ({
 									send((c, artist, o) =>
 										c.mark_promo_sent({ artist, ...id }, o),
 									),
-								"¡Gráfica marcada como enviada!",
+								"Graphic marked as posted!",
 							)
 						}
 					>
-						{busy === "promo" ? "..." : "📣 Ya publiqué la gráfica"}
+						{busy === "promo" ? "..." : "📣 I posted the graphic"}
 					</button>
 				)}
 				{actions.includes("confirmar_estancia") && (
@@ -138,11 +138,11 @@ export const BookingActions = ({
 							void run(
 								"complete",
 								() => send((c, host, o) => c.complete_stay({ host, ...id }, o)),
-								"Estancia completada. Ya pueden reseñarse.",
+								"Stay completed. You can now review each other.",
 							)
 						}
 					>
-						{busy === "complete" ? "..." : "🏁 Confirmar que terminó"}
+						{busy === "complete" ? "..." : "🏁 Confirm it ended"}
 					</button>
 				)}
 				{actions.includes("resenar") && !reviewing && artistReviewPending && (
@@ -150,7 +150,7 @@ export const BookingActions = ({
 						className="btn-lavender"
 						onClick={() => setReviewing("artist")}
 					>
-						★ Reseñar a {other?.name ?? (amHost ? "tu guest" : "tu host")}
+						★ Review {other?.name ?? (amHost ? "your guest" : "your host")}
 					</button>
 				)}
 				{actions.includes("resenar") && !reviewing && studioReviewPending && (
@@ -158,7 +158,7 @@ export const BookingActions = ({
 						className="btn-lavender"
 						onClick={() => setReviewing("studio")}
 					>
-						🏠 Reseñar el estudio
+						🏠 Review the studio
 					</button>
 				)}
 			</div>
@@ -167,8 +167,8 @@ export const BookingActions = ({
 				<div style={{ marginTop: "0.75rem" }}>
 					<div className="section-label">
 						{reviewing === "studio"
-							? `Reseña al estudio ${studio?.name ?? ""}`
-							: `Reseña a ${other?.name ?? (amHost ? "tu guest" : "tu host")}`}
+							? `Review of the studio ${studio?.name ?? ""}`
+							: `Review of ${other?.name ?? (amHost ? "your guest" : "your host")}`}
 					</div>
 					<StarPicker value={score} onChange={setScore} />
 					<div className="chips" style={{ margin: "0.5rem 0" }}>
@@ -193,7 +193,7 @@ export const BookingActions = ({
 						<textarea
 							rows={2}
 							maxLength={200}
-							placeholder="¿Cómo fue la experiencia?"
+							placeholder="How was it?"
 							value={comment}
 							onChange={(e) => setComment(e.target.value)}
 						/>
@@ -216,11 +216,11 @@ export const BookingActions = ({
 													o,
 												),
 									),
-								"Reseña guardada on-chain. Ya no se puede borrar ni editar.",
+								"Review saved on-chain. It can't be deleted or edited.",
 							)
 						}
 					>
-						{busy === "review" ? "Guardando..." : "Publicar reseña"}
+						{busy === "review" ? "Saving..." : "Post review"}
 					</button>
 				</div>
 			)}

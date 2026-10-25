@@ -11,14 +11,14 @@ export interface CalendarEvent {
 }
 
 const KIND_LABELS: Record<CalendarKind, string> = {
-	available: "Mi estudio libre",
-	confirmed: "Swap confirmado",
-	proposed: "Fechas propuestas",
+	available: "My studio is free",
+	confirmed: "Confirmed swap",
+	proposed: "Proposed dates",
 	deadline: "Deadline",
 }
 
 const DAY = 86_400
-const WEEKDAYS = ["L", "M", "X", "J", "V", "S", "D"]
+const WEEKDAYS = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"]
 
 const utcDay = (y: number, m: number, d: number) => Date.UTC(y, m, d) / 1000
 
@@ -40,7 +40,7 @@ export const SwapCalendar = ({ events }: { events: CalendarEvent[] }) => {
 	const m = (((first.m + offset) % 12) + 12) % 12
 	const daysInMonth = new Date(Date.UTC(y, m + 1, 0)).getUTCDate()
 	const lead = (new Date(Date.UTC(y, m, 1)).getUTCDay() + 6) % 7
-	const title = new Date(Date.UTC(y, m, 1)).toLocaleDateString("es-ES", {
+	const title = new Date(Date.UTC(y, m, 1)).toLocaleDateString("en-GB", {
 		month: "long",
 		year: "numeric",
 		timeZone: "UTC",
@@ -58,7 +58,7 @@ export const SwapCalendar = ({ events }: { events: CalendarEvent[] }) => {
 				<button
 					className="btn-ghost"
 					onClick={() => setOffset(offset - 1)}
-					aria-label="Mes anterior"
+					aria-label="Previous month"
 				>
 					←
 				</button>
@@ -66,7 +66,7 @@ export const SwapCalendar = ({ events }: { events: CalendarEvent[] }) => {
 				<button
 					className="btn-ghost"
 					onClick={() => setOffset(offset + 1)}
-					aria-label="Mes siguiente"
+					aria-label="Next month"
 				>
 					→
 				</button>

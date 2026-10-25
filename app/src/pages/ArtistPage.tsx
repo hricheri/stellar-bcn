@@ -22,9 +22,9 @@ const ArtistPage = () => {
 	const reviews = useReviews(artistAddress)
 	const spots = useSpots()
 
-	if (artist.isLoading) return <div className="empty-state">Cargando...</div>
+	if (artist.isLoading) return <div className="empty-state">Loading...</div>
 	if (!artist.data)
-		return <div className="empty-state">Este artista no existe.</div>
+		return <div className="empty-state">This artist doesn't exist.</div>
 
 	const a = artist.data
 	const openSpots = (spots.data ?? []).filter(
@@ -70,7 +70,7 @@ const ArtistPage = () => {
 			{openSpots.length > 0 && (
 				<>
 					<div className="split-title">
-						<h2>Su estudio disponible</h2>
+						<h2>Their open dates</h2>
 					</div>
 					{openSpots.map((s) => (
 						<SpotCard key={s.id} spot={s} host={a} me={me.data} />
@@ -92,9 +92,9 @@ const ArtistPage = () => {
 				isEstablished(me.data) && (
 					<>
 						<div className="split-title">
-							<h2>Escribirle</h2>
+							<h2>Write to them</h2>
 							<span className="hint">
-								Como establecidx puedes contactar sin match
+								As an established artist you can write without a match
 							</span>
 						</div>
 						<section className="ts-card">
@@ -106,8 +106,8 @@ const ArtistPage = () => {
 				)}
 
 			<div className="split-title">
-				<h2>Reseñas on-chain</h2>
-				<span className="hint">{reviews.data?.length ?? 0} en total</span>
+				<h2>On-chain reviews</h2>
+				<span className="hint">{reviews.data?.length ?? 0} in total</span>
 			</div>
 			<section className="ts-card">
 				<div className="ts-card-body">

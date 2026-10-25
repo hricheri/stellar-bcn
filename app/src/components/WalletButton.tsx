@@ -26,7 +26,7 @@ export const WalletButton = () => {
 					className="btn-ghost"
 					onClick={() => (isDemo ? stopDemo() : void disconnectWallet())}
 				>
-					Salir
+					Log out
 				</button>
 			</div>
 		)
@@ -38,7 +38,7 @@ export const WalletButton = () => {
 			setOpen(false)
 			setSecret("")
 		} catch {
-			setError("Esa clave no es válida. Empieza con S y tiene 56 caracteres.")
+			setError("That key isn't valid. It starts with S and has 56 characters.")
 		}
 	}
 
@@ -49,13 +49,13 @@ export const WalletButton = () => {
 				onClick={() => setOpen(!open)}
 				disabled={isPending}
 			>
-				Entrar
+				Sign in
 			</button>
 			{open && (
 				<div className="entry-menu">
 					<p className="hint" style={{ margin: 0 }}>
-						Tu cuenta es tu firma: tus likes, reservas y reseñas quedan a tu
-						nombre en Stellar. No se mueve dinero.
+						Your account is your signature: your likes, bookings and reviews are
+						stored under your name on Stellar. No money moves.
 					</p>
 					<button
 						className="btn-lime"
@@ -64,14 +64,14 @@ export const WalletButton = () => {
 							void startDemo()
 						}}
 					>
-						Crear cuenta nueva
+						Create a new account
 					</button>
 					<div className="section-label" style={{ margin: "0.3rem 0 0" }}>
-						Entrar como artista del ejemplo
+						Sign in as a sample artist
 					</div>
 					<input
 						type="password"
-						placeholder="Clave secreta (S...)"
+						placeholder="Secret key (S...)"
 						value={secret}
 						onChange={(e) => {
 							setSecret(e.target.value)
@@ -79,7 +79,7 @@ export const WalletButton = () => {
 						}}
 					/>
 					<button className="btn-ghost" onClick={enter} disabled={!secret}>
-						Entrar con clave
+						Sign in with key
 					</button>
 					{error && <div className="alert alert-error">{error}</div>}
 					<button
@@ -90,7 +90,7 @@ export const WalletButton = () => {
 							void connectWallet()
 						}}
 					>
-						Ya tengo una wallet de Stellar
+						I already have a Stellar wallet
 					</button>
 				</div>
 			)}

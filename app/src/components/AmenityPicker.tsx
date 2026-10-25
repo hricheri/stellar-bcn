@@ -46,7 +46,7 @@ export const AmenityPicker = ({
 									)
 								}
 							>
-								{allOn ? "quitar todos" : "marcar todos"}
+								{allOn ? "clear all" : "mark all"}
 							</button>
 						</div>
 						<div className="chips">
