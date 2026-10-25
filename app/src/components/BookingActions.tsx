@@ -1,12 +1,16 @@
 import { useState } from "react"
-import { useSend } from "../hooks/useTattoo"
+import { useSend, useStudios } from "../hooks/useTattoo"
 import {
 	ACTION_LABELS,
+	BK_PENDING,
 	type Artist,
 	type Booking,
 	formatDate,
 	GUEST_TAGS,
 	HOST_TAGS,
+	NO_STUDIO,
+	STUDIO_TAGS,
+	isStudioArtist,
 	pendingActions,
 	promoDeadline,
 	TAG_LABELS,
@@ -19,18 +23,19 @@ export const BookingActions = ({
 	booking,
 	me,
 	other,
-	start,
 }: {
 	booking: Booking
 	me: string
 	other?: Artist
-	start?: bigint
 }) => {
 	const send = useSend()
-	const amHost = booking.host === me
-	const actions = pendingActions(booking, me, start)
+	const studios = useStudios()
+	const studioArtist = isStudioArtist(studios.data, booking.studio_id, me)
+	const amHost =
+		booking.host === me || (studioArtist && booking.status === BK_PENDING)
+	const actions = pendingActions(booking, me, studioArtist)
 
-	const [reviewing, setReviewing] = useState(false)
+	const [reviewing, setReviewing] = useState<false | "artist" | "studio">(false)
 	const [score, setScore] = useState(5)
 	const [tags, setTags] = useState<string[]>([])
 	const [comment, setComment] = useState("")
@@ -57,7 +62,14 @@ export const BookingActions = ({
 	}
 
 	const id = { booking_id: booking.id }
-	const tagOptions = amHost ? GUEST_TAGS : HOST_TAGS
+	const tagOptions =
+		reviewing === "studio" ? STUDIO_TAGS : amHost ? GUEST_TAGS : HOST_TAGS
+	const studio = (studios.data ?? []).find((s) => s.id === booking.studio_id)
+	const artistReviewPending = !(amHost
+		? booking.host_reviewed
+		: booking.guest_reviewed)
+	const studioReviewPending =
+		!amHost && booking.studio_id !== NO_STUDIO && !booking.studio_reviewed
 
 	return (
 		<div>
@@ -70,7 +82,8 @@ export const BookingActions = ({
 							onClick={() =>
 								void run(
 									"confirm",
-									() => send((c, host, o) => c.confirm_booking({ host, ...id }, o)),
+									() =>
+										send((c, host, o) => c.confirm_booking({ host, ...id }, o)),
 									"Fechas confirmadas.",
 								)
 							}
@@ -83,8 +96,9 @@ export const BookingActions = ({
 							onClick={() =>
 								void run(
 									"decline",
-									() => send((c, host, o) => c.decline_booking({ host, ...id }, o)),
-									"Rechazada. Se devolvió el depósito.",
+									() =>
+										send((c, host, o) => c.decline_booking({ host, ...id }, o)),
+									"Propuesta rechazada.",
 								)
 							}
 						>
@@ -93,17 +107,22 @@ export const BookingActions = ({
 					</>
 				)}
 				{actions.includes("esperando_host") && (
-					<span className="pill pill-gray">⏳ {ACTION_LABELS.esperando_host}</span>
+					<span className="pill pill-gray">
+						⏳ {ACTION_LABELS.esperando_host}
+					</span>
 				)}
 				{actions.includes("enviar_grafica") && (
 					<button
 						className="btn-lavender"
 						disabled={!!busy}
-						title={start ? `Antes del ${formatDate(promoDeadline(start))}` : undefined}
+						title={`Antes del ${formatDate(promoDeadline(booking.start))}`}
 						onClick={() =>
 							void run(
 								"promo",
-								() => send((c, artist, o) => c.mark_promo_sent({ artist, ...id }, o)),
+								() =>
+									send((c, artist, o) =>
+										c.mark_promo_sent({ artist, ...id }, o),
+									),
 								"¡Gráfica marcada como enviada!",
 							)
 						}
@@ -126,9 +145,20 @@ export const BookingActions = ({
 						{busy === "complete" ? "..." : "🏁 Confirmar que terminó"}
 					</button>
 				)}
-				{actions.includes("resenar") && !reviewing && (
-					<button className="btn-lavender" onClick={() => setReviewing(true)}>
-						★ Dejar reseña
+				{actions.includes("resenar") && !reviewing && artistReviewPending && (
+					<button
+						className="btn-lavender"
+						onClick={() => setReviewing("artist")}
+					>
+						★ Reseñar a {other?.name ?? (amHost ? "tu guest" : "tu host")}
+					</button>
+				)}
+				{actions.includes("resenar") && !reviewing && studioReviewPending && (
+					<button
+						className="btn-lavender"
+						onClick={() => setReviewing("studio")}
+					>
+						🏠 Reseñar el estudio
 					</button>
 				)}
 			</div>
@@ -136,7 +166,9 @@ export const BookingActions = ({
 			{reviewing && (
 				<div style={{ marginTop: "0.75rem" }}>
 					<div className="section-label">
-						Reseña a {other?.name ?? (amHost ? "tu guest" : "tu host")}
+						{reviewing === "studio"
+							? `Reseña al estudio ${studio?.name ?? ""}`
+							: `Reseña a ${other?.name ?? (amHost ? "tu guest" : "tu host")}`}
 					</div>
 					<StarPicker value={score} onChange={setScore} />
 					<div className="chips" style={{ margin: "0.5rem 0" }}>
@@ -146,7 +178,11 @@ export const BookingActions = ({
 								key={t}
 								className={`chip-toggle${tags.includes(t) ? " on" : ""}`}
 								onClick={() =>
-									setTags(tags.includes(t) ? tags.filter((x) => x !== t) : [...tags, t])
+									setTags(
+										tags.includes(t)
+											? tags.filter((x) => x !== t)
+											: [...tags, t],
+									)
 								}
 							>
 								{TAG_LABELS[t]}
@@ -170,7 +206,15 @@ export const BookingActions = ({
 								"review",
 								() =>
 									send((c, reviewer, o) =>
-										c.review_artist({ reviewer, ...id, score, tags, comment }, o),
+										reviewing === "studio"
+											? c.review_studio(
+													{ guest: reviewer, ...id, score, tags, comment },
+													o,
+												)
+											: c.review_artist(
+													{ reviewer, ...id, score, tags, comment },
+													o,
+												),
 									),
 								"Reseña guardada on-chain. Ya no se puede borrar ni editar.",
 							)

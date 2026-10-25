@@ -36,12 +36,14 @@ pub enum Error {
     InvalidSecret = 16,
     /// Studio + home swaps need a higher reputation
     NotTrustedEnough = 17,
-    /// The XLM deposit could not be transferred
-    DepositFailed = 18,
     /// The booking is not in the right state for this action
     WrongBookingStatus = 19,
     /// Messages must have between 1 and 280 characters
     InvalidMessage = 20,
     /// You can only chat with matches or artists you share a booking with
     NotConnected = 21,
+    /// The studio does not exist
+    StudioNotFound = 22,
+    /// Only the studio's artists can do this
+    NotStudioArtist = 23,
 }

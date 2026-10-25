@@ -55,13 +55,27 @@ export const SwapCalendar = ({ events }: { events: CalendarEvent[] }) => {
 	return (
 		<div>
 			<div className="cal-head">
-				<button className="btn-ghost" onClick={() => setOffset(offset - 1)} aria-label="Mes anterior">←</button>
+				<button
+					className="btn-ghost"
+					onClick={() => setOffset(offset - 1)}
+					aria-label="Mes anterior"
+				>
+					←
+				</button>
 				<h3 style={{ textTransform: "capitalize" }}>{title}</h3>
-				<button className="btn-ghost" onClick={() => setOffset(offset + 1)} aria-label="Mes siguiente">→</button>
+				<button
+					className="btn-ghost"
+					onClick={() => setOffset(offset + 1)}
+					aria-label="Mes siguiente"
+				>
+					→
+				</button>
 			</div>
 			<div className="cal-grid">
 				{WEEKDAYS.map((w) => (
-					<div key={w} className="cal-weekday">{w}</div>
+					<div key={w} className="cal-weekday">
+						{w}
+					</div>
 				))}
 				{Array.from({ length: lead }, (_, i) => (
 					<div key={`l${i}`} />

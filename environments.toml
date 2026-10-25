@@ -12,20 +12,48 @@ network-passphrase = "Test SDF Network ; September 2015"
 
 
 [[development.accounts]]
-name = "me" # Required. Keys for this account will be saved to `./.stellar/identity`
+name = "deployer" # Required. Keys for this account will be saved to `./.stellar/identity`
 default = true # Optional. Whether to use this account as the `--source` for commands that need one.
-
-# TATTOO APP: artistas de ejemplo para que la demo tenga datos desde el primer arranque
-[[development.accounts]]
-name = "bea"
+# TATTOO APP: una cuenta solo para desplegar. Subir el contrato a testnet cuesta casi
+# todo el XLM que da Friendbot, así que lxs artistas usan cuentas aparte.
 
 [[development.accounts]]
-name = "cata"
+name = "wilo"
+
+# TATTOO APP: artistas reales de ejemplo (y una cuenta de cliente) para que la demo tenga datos
+[[development.accounts]]
+name = "alma"
 
 [[development.accounts]]
-name = "dani"
+name = "cora"
+
+[[development.accounts]]
+name = "stacey"
+
+[[development.accounts]]
+name = "roro"
+
+[[development.accounts]]
+name = "boban"
+
+[[development.accounts]]
+name = "zeze"
+
+[[development.accounts]]
+name = "ina"
+
+[[development.accounts]]
+name = "julim"
+
+[[development.accounts]]
+name = "cliente"
 
 [development.contracts]
+# TATTOO APP: contratos de ejemplo del taller desactivados. Sin `client = false`,
+# Scaffold igual los despliega por estar en el workspace.
+fungible_allowlist_example = { client = false }
+nft_enumerable_example = { client = false }
+guess_the_number = { client = false }
 # TATTOO APP: desactivado para que el primer `npm start` sea más rápido
 # fungible_allowlist_example = { client = true, constructor_args = "--name ExampleToken --symbol EXT --admin me --manager me --initial_supply 1000000000000000000000000" }
 # TATTOO APP: desactivado para que el primer `npm start` sea más rápido
@@ -34,48 +62,201 @@ name = "dani"
 [development.contracts.tattoo_guest_spot]
 # TATTOO APP: nuestro contrato
 client = true
-constructor_args = """
---admin me
-"""
 after_deploy = """
-register_artist --artist me --name Hui --city Barcelona --instagram @hui.tattoo
-STELLAR_ACCOUNT=bea register_artist --artist bea --name Bea --city Berlin --instagram @bea.ink
-STELLAR_ACCOUNT=bea publish_spot --host bea --city Berlin --start 1793491200 --end 1794700800 --price 100000000 --include_home false --amenities '["camilla","luz","apoyabrazos","tinta_negra","cups","grip_tape","alcohol","jabon_quirurgico","guantes","film","vaselina","witch_hazel","second_skin"]'
-STELLAR_ACCOUNT=cata register_artist --artist cata --name Cata --city 'Ciudad de Mexico' --instagram @cata.linework
-STELLAR_ACCOUNT=cata publish_spot --host cata --city 'Ciudad de Mexico' --start 1796083200 --end 1797724800 --price 0 --include_home false --amenities '["camilla","luz","tinta_negra","cups","guantes","film","tinta_color","agujas"]'
-STELLAR_ACCOUNT=dani register_artist --artist dani --name Dani --city Lisboa --instagram @dani.blackwork
-STELLAR_ACCOUNT=dani publish_spot --host dani --city Lisboa --start 1790812800 --end 1791590400 --price 0 --include_home false --amenities '["camilla","luz","apoyabrazos","tinta_negra","cups","grip_tape","alcohol","jabon_quirurgico","guantes","film","vaselina","witch_hazel","second_skin","tinta_color","agujas"]'
-STELLAR_ACCOUNT=cata book_spot --guest cata --spot_id 3
-STELLAR_ACCOUNT=dani confirm_booking --host dani --booking_id 1
-STELLAR_ACCOUNT=dani mark_promo_sent --artist dani --booking_id 1
-STELLAR_ACCOUNT=cata mark_promo_sent --artist cata --booking_id 1
-STELLAR_ACCOUNT=dani complete_stay --host dani --booking_id 1
-STELLAR_ACCOUNT=cata review_artist --reviewer cata --booking_id 1 --score 5 --tags '["limpio","insumos_ok","responde"]' --comment 'Estudio impecable, todo lo prometido'
-STELLAR_ACCOUNT=dani review_artist --reviewer dani --booking_id 1 --score 5 --tags '["respetuosx","ordenadx"]' --comment 'Super respetuosa y ordenada'
-STELLAR_ACCOUNT=dani publish_spot --host dani --city Lisboa --start 1790812800 --end 1791590400 --price 0 --include_home false --amenities '["camilla","luz","apoyabrazos","tinta_negra","cups","grip_tape","alcohol","jabon_quirurgico","guantes","film","vaselina","witch_hazel","second_skin","tinta_color","agujas"]'
-STELLAR_ACCOUNT=cata book_spot --guest cata --spot_id 4
-STELLAR_ACCOUNT=dani confirm_booking --host dani --booking_id 2
-STELLAR_ACCOUNT=dani mark_promo_sent --artist dani --booking_id 2
-STELLAR_ACCOUNT=cata mark_promo_sent --artist cata --booking_id 2
-STELLAR_ACCOUNT=dani complete_stay --host dani --booking_id 2
-STELLAR_ACCOUNT=cata review_artist --reviewer cata --booking_id 2 --score 5 --tags '["limpio","insumos_ok","responde"]' --comment 'Estudio impecable, todo lo prometido'
-STELLAR_ACCOUNT=dani review_artist --reviewer dani --booking_id 2 --score 5 --tags '["respetuosx","ordenadx"]' --comment 'Super respetuosa y ordenada'
-STELLAR_ACCOUNT=dani publish_spot --host dani --city Lisboa --start 1790812800 --end 1791590400 --price 0 --include_home false --amenities '["camilla","luz","apoyabrazos","tinta_negra","cups","grip_tape","alcohol","jabon_quirurgico","guantes","film","vaselina","witch_hazel","second_skin","tinta_color","agujas"]'
-STELLAR_ACCOUNT=cata book_spot --guest cata --spot_id 5
-STELLAR_ACCOUNT=dani confirm_booking --host dani --booking_id 3
-STELLAR_ACCOUNT=dani mark_promo_sent --artist dani --booking_id 3
-STELLAR_ACCOUNT=cata mark_promo_sent --artist cata --booking_id 3
-STELLAR_ACCOUNT=dani complete_stay --host dani --booking_id 3
-STELLAR_ACCOUNT=cata review_artist --reviewer cata --booking_id 3 --score 5 --tags '["limpio","insumos_ok","responde"]' --comment 'Estudio impecable, todo lo prometido'
-STELLAR_ACCOUNT=dani review_artist --reviewer dani --booking_id 3 --score 5 --tags '["respetuosx","ordenadx"]' --comment 'Super respetuosa y ordenada'
-STELLAR_ACCOUNT=dani publish_spot --host dani --city Lisboa --start 1794268800 --end 1795996800 --price 0 --include_home true --amenities '["camilla","luz","apoyabrazos","tinta_negra","cups","grip_tape","alcohol","jabon_quirurgico","guantes","film","vaselina","witch_hazel","second_skin","tinta_color","agujas"]'
-publish_spot --host me --city Barcelona --start 1794268800 --end 1795996800 --price 0 --include_home false --amenities '["camilla","luz","apoyabrazos","tinta_negra","cups","grip_tape","alcohol","guantes","film","vaselina","second_skin"]'
-STELLAR_ACCOUNT=dani book_spot --guest dani --spot_id 7
-STELLAR_ACCOUNT=bea like_artist --from bea --to me
-STELLAR_ACCOUNT=cata like_artist --from cata --to me
-STELLAR_ACCOUNT=dani like_artist --from dani --to me
-like_artist --from me --to dani
-STELLAR_ACCOUNT=dani send_message --from dani --to me --text 'Hola Hui! Me encantaria ir a tu estudio en noviembre, te propuse fechas'
+STELLAR_ACCOUNT=wilo register_artist --artist wilo --name 'Wilo' --city 'Barcelona' --instagram '@wilo.tattoo'
+STELLAR_ACCOUNT=alma register_artist --artist alma --name 'Alma' --city 'Barcelona' --instagram '@alma.tattoo'
+STELLAR_ACCOUNT=cora register_artist --artist cora --name 'Cora' --city 'Barcelona' --instagram '@cora.tattoo'
+STELLAR_ACCOUNT=stacey register_artist --artist stacey --name 'Stacey' --city 'Perth' --instagram '@stacey.tattoo'
+STELLAR_ACCOUNT=roro register_artist --artist roro --name 'Roro' --city 'Perth' --instagram '@roro.tattoo'
+STELLAR_ACCOUNT=boban register_artist --artist boban --name 'Boban' --city 'Barcelona' --instagram '@boban.tattoo'
+STELLAR_ACCOUNT=zeze register_artist --artist zeze --name 'Zeze' --city 'Lisboa' --instagram '@zeze.tattoo'
+STELLAR_ACCOUNT=ina register_artist --artist ina --name 'Ina' --city 'Berlin' --instagram '@ina.tattoo'
+STELLAR_ACCOUNT=julim register_artist --artist julim --name 'Julim' --city 'Berlin' --instagram '@julim.tattoo'
+STELLAR_ACCOUNT=stacey create_studio --owner stacey --name 'Marketplace' --city 'Perth' --amenities '["camilla","luz","apoyabrazos","tinta_negra","cups","grip_tape","alcohol","jabon_quirurgico","guantes","film","vaselina","witch_hazel","second_skin","tinta_color","agujas"]'
+STELLAR_ACCOUNT=ina create_studio --owner ina --name 'Baby' --city 'Berlin' --amenities '["camilla","luz","apoyabrazos","tinta_negra","cups","grip_tape","alcohol","jabon_quirurgico","guantes","film","vaselina","witch_hazel","second_skin","tinta_color","agujas"]'
+STELLAR_ACCOUNT=ina add_studio_artist --member ina --studio_id 2 --artist julim
+STELLAR_ACCOUNT=julim create_studio --owner julim --name 'Vision Studio' --city 'Berlin' --amenities '["camilla","luz","apoyabrazos","tinta_negra","cups","grip_tape","alcohol","jabon_quirurgico","guantes","film","vaselina","second_skin","agujas"]'
+STELLAR_ACCOUNT=wilo create_studio --owner wilo --name 'Tattoo Club' --city 'Barcelona' --amenities '["camilla","luz","apoyabrazos","tinta_negra","cups","grip_tape","alcohol","jabon_quirurgico","guantes","film","vaselina","second_skin"]'
+STELLAR_ACCOUNT=boban create_studio --owner boban --name '"140"' --city 'Barcelona' --amenities '["camilla","luz","apoyabrazos","tinta_negra","cups","grip_tape","alcohol","jabon_quirurgico","guantes","film","vaselina","witch_hazel","second_skin","tinta_color","agujas"]'
+STELLAR_ACCOUNT=zeze create_studio --owner zeze --name 'Casa Angelita' --city 'Lisboa' --amenities '["camilla","luz","tinta_negra","guantes","film"]'
+STELLAR_ACCOUNT=stacey publish_spot --host stacey --studio_id 1 --start 1767571200 --end 1768089600 --include_home false
+STELLAR_ACCOUNT=wilo book_spot --guest wilo --spot_id 1
+STELLAR_ACCOUNT=stacey mark_promo_sent --artist stacey --booking_id 1
+STELLAR_ACCOUNT=wilo mark_promo_sent --artist wilo --booking_id 1
+STELLAR_ACCOUNT=stacey complete_stay --host stacey --booking_id 1
+STELLAR_ACCOUNT=wilo review_studio --guest wilo --booking_id 1 --score 5 --tags '["higiene","insumos_ok"]' --comment 'Estudio impecable'
+STELLAR_ACCOUNT=wilo review_artist --reviewer wilo --booking_id 1 --score 5 --tags '["higiene","responde","promocion"]' --comment 'Gran host, todo lo prometido'
+STELLAR_ACCOUNT=stacey review_artist --reviewer stacey --booking_id 1 --score 5 --tags '["higiene","respetuosx","responde","grafica"]' --comment 'Guest respetuosx y prolijx'
+STELLAR_ACCOUNT=stacey publish_spot --host stacey --studio_id 1 --start 1768176000 --end 1768694400 --include_home false
+STELLAR_ACCOUNT=roro book_spot --guest roro --spot_id 2
+STELLAR_ACCOUNT=stacey complete_stay --host stacey --booking_id 2
+STELLAR_ACCOUNT=roro review_studio --guest roro --booking_id 2 --score 5 --tags '["higiene","insumos_ok"]' --comment 'Estudio impecable'
+STELLAR_ACCOUNT=roro review_artist --reviewer roro --booking_id 2 --score 5 --tags '["higiene","responde","promocion"]' --comment 'Gran host, todo lo prometido'
+STELLAR_ACCOUNT=stacey review_artist --reviewer stacey --booking_id 2 --score 5 --tags '["higiene","respetuosx","responde","grafica"]' --comment 'Guest respetuosx y prolijx'
+STELLAR_ACCOUNT=stacey publish_spot --host stacey --studio_id 1 --start 1768780800 --end 1769299200 --include_home false
+STELLAR_ACCOUNT=roro book_spot --guest roro --spot_id 3
+STELLAR_ACCOUNT=stacey complete_stay --host stacey --booking_id 3
+STELLAR_ACCOUNT=roro review_studio --guest roro --booking_id 3 --score 5 --tags '["higiene","insumos_ok"]' --comment 'Estudio impecable'
+STELLAR_ACCOUNT=stacey review_artist --reviewer stacey --booking_id 3 --score 5 --tags '["higiene","respetuosx","responde","grafica"]' --comment 'Guest respetuosx y prolijx'
+STELLAR_ACCOUNT=stacey publish_spot --host stacey --studio_id 1 --start 1769385600 --end 1769904000 --include_home false
+STELLAR_ACCOUNT=roro book_spot --guest roro --spot_id 4
+STELLAR_ACCOUNT=stacey complete_stay --host stacey --booking_id 4
+STELLAR_ACCOUNT=roro review_studio --guest roro --booking_id 4 --score 5 --tags '["higiene","insumos_ok"]' --comment 'Estudio impecable'
+STELLAR_ACCOUNT=stacey review_artist --reviewer stacey --booking_id 4 --score 5 --tags '["higiene","respetuosx","responde","grafica"]' --comment 'Guest respetuosx y prolijx'
+STELLAR_ACCOUNT=stacey publish_spot --host stacey --studio_id 1 --start 1769990400 --end 1770508800 --include_home false
+STELLAR_ACCOUNT=roro book_spot --guest roro --spot_id 5
+STELLAR_ACCOUNT=stacey complete_stay --host stacey --booking_id 5
+STELLAR_ACCOUNT=roro review_studio --guest roro --booking_id 5 --score 5 --tags '["higiene","insumos_ok"]' --comment 'Estudio impecable'
+STELLAR_ACCOUNT=stacey review_artist --reviewer stacey --booking_id 5 --score 5 --tags '["higiene","respetuosx","responde","grafica"]' --comment 'Guest respetuosx y prolijx'
+STELLAR_ACCOUNT=stacey add_studio_artist --member stacey --studio_id 1 --artist roro
+STELLAR_ACCOUNT=ina publish_spot --host ina --studio_id 2 --start 1770595200 --end 1771113600 --include_home false
+STELLAR_ACCOUNT=wilo book_spot --guest wilo --spot_id 6
+STELLAR_ACCOUNT=ina mark_promo_sent --artist ina --booking_id 6
+STELLAR_ACCOUNT=wilo mark_promo_sent --artist wilo --booking_id 6
+STELLAR_ACCOUNT=ina complete_stay --host ina --booking_id 6
+STELLAR_ACCOUNT=wilo review_studio --guest wilo --booking_id 6 --score 5 --tags '["higiene","insumos_ok"]' --comment 'Estudio impecable'
+STELLAR_ACCOUNT=wilo review_artist --reviewer wilo --booking_id 6 --score 5 --tags '["higiene","responde","promocion"]' --comment 'Gran host, todo lo prometido'
+STELLAR_ACCOUNT=ina review_artist --reviewer ina --booking_id 6 --score 5 --tags '["higiene","respetuosx","responde","grafica"]' --comment 'Guest respetuosx y prolijx'
+STELLAR_ACCOUNT=julim publish_spot --host julim --studio_id 2 --start 1771200000 --end 1771718400 --include_home false
+STELLAR_ACCOUNT=wilo book_spot --guest wilo --spot_id 7
+STELLAR_ACCOUNT=julim mark_promo_sent --artist julim --booking_id 7
+STELLAR_ACCOUNT=wilo mark_promo_sent --artist wilo --booking_id 7
+STELLAR_ACCOUNT=julim complete_stay --host julim --booking_id 7
+STELLAR_ACCOUNT=wilo review_studio --guest wilo --booking_id 7 --score 5 --tags '["higiene","insumos_ok"]' --comment 'Estudio impecable'
+STELLAR_ACCOUNT=wilo review_artist --reviewer wilo --booking_id 7 --score 5 --tags '["higiene","responde","promocion"]' --comment 'Gran host, todo lo prometido'
+STELLAR_ACCOUNT=julim review_artist --reviewer julim --booking_id 7 --score 5 --tags '["higiene","respetuosx","responde","grafica"]' --comment 'Guest respetuosx y prolijx'
+STELLAR_ACCOUNT=ina publish_spot --host ina --studio_id 2 --start 1771804800 --end 1772323200 --include_home false
+STELLAR_ACCOUNT=wilo book_spot --guest wilo --spot_id 8
+STELLAR_ACCOUNT=ina mark_promo_sent --artist ina --booking_id 8
+STELLAR_ACCOUNT=wilo mark_promo_sent --artist wilo --booking_id 8
+STELLAR_ACCOUNT=ina complete_stay --host ina --booking_id 8
+STELLAR_ACCOUNT=wilo review_studio --guest wilo --booking_id 8 --score 5 --tags '["higiene","insumos_ok"]' --comment 'Estudio impecable'
+STELLAR_ACCOUNT=wilo review_artist --reviewer wilo --booking_id 8 --score 5 --tags '["higiene","responde","promocion"]' --comment 'Gran host, todo lo prometido'
+STELLAR_ACCOUNT=ina review_artist --reviewer ina --booking_id 8 --score 5 --tags '["higiene","respetuosx","responde","grafica"]' --comment 'Guest respetuosx y prolijx'
+STELLAR_ACCOUNT=julim publish_spot --host julim --studio_id 2 --start 1772409600 --end 1772928000 --include_home false
+STELLAR_ACCOUNT=stacey book_spot --guest stacey --spot_id 9
+STELLAR_ACCOUNT=julim complete_stay --host julim --booking_id 9
+STELLAR_ACCOUNT=stacey review_studio --guest stacey --booking_id 9 --score 5 --tags '["higiene","insumos_ok"]' --comment 'Estudio impecable'
+STELLAR_ACCOUNT=stacey review_artist --reviewer stacey --booking_id 9 --score 5 --tags '["higiene","responde","promocion"]' --comment 'Gran host, todo lo prometido'
+STELLAR_ACCOUNT=ina publish_spot --host ina --studio_id 2 --start 1773014400 --end 1773532800 --include_home false
+STELLAR_ACCOUNT=boban book_spot --guest boban --spot_id 10
+STELLAR_ACCOUNT=ina complete_stay --host ina --booking_id 10
+STELLAR_ACCOUNT=boban review_studio --guest boban --booking_id 10 --score 5 --tags '["higiene","insumos_ok"]' --comment 'Estudio impecable'
+STELLAR_ACCOUNT=boban review_artist --reviewer boban --booking_id 10 --score 5 --tags '["higiene","responde","promocion"]' --comment 'Gran host, todo lo prometido'
+STELLAR_ACCOUNT=julim publish_spot --host julim --studio_id 2 --start 1773619200 --end 1774137600 --include_home false
+STELLAR_ACCOUNT=zeze book_spot --guest zeze --spot_id 11
+STELLAR_ACCOUNT=julim complete_stay --host julim --booking_id 11
+STELLAR_ACCOUNT=zeze review_studio --guest zeze --booking_id 11 --score 5 --tags '["higiene","insumos_ok"]' --comment 'Estudio impecable'
+STELLAR_ACCOUNT=zeze review_artist --reviewer zeze --booking_id 11 --score 5 --tags '["higiene","responde","promocion"]' --comment 'Gran host, todo lo prometido'
+STELLAR_ACCOUNT=ina publish_spot --host ina --studio_id 2 --start 1774224000 --end 1774742400 --include_home false
+STELLAR_ACCOUNT=roro book_spot --guest roro --spot_id 12
+STELLAR_ACCOUNT=ina complete_stay --host ina --booking_id 12
+STELLAR_ACCOUNT=roro review_studio --guest roro --booking_id 12 --score 5 --tags '["higiene","insumos_ok"]' --comment 'Estudio impecable'
+STELLAR_ACCOUNT=roro review_artist --reviewer roro --booking_id 12 --score 5 --tags '["higiene","responde","promocion"]' --comment 'Gran host, todo lo prometido'
+STELLAR_ACCOUNT=julim publish_spot --host julim --studio_id 3 --start 1774828800 --end 1775347200 --include_home false
+STELLAR_ACCOUNT=alma book_spot --guest alma --spot_id 13
+STELLAR_ACCOUNT=julim complete_stay --host julim --booking_id 13
+STELLAR_ACCOUNT=alma review_studio --guest alma --booking_id 13 --score 5 --tags '["higiene","insumos_ok"]' --comment 'Estudio impecable'
+STELLAR_ACCOUNT=alma review_artist --reviewer alma --booking_id 13 --score 5 --tags '["higiene","responde","promocion"]' --comment 'Gran host, todo lo prometido'
+STELLAR_ACCOUNT=julim publish_spot --host julim --studio_id 3 --start 1775433600 --end 1775952000 --include_home false
+STELLAR_ACCOUNT=cora book_spot --guest cora --spot_id 14
+STELLAR_ACCOUNT=julim complete_stay --host julim --booking_id 14
+STELLAR_ACCOUNT=cora review_studio --guest cora --booking_id 14 --score 5 --tags '["higiene","insumos_ok"]' --comment 'Estudio impecable'
+STELLAR_ACCOUNT=cora review_artist --reviewer cora --booking_id 14 --score 5 --tags '["higiene","responde","promocion"]' --comment 'Gran host, todo lo prometido'
+STELLAR_ACCOUNT=wilo publish_spot --host wilo --studio_id 4 --start 1776038400 --end 1776556800 --include_home false
+STELLAR_ACCOUNT=alma book_spot --guest alma --spot_id 15
+STELLAR_ACCOUNT=wilo complete_stay --host wilo --booking_id 15
+STELLAR_ACCOUNT=wilo review_artist --reviewer wilo --booking_id 15 --score 5 --tags '["higiene","respetuosx","responde","grafica"]' --comment 'Guest respetuosx y prolijx'
+STELLAR_ACCOUNT=wilo publish_spot --host wilo --studio_id 4 --start 1776643200 --end 1777161600 --include_home false
+STELLAR_ACCOUNT=cora book_spot --guest cora --spot_id 16
+STELLAR_ACCOUNT=wilo complete_stay --host wilo --booking_id 16
+STELLAR_ACCOUNT=cora review_studio --guest cora --booking_id 16 --score 5 --tags '["higiene","insumos_ok"]' --comment 'Estudio impecable'
+STELLAR_ACCOUNT=cora review_artist --reviewer cora --booking_id 16 --score 5 --tags '["higiene","responde","promocion"]' --comment 'Gran host, todo lo prometido'
+STELLAR_ACCOUNT=wilo review_artist --reviewer wilo --booking_id 16 --score 5 --tags '["higiene","respetuosx","responde","grafica"]' --comment 'Guest respetuosx y prolijx'
+STELLAR_ACCOUNT=wilo publish_spot --host wilo --studio_id 4 --start 1777248000 --end 1777766400 --include_home false
+STELLAR_ACCOUNT=cora book_spot --guest cora --spot_id 17
+STELLAR_ACCOUNT=wilo complete_stay --host wilo --booking_id 17
+STELLAR_ACCOUNT=wilo review_artist --reviewer wilo --booking_id 17 --score 5 --tags '["higiene","respetuosx","responde","grafica"]' --comment 'Guest respetuosx y prolijx'
+STELLAR_ACCOUNT=wilo add_studio_artist --member wilo --studio_id 4 --artist alma
+STELLAR_ACCOUNT=boban publish_spot --host boban --studio_id 5 --start 1777852800 --end 1778371200 --include_home false
+STELLAR_ACCOUNT=ina book_spot --guest ina --spot_id 18
+STELLAR_ACCOUNT=boban complete_stay --host boban --booking_id 18
+STELLAR_ACCOUNT=ina review_studio --guest ina --booking_id 18 --score 4 --tags '["higiene"]' --comment 'Buen estudio, faltaron algunos insumos'
+STELLAR_ACCOUNT=boban publish_spot --host boban --studio_id 5 --start 1778457600 --end 1778976000 --include_home false
+STELLAR_ACCOUNT=julim book_spot --guest julim --spot_id 19
+STELLAR_ACCOUNT=boban complete_stay --host boban --booking_id 19
+STELLAR_ACCOUNT=julim review_studio --guest julim --booking_id 19 --score 4 --tags '["higiene"]' --comment 'Buen estudio, faltaron algunos insumos'
+STELLAR_ACCOUNT=boban publish_spot --host boban --studio_id 5 --start 1779062400 --end 1779580800 --include_home false
+STELLAR_ACCOUNT=stacey book_spot --guest stacey --spot_id 20
+STELLAR_ACCOUNT=boban complete_stay --host boban --booking_id 20
+STELLAR_ACCOUNT=stacey review_studio --guest stacey --booking_id 20 --score 4 --tags '["higiene"]' --comment 'Buen estudio, faltaron algunos insumos'
+STELLAR_ACCOUNT=boban publish_spot --host boban --studio_id 5 --start 1779667200 --end 1780185600 --include_home false
+STELLAR_ACCOUNT=roro book_spot --guest roro --spot_id 21
+STELLAR_ACCOUNT=boban complete_stay --host boban --booking_id 21
+STELLAR_ACCOUNT=roro review_studio --guest roro --booking_id 21 --score 4 --tags '["higiene"]' --comment 'Buen estudio, faltaron algunos insumos'
+STELLAR_ACCOUNT=boban publish_spot --host boban --studio_id 5 --start 1780272000 --end 1780790400 --include_home false
+STELLAR_ACCOUNT=cora book_spot --guest cora --spot_id 22
+STELLAR_ACCOUNT=boban complete_stay --host boban --booking_id 22
+STELLAR_ACCOUNT=cora review_studio --guest cora --booking_id 22 --score 4 --tags '["higiene"]' --comment 'Buen estudio, faltaron algunos insumos'
+STELLAR_ACCOUNT=boban create_client_invite --artist boban --commitment 21265840062312924752660531176319105311234083680761447772888629169980570331379
+STELLAR_ACCOUNT=cliente review_by_client --client cliente --secret 1001 --score 5 --comment 'Me encanto mi tatuaje'
+STELLAR_ACCOUNT=boban create_client_invite --artist boban --commitment 10932972206600167674597881632825974487235966045304206808226883448777969382741
+STELLAR_ACCOUNT=cliente review_by_client --client cliente --secret 1002 --score 5 --comment 'Me encanto mi tatuaje'
+STELLAR_ACCOUNT=boban create_client_invite --artist boban --commitment 16656905259517475793916057696312665970193201508500698118157148083045780131455
+STELLAR_ACCOUNT=cliente review_by_client --client cliente --secret 1003 --score 5 --comment 'Me encanto mi tatuaje'
+STELLAR_ACCOUNT=boban create_client_invite --artist boban --commitment 7105494995731205534888177742627904831540154335809507640890458559322272679522
+STELLAR_ACCOUNT=cliente review_by_client --client cliente --secret 1004 --score 5 --comment 'Me encanto mi tatuaje'
+STELLAR_ACCOUNT=boban create_client_invite --artist boban --commitment 5203762478816737545089926708797642501505121160180837657743385795638543362214
+STELLAR_ACCOUNT=cliente review_by_client --client cliente --secret 1005 --score 5 --comment 'Me encanto mi tatuaje'
+STELLAR_ACCOUNT=boban create_client_invite --artist boban --commitment 4292259824001049523154847063692909063520224660148625648828869902571452100381
+STELLAR_ACCOUNT=cliente review_by_client --client cliente --secret 1006 --score 5 --comment 'Me encanto mi tatuaje'
+STELLAR_ACCOUNT=boban create_client_invite --artist boban --commitment 14331314306934712276167570911996151349345005988203767274030908083949130167682
+STELLAR_ACCOUNT=cliente review_by_client --client cliente --secret 1007 --score 5 --comment 'Me encanto mi tatuaje'
+STELLAR_ACCOUNT=boban create_client_invite --artist boban --commitment 11031066548264218461523102496733890444644111854873844521099220202110064003669
+STELLAR_ACCOUNT=cliente review_by_client --client cliente --secret 1008 --score 5 --comment 'Me encanto mi tatuaje'
+STELLAR_ACCOUNT=boban create_client_invite --artist boban --commitment 4145477656579828297469015572624693530283374145999564304725871219345700242720
+STELLAR_ACCOUNT=cliente review_by_client --client cliente --secret 1009 --score 5 --comment 'Me encanto mi tatuaje'
+STELLAR_ACCOUNT=boban create_client_invite --artist boban --commitment 13201645620592504317452176953026023717106018727587971399157912258077358115409
+STELLAR_ACCOUNT=cliente review_by_client --client cliente --secret 1010 --score 5 --comment 'Me encanto mi tatuaje'
+STELLAR_ACCOUNT=boban create_client_invite --artist boban --commitment 2337505276467781115438404436159873486975910586705615011832046911533814558947
+STELLAR_ACCOUNT=cliente review_by_client --client cliente --secret 1011 --score 5 --comment 'Me encanto mi tatuaje'
+STELLAR_ACCOUNT=boban create_client_invite --artist boban --commitment 4472455943317427300573823788370248790006304379656157580859400282688737184839
+STELLAR_ACCOUNT=cliente review_by_client --client cliente --secret 1012 --score 5 --comment 'Me encanto mi tatuaje'
+STELLAR_ACCOUNT=boban create_client_invite --artist boban --commitment 14973127926300562901626222998097489479883265885113769600160198079177271656161
+STELLAR_ACCOUNT=cliente review_by_client --client cliente --secret 1013 --score 5 --comment 'Me encanto mi tatuaje'
+STELLAR_ACCOUNT=boban create_client_invite --artist boban --commitment 21570356886920307915261627891645946053804749845245146909114587366428094528065
+STELLAR_ACCOUNT=cliente review_by_client --client cliente --secret 1014 --score 5 --comment 'Me encanto mi tatuaje'
+STELLAR_ACCOUNT=ina create_client_invite --artist ina --commitment 15354645412911938846475783504903844356508754656278789983607551750935497913402
+STELLAR_ACCOUNT=cliente review_by_client --client cliente --secret 1015 --score 5 --comment 'Super profesional'
+STELLAR_ACCOUNT=ina create_client_invite --artist ina --commitment 15186552110302715466455621783893064507814969632207836353971116230209409984540
+STELLAR_ACCOUNT=cliente review_by_client --client cliente --secret 1016 --score 5 --comment 'Super profesional'
+STELLAR_ACCOUNT=ina create_client_invite --artist ina --commitment 19867760462778567301252207223507604016548380930228178984723801328812995420263
+STELLAR_ACCOUNT=cliente review_by_client --client cliente --secret 1017 --score 5 --comment 'Super profesional'
+STELLAR_ACCOUNT=julim create_client_invite --artist julim --commitment 8820011603254145365589525855728725028939057699763434250809367577031029335531
+STELLAR_ACCOUNT=cliente review_by_client --client cliente --secret 1018 --score 5 --comment 'Volveria sin dudas'
+STELLAR_ACCOUNT=julim create_client_invite --artist julim --commitment 16033562592119246090511493539984811269221585562943854682338371997809412169794
+STELLAR_ACCOUNT=cliente review_by_client --client cliente --secret 1019 --score 5 --comment 'Volveria sin dudas'
+STELLAR_ACCOUNT=julim create_client_invite --artist julim --commitment 4350692658898985541854648424693294463351361215596740333233000305362394215093
+STELLAR_ACCOUNT=cliente review_by_client --client cliente --secret 1020 --score 5 --comment 'Volveria sin dudas'
+STELLAR_ACCOUNT=wilo publish_spot --host wilo --studio_id 4 --start 1794268800 --end 1795996800 --include_home false
+STELLAR_ACCOUNT=ina publish_spot --host ina --studio_id 2 --start 1796083200 --end 1797724800 --include_home false
+STELLAR_ACCOUNT=julim publish_spot --host julim --studio_id 3 --start 1799107200 --end 1800835200 --include_home false
+STELLAR_ACCOUNT=stacey publish_spot --host stacey --studio_id 1 --start 1801440000 --end 1803772800 --include_home false
+STELLAR_ACCOUNT=boban publish_spot --host boban --studio_id 5 --start 1796083200 --end 1797292800 --include_home true
+STELLAR_ACCOUNT=zeze publish_spot --host zeze --studio_id 6 --start 1793577600 --end 1794096000 --include_home false
+STELLAR_ACCOUNT=wilo book_spot --guest wilo --spot_id 28
+STELLAR_ACCOUNT=roro propose_dates --guest roro --studio_id 4 --start 1796601600 --end 1797206400
+STELLAR_ACCOUNT=stacey like_artist --from stacey --to wilo
+STELLAR_ACCOUNT=wilo like_artist --from wilo --to stacey
+STELLAR_ACCOUNT=cora like_artist --from cora --to wilo
+STELLAR_ACCOUNT=wilo like_artist --from wilo --to cora
+STELLAR_ACCOUNT=zeze like_artist --from zeze --to wilo
+STELLAR_ACCOUNT=wilo like_artist --from wilo --to zeze
+STELLAR_ACCOUNT=julim like_artist --from julim --to wilo
+STELLAR_ACCOUNT=wilo like_artist --from wilo --to ina
+STELLAR_ACCOUNT=alma like_artist --from alma --to wilo
+STELLAR_ACCOUNT=zeze send_message --from zeze --to wilo --text 'Hola Wilo! Te espero en Casa Angelita en noviembre'
+STELLAR_ACCOUNT=ina send_message --from ina --to wilo --text 'Wilo! Tenemos fechas libres en Baby en diciembre, te interesa?'
 """
 
 # Rather than in one list, TOML allows specifying contracts in their own "sections"

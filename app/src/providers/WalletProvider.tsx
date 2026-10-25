@@ -1,4 +1,4 @@
-import  { type Keypair } from "@stellar/stellar-sdk"
+import { type Keypair } from "@stellar/stellar-sdk"
 import {
 	fetchBalances,
 	type MappedBalances,
@@ -10,6 +10,7 @@ import {
 	createDemoAccount,
 	demoSigner,
 	forgetDemoAccount,
+	importDemoAccount,
 	loadDemoAccount,
 } from "../lib/demoAccount"
 
@@ -45,6 +46,8 @@ export interface WalletContextType {
 	/** TATTOO APP: true when signing with the in-browser demo account */
 	isDemo: boolean
 	startDemo: () => Promise<void>
+	/** Enter with a testnet secret key; throws if the key is not valid */
+	enterWithSecret: (secret: string) => void
 	stopDemo: () => void
 }
 
@@ -56,6 +59,7 @@ export const WalletContext = // @ts-ignore
 		signTransaction,
 		isDemo: false,
 		startDemo: async () => {},
+		enterWithSecret: () => {},
 		stopDemo: () => {},
 	})
 
@@ -112,6 +116,10 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
 		}
 	}, [])
 
+	const enterWithSecret = useCallback((secret: string) => {
+		setDemo(importDemoAccount(secret))
+	}, [])
+
 	const stopDemo = useCallback(() => {
 		forgetDemoAccount()
 		setDemo(undefined)
@@ -131,6 +139,7 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
 				: signTransaction) as typeof signTransaction,
 			isDemo,
 			startDemo,
+			enterWithSecret,
 			stopDemo,
 		}),
 		[
@@ -142,6 +151,7 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
 			isDemo,
 			demo,
 			startDemo,
+			enterWithSecret,
 			stopDemo,
 		],
 	)

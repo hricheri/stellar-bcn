@@ -40,7 +40,7 @@ Lxs tatuadorxs viajan para trabajar como *guest artists*, pero:
 │  · Favoritos/Swaps/Agenda │        │  Likes → Match · Chat entre matches       │
 │  · QR para clientes       │        │  Reseñas host/guest/cliente               │
 │  · Wallet o cuenta prueba │        │  Invitaciones Poseidon (BN254)            │
-└──────────────────────────┘        │  Depósito en XLM vía Stellar Asset Contract│
+└──────────────────────────┘        │  Sin dinero: los swaps no son monetarios  │
                                      └───────────────────────────────────────────┘
 ```
 
@@ -48,9 +48,8 @@ Lxs tatuadorxs viajan para trabajar como *guest artists*, pero:
 |---|---|
 | **Contrato Soroban** (`contracts/tattoo-guest-spot`) | Toda la lógica: perfiles, estudios, reservas, likes y match, chat y reseñas. |
 | **Poseidon nativo (host function BN254, Protocol 25)** | El artista registra `Poseidon(secreto)`, y el secreto solo viaja dentro del QR. Al reseñar, el contrato recalcula el hash on-chain y quema la invitación. No se puede inventar ni reutilizar un QR. Usa el crate oficial [`soroban-poseidon`](https://github.com/stellar/rs-soroban-poseidon), compatible con circomlib (lo validamos en los tests con el vector `Poseidon([1])`). |
-| **Stellar Asset Contract (XLM)** | Depósito opcional al reservar: queda en el contrato, se libera al host cuando confirma la estancia y se devuelve al guest si la rechaza. |
 | **Eventos de contrato** | `SpotPublished`, `SpotBooked`, `ReviewLeft`, `Matched` y `HomeSwapUnlocked`, para rastrear la actividad en exploradores. |
-| **Wallets** | [Stellar Wallets Kit](https://stellarwalletskit.dev/) (Freighter, xBull, etc.) o una **cuenta de prueba** creada en el navegador y fondeada con Friendbot, para que jurado y clientes prueben sin instalar nada. |
+| **Wallets** | [Stellar Wallets Kit](https://stellarwalletskit.dev/) (Freighter, xBull, etc.) o una **cuenta de prueba** creada en el navegador (Friendbot paga las comisiones de testnet), para que jurado y clientes prueben sin instalar nada. La cuenta es solo identidad: firma likes, reservas y reseñas. No hay pagos. |
 
 ### Contrato en testnet
 
@@ -65,14 +64,18 @@ Lxs tatuadorxs viajan para trabajar como *guest artists*, pero:
 | Función | Quién | Qué hace |
 |---|---|---|
 | `register_artist` | artista | Crea el perfil (nombre, ciudad, Instagram) |
-| `publish_spot` | host | Publica su estudio libre entre dos fechas, con equipamiento e insumos, depósito opcional y opción **estudio + hogar** (solo si es establecidx) |
-| `book_spot` | guest | Propone fechas reservando el estudio (deja el depósito) |
-| `confirm_booking` / `decline_booking` | host | Acepta las fechas o las rechaza (devuelve el depósito) |
+| `create_studio` / `add_studio_artist` / `update_studio_amenities` | artista | Crea un estudio (puede tener varixs artistas), suma artistas y actualiza sus insumos |
+| `get_studio_reputation` | cualquiera | Reputación propia del estudio: *establecido*, *respaldado* (tiene unx artista establecidx) o *nuevo* |
+| `publish_spot` | artista del estudio | Publica (desde su perfil) las fechas en que el estudio queda libre, con opción **estudio + hogar** (solo si es establecidx) |
+| `publish_home` | artista establecidx | Publica **solo su hogar**, para quien no tiene estudio |
+| `book_spot` | guest | Reserva fechas ya publicadas: quedan confirmadas al instante |
+| `propose_dates` | guest | Propone fechas nuevas en un estudio; cualquier artista del estudio responde |
+| `confirm_booking` / `decline_booking` | host | Acepta o rechaza las fechas propuestas |
 | `mark_promo_sent` | host o guest | Marca la gráfica de *guest artist* como publicada |
-| `complete_stay` | host | Cierra la estancia y libera el depósito |
-| `review_artist` | host o guest | Reseña mutua: 1 a 5 estrellas, etiquetas y comentario; una por lado |
+| `complete_stay` | host | Cierra la estancia y habilita las reseñas |
+| `review_artist` | host o guest | Reseña mutua: 1 a 5 estrellas, etiquetas y comentario; una por lado. La reseña del guest también suma al estudio |
 | `like_artist` / `list_likes` | artista | Like; si es mutuo, es **match** |
-| `send_message` / `list_messages` | matches | Chat corto (280 caracteres), solo entre matches o artistas con una reserva compartida |
+| `send_message` / `list_messages` | artistas | Chat corto (280 caracteres) entre matches o artistas con una reserva compartida. Lxs **establecidxs** pueden escribir primero sin match, y la otra persona puede responder |
 | `create_client_invite` / `review_by_client` | artista / cliente | QR de un solo uso verificado con Poseidon |
 | `get_reputation` | cualquiera | Promedio, cantidad de reseñas y si desbloqueó estudio + hogar |
 
@@ -92,9 +95,9 @@ npm start
 
 El primer `npm start` hace todo esto solo:
 
-1. Crea y fondea en testnet las cuentas `me`, `bea`, `cata` y `dani`.
+1. Crea y fondea en testnet una cuenta `deployer` (solo despliega), las de 9 artistas y una de cliente.
 2. Compila y despliega `tattoo_guest_spot`.
-3. Carga **datos de ejemplo** (bloque `after_deploy` de `environments.toml`): 4 artistas, estudios en Berlín, CDMX, Lisboa y Barcelona, tres estancias completas con reseñas (Dani y Cata quedan *establecidxs*), una reserva pendiente en tu estudio, likes y un mensaje.
+3. Carga **datos de ejemplo** basados en casos reales (bloque `after_deploy` de `environments.toml`, unas 190 transacciones): 6 estudios en Barcelona, Berlín, Lisboa y Perth (Tattoo Club, 140, Baby, Vision Studio, Marketplace y Casa Angelita), estancias con reseñas de estudios y artistas, reseñas de clientes por QR, una estadía próxima en Lisboa, una propuesta de fechas pendiente, likes y mensajes. El test `demo_seed_replays` repite exactamente las mismas llamadas contra el contrato.
 4. Levanta la app en `http://localhost:5173`.
 
 ### Variables de entorno (`app/.env`)
@@ -106,6 +109,8 @@ El primer `npm start` hace todo esto solo:
 | `PUBLIC_STELLAR_NETWORK_PASSPHRASE` | `Test SDF Network ; September 2015` |
 | `PUBLIC_STELLAR_RPC_URL` | `https://soroban-testnet.stellar.org` |
 | `PUBLIC_STELLAR_HORIZON_URL` | `https://horizon-testnet.stellar.org` |
+
+> **Nota sobre testnet:** el contrato no extiende el TTL de sus datos, porque hoy en testnet la renta para mantener el código vivo 30 días cuesta más XLM del que da Friendbot. Si el contrato o algún dato se archiva, se recupera con `stellar contract restore`.
 
 ### Tests del contrato
 
@@ -119,12 +124,11 @@ cargo test -p tattoo-guest-spot
 
 **URL pública:** `PENDIENTE`
 
-1. Toca **Probar sin wallet** (o conecta Freighter en testnet) y crea tu perfil.
-2. **Explorar:** indica ciudad, fechas e insumos, y mira el % de match de cada estudio.
-3. **Artistas:** compara nuevxs y establecidxs y dale ♡ a alguien.
-4. **Favoritos → Swaps → Calendario:** da vuelta una tarjeta para chatear, propón fechas, confirma y marca la gráfica. El calendario muestra todo junto.
-5. **QR:** genera un QR para un cliente, ábrelo en otra pestaña o en el móvil y deja una reseña sin wallet.
-6. Cada acción enlaza su transacción en **stellar.expert**.
+1. Toca **Entrar** y crea una cuenta nueva (o entra con la clave de un artista del ejemplo). La cuenta solo firma tus acciones: no se mueve dinero.
+2. **Explorar:** indica ciudad, fechas y materiales. Las tarjetas aparecen de a una, ordenadas por % de match: cada una es unx artista con la foto de su estudio (y de su hogar si lo ofrece). Descarta o dale ♥ Like, y reserva directamente las fechas que publicó.
+3. **Favoritos → Swaps → Calendario:** da vuelta una tarjeta para chatear, propón fechas, confirma y marca la gráfica. El calendario muestra todo junto.
+4. **QR:** genera un QR para un cliente, ábrelo en otra pestaña o en el móvil y deja una reseña sin wallet.
+5. Cada acción enlaza su transacción en **stellar.expert**.
 
 ### Evidencia on-chain
 
@@ -151,7 +155,7 @@ Este proyecto se construyó con asistencia de **Claude (Anthropic)**, siguiendo 
 - Verificación de identidad de clientes (credenciales verificables o pruebas ZK de pertenencia, con BN254).
 - Reportes de conductas peligrosas con moderación comunitaria.
 - Fotos de estudio y hogar, mapa y notificaciones.
-- Mainnet y depósitos en stablecoins (USDC).
+- Mainnet.
 
 ---
 

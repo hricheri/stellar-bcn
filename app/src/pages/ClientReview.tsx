@@ -44,11 +44,18 @@ const ClientReview = () => {
 	const [sent, setSent] = useState(false)
 
 	if (secret === undefined) {
-		return <div className="alert alert-error">Este link de reseña no es válido.</div>
+		return (
+			<div className="alert alert-error">Este link de reseña no es válido.</div>
+		)
 	}
-	if (invite.isLoading) return <div className="empty-state">Verificando el QR...</div>
+	if (invite.isLoading)
+		return <div className="empty-state">Verificando el QR...</div>
 	if (!invite.data) {
-		return <div className="alert alert-error">Este QR no está registrado en Stellar.</div>
+		return (
+			<div className="alert alert-error">
+				Este QR no está registrado en Stellar.
+			</div>
+		)
 	}
 
 	const submit = async () => {
@@ -78,9 +85,14 @@ const ClientReview = () => {
 					{artist.data && <ArtistRow artist={artist.data} />}
 
 					{invite.data.used && !sent ? (
-						<div className="alert alert-info">Este QR ya se usó para dejar una reseña.</div>
+						<div className="alert alert-info">
+							Este QR ya se usó para dejar una reseña.
+						</div>
 					) : sent ? (
-						<TxNotice hash={hash} text="¡Gracias! Tu reseña ya es parte del perfil del artista." />
+						<TxNotice
+							hash={hash}
+							text="¡Gracias! Tu reseña ya es parte del perfil del artista."
+						/>
 					) : !address ? (
 						<div style={{ marginTop: "1rem" }}>
 							<button
@@ -91,8 +103,8 @@ const ClientReview = () => {
 								{isPending ? "Preparando..." : "Empezar (sin registrarte)"}
 							</button>
 							<p className="hint">
-								Creamos una cuenta anónima de testnet en tu navegador para firmar
-								la reseña.
+								Creamos una cuenta anónima de testnet en tu navegador para
+								firmar la reseña.
 							</p>
 						</div>
 					) : (
@@ -107,7 +119,11 @@ const ClientReview = () => {
 									onChange={(e) => setComment(e.target.value)}
 								/>
 							</div>
-							<button className="btn-lavender btn-block" disabled={busy} onClick={() => void submit()}>
+							<button
+								className="btn-lavender btn-block"
+								disabled={busy}
+								onClick={() => void submit()}
+							>
 								{busy ? "Enviando..." : "Publicar reseña"}
 							</button>
 						</div>

@@ -46,10 +46,13 @@ export const Chat = ({
 		<div className="chat">
 			<div className="chat-messages">
 				{count === 0 && (
-					<div className="hint" style={{ textAlign: "center", padding: "1rem" }}>
+					<div
+						className="hint"
+						style={{ textAlign: "center", padding: "1rem" }}
+					>
 						{canChat
 							? `Escríbele a ${other.name} para coordinar fechas.`
-							: "Podrán chatear cuando haya match."}
+							: "Podrán chatear cuando haya match. Lxs artistas establecidxs pueden escribir sin match."}
 					</div>
 				)}
 				{messages.data?.map((m, i) => (
@@ -79,7 +82,11 @@ export const Chat = ({
 					</button>
 				</form>
 			)}
-			{error && <div className="hint" style={{ color: "var(--danger-600)" }}>{error}</div>}
+			{error && (
+				<div className="hint" style={{ color: "var(--danger-600)" }}>
+					{error}
+				</div>
+			)}
 		</div>
 	)
 }
