@@ -1777,3 +1777,59 @@ a.btn-lavender {
 	border-top: 1px solid var(--gray-200);
 }
 
+/* ---------- Guest / Studio / Favorites lists ---------- */
+.stay-row {
+	padding: 1rem 1.25rem;
+	border-top: 1px solid var(--gray-200);
+}
+
+.stay-row:first-child {
+	border-top: none;
+}
+
+.stay-main {
+	display: flex;
+	align-items: center;
+	gap: 0.85rem;
+}
+
+.stay-thumb {
+	width: 64px;
+	height: 64px;
+	flex-shrink: 0;
+	border-radius: 1rem;
+	overflow: hidden;
+	background: linear-gradient(160deg, var(--lima-100), var(--lima-300));
+	box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+
+.stay-thumb img,
+.stay-thumb .cover-fallback {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	padding: 0;
+}
+
+.stay-city {
+	font-size: 1.2rem;
+	font-weight: 900;
+	line-height: 1.1;
+}
+
+.stay-row .host-name {
+	text-decoration: none;
+	color: var(--gray-900);
+}
+
+.dot-alert {
+	width: 10px;
+	height: 10px;
+	flex-shrink: 0;
+	border-radius: 50%;
+	background: var(--danger-600);
+}
+
+.btn-ghost.on {
+	background: var(--lavender-100);
+}
