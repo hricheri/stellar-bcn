@@ -31,6 +31,17 @@ export async function createDemoAccount(): Promise<Keypair> {
 	return kp
 }
 
+/** Enter with the secret key of an existing testnet account (e.g. a seeded artist) */
+export function importDemoAccount(secret: string): Keypair {
+	const kp = Keypair.fromSecret(secret.trim())
+	try {
+		localStorage.setItem(KEY, kp.secret())
+	} catch {
+		// private mode: the account lives only for this tab
+	}
+	return kp
+}
+
 export const forgetDemoAccount = () => {
 	try {
 		localStorage.removeItem(KEY)

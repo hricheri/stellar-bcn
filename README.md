@@ -49,7 +49,7 @@ Lxs tatuadorxs viajan para trabajar como *guest artists*, pero:
 | **Contrato Soroban** (`contracts/tattoo-guest-spot`) | Toda la lógica: perfiles, estudios, reservas, likes y match, chat y reseñas. |
 | **Poseidon nativo (host function BN254, Protocol 25)** | El artista registra `Poseidon(secreto)`, y el secreto solo viaja dentro del QR. Al reseñar, el contrato recalcula el hash on-chain y quema la invitación. No se puede inventar ni reutilizar un QR. Usa el crate oficial [`soroban-poseidon`](https://github.com/stellar/rs-soroban-poseidon), compatible con circomlib (lo validamos en los tests con el vector `Poseidon([1])`). |
 | **Eventos de contrato** | `SpotPublished`, `SpotBooked`, `ReviewLeft`, `Matched` y `HomeSwapUnlocked`, para rastrear la actividad en exploradores. |
-| **Wallets** | [Stellar Wallets Kit](https://stellarwalletskit.dev/) (Freighter, xBull, etc.) o una **cuenta de prueba** creada en el navegador y fondeada con Friendbot, para que jurado y clientes prueben sin instalar nada. |
+| **Wallets** | [Stellar Wallets Kit](https://stellarwalletskit.dev/) (Freighter, xBull, etc.) o una **cuenta de prueba** creada en el navegador (Friendbot paga las comisiones de testnet), para que jurado y clientes prueben sin instalar nada. La cuenta es solo identidad: firma likes, reservas y reseñas. No hay pagos. |
 
 ### Contrato en testnet
 
@@ -124,12 +124,11 @@ cargo test -p tattoo-guest-spot
 
 **URL pública:** `PENDIENTE`
 
-1. Toca **Probar sin wallet** (o conecta Freighter en testnet) y crea tu perfil.
-2. **Explorar:** indica ciudad, fechas e insumos, y mira el % de match de cada estudio.
-3. **Artistas:** compara nuevxs y establecidxs y dale ♡ a alguien.
-4. **Favoritos → Swaps → Calendario:** da vuelta una tarjeta para chatear, propón fechas, confirma y marca la gráfica. El calendario muestra todo junto.
-5. **QR:** genera un QR para un cliente, ábrelo en otra pestaña o en el móvil y deja una reseña sin wallet.
-6. Cada acción enlaza su transacción en **stellar.expert**.
+1. Toca **Entrar** y crea una cuenta nueva (o entra con la clave de un artista del ejemplo). La cuenta solo firma tus acciones: no se mueve dinero.
+2. **Explorar:** indica ciudad, fechas y materiales. Las tarjetas aparecen de a una, ordenadas por % de match: cada una es unx artista con la foto de su estudio (y de su hogar si lo ofrece). Descarta o dale ♥ Like, y reserva directamente las fechas que publicó.
+3. **Favoritos → Swaps → Calendario:** da vuelta una tarjeta para chatear, propón fechas, confirma y marca la gráfica. El calendario muestra todo junto.
+4. **QR:** genera un QR para un cliente, ábrelo en otra pestaña o en el móvil y deja una reseña sin wallet.
+5. Cada acción enlaza su transacción en **stellar.expert**.
 
 ### Evidencia on-chain
 

@@ -64,8 +64,8 @@ export const BASIC_REQUIREMENTS = AMENITIES.filter(
 ).map((a) => a.id)
 
 /** Requisitos básicos que el estudio no declara tener */
-export const missingBasics = (spot: Spot) =>
-	BASIC_REQUIREMENTS.filter((id) => !spot.amenities.includes(id))
+export const missingBasics = (place: { amenities: string[] }) =>
+	BASIC_REQUIREMENTS.filter((id) => !place.amenities.includes(id))
 
 export const DEFAULT_WANTED = AMENITIES.filter(
 	(a) => a.group !== "adicionales",
@@ -161,12 +161,20 @@ export function matchSpot(spot: Spot, wish: Wishlist): MatchResult {
 		.reduce((best, m) => (m.percent > best.percent ? m : best))
 }
 
-function matchTrip(spot: Spot, trip: Trip, wanted: string[]): MatchResult {
+/** What matching needs from a spot (a studio with no dates has start = end = 0) */
+export type Place = Pick<Spot, "city" | "amenities" | "start" | "end">
+
+export function matchTrip(
+	spot: Place,
+	trip: Trip,
+	wanted: string[],
+): MatchResult {
 	const cityOk =
 		!trip.city || normalize(spot.city).includes(normalize(trip.city))
 
 	let dateOverlap = 1
-	if (trip.from && trip.to) {
+	if (trip.from && trip.to && Number(spot.end) === 0) dateOverlap = 0
+	else if (trip.from && trip.to) {
 		const from = toUnix(trip.from)
 		const to = toUnix(trip.to)
 		const overlap =

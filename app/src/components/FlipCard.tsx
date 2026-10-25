@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { Link } from "react-router-dom"
-import { useSend } from "../hooks/useTattoo"
+import { useSend, useStudios } from "../hooks/useTattoo"
+import { homePhoto, studioPhoto } from "../lib/photos"
 import {
 	ACTION_LABELS,
 	type Artist,
@@ -16,6 +17,7 @@ import { ProposeDates } from "./ProposeDates"
 import {
 	Avatar,
 	BasicsBadge,
+	Cover,
 	MatchRing,
 	RatingLine,
 	TierBadge,
@@ -107,34 +109,50 @@ export const FlipCard = ({
 		setFlipped(true)
 	}
 	const a = c.artist
+	const studios = useStudios()
+	const studio = (studios.data ?? []).find((s) =>
+		c.spot ? s.id === c.spot.studio_id : s.members.includes(a.address),
+	)
 
 	return (
 		<div className={`flip${flipped ? " flipped" : ""}`}>
 			<div className="flip-inner">
 				{/* Frente */}
 				<div className="flip-face ts-card" onClick={() => open("chat")}>
-					<div
-						className={`spot-cover${c.spot?.kind === "home" ? " home" : ""}`}
+					<Cover
+						kind={c.spot?.kind === "homeonly" ? "home" : "studio"}
+						src={
+							c.spot?.kind === "homeonly"
+								? homePhoto(a.name)
+								: studioPhoto(studio?.name ?? "")
+						}
+						title={
+							c.spot?.kind === "homeonly"
+								? `Hogar de ${a.name}`
+								: (studio?.name ?? a.city)
+						}
+						subtitle={studio?.city ?? a.city}
 					>
-						<div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap" }}>
-							{c.kind === "match" && (
-								<span className="pill pill-dark">♥ MATCH</span>
-							)}
-							{c.kind === "likedMe" && (
-								<span className="pill pill-lima">♥ TE DIO LIKE</span>
-							)}
-							{c.kind === "contact" && (
-								<span className="pill pill-lavender">💬 CONVERSACIÓN</span>
-							)}
-							{c.unread > 0 && (
-								<span className="pill pill-lavender">
-									💬 {c.unread} nuevo{c.unread > 1 ? "s" : ""}
-								</span>
-							)}
-							{c.spot && <BasicsBadge spot={c.spot} />}
+						<div className="cover-corner">
+							{c.match && <MatchRing percent={c.match.percent} />}
 						</div>
-						{c.match && <MatchRing percent={c.match.percent} />}
-						<div className="spot-city">{a.city}</div>
+					</Cover>
+					<div className="chips" style={{ padding: "0.85rem 1.25rem 0" }}>
+						{c.kind === "match" && (
+							<span className="pill pill-dark">♥ Match</span>
+						)}
+						{c.kind === "likedMe" && (
+							<span className="pill pill-outline-dark">♥ Te dio like</span>
+						)}
+						{c.kind === "contact" && (
+							<span className="pill pill-outline">💬 Conversación</span>
+						)}
+						{c.unread > 0 && (
+							<span className="pill pill-dark">
+								💬 {c.unread} nuevo{c.unread > 1 ? "s" : ""}
+							</span>
+						)}
+						{c.spot && <BasicsBadge spot={c.spot} />}
 					</div>
 					<div className="ts-card-body">
 						<div className="host-row">

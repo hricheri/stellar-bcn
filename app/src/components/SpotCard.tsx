@@ -1,11 +1,11 @@
 import { useMemo, useState } from "react"
 import { useArtists, useSend, useStudios } from "../hooks/useTattoo"
 import { useWallet } from "../hooks/useWallet"
+import { homePhoto, studioPhoto } from "../lib/photos"
 import {
 	amenityLabel,
 	type Artist,
 	formatDate,
-	isEstablished,
 	type MatchResult,
 	type Spot,
 	SPOT_OPEN,
@@ -16,6 +16,7 @@ import { LikeButton } from "./LikeButton"
 import {
 	ArtistRow,
 	BasicsBadge,
+	Cover,
 	ErrorNotice,
 	MatchRing,
 	StudioTierBadge,
@@ -54,18 +55,6 @@ export const SpotCard = ({
 				: undefined,
 		[studio, artists.data],
 	)
-	// Studios show their own level; a home-only spot shows its artist's level
-	const tierClass = tier
-		? {
-				establecido: " tier-established",
-				respaldado: " tier-backed",
-				nuevo: " tier-new",
-			}[tier]
-		: host
-			? isEstablished(host)
-				? " tier-established"
-				: " tier-new"
-			: ""
 	const isMine = address === spot.host
 	const open = spot.status === SPOT_OPEN
 
@@ -85,24 +74,42 @@ export const SpotCard = ({
 	}
 
 	return (
-		<article className={`ts-card${tierClass}`}>
-			<div className={`spot-cover${isHome || homeOnly ? " home" : ""}`}>
-				<div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap" }}>
-					{homeOnly ? (
-						<span className="pill pill-lavender">SOLO HOGAR</span>
-					) : (
-						<span className="pill pill-lima">ESTUDIO</span>
-					)}
-					{isHome && <span className="pill pill-lavender">+ HOGAR</span>}
-					{!homeOnly && <BasicsBadge spot={spot} />}
-					{tier && <StudioTierBadge tier={tier} />}
-					{!open && <span className="pill pill-dark">RESERVADO</span>}
-				</div>
-				{match && <MatchRing percent={match.percent} />}
-				<div className="spot-city">{spot.city}</div>
-			</div>
+		<article className="ts-card">
+			<Cover
+				kind={homeOnly ? "home" : "studio"}
+				src={
+					homeOnly
+						? homePhoto(host?.name ?? "")
+						: studioPhoto(studio?.name ?? "")
+				}
+				title={
+					homeOnly
+						? `Hogar de ${host?.name ?? ""}`
+						: (studio?.name ?? "Estudio")
+				}
+				subtitle={spot.city}
+			>
+				{match && (
+					<div className="cover-corner">
+						<MatchRing percent={match.percent} />
+					</div>
+				)}
+			</Cover>
+			{isHome && (
+				<Cover
+					kind="home"
+					src={homePhoto(host?.name ?? "")}
+					title={`Hogar de ${host?.name ?? ""}`}
+					subtitle={spot.city}
+				/>
+			)}
 
 			<div className="ts-card-body">
+				<div className="chips" style={{ marginBottom: "0.6rem" }}>
+					{!homeOnly && <BasicsBadge spot={spot} />}
+					{tier && <StudioTierBadge tier={tier} />}
+					{!open && <span className="pill pill-dark">Reservado</span>}
+				</div>
 				<div className="meta" style={{ marginBottom: "0.75rem" }}>
 					{studio && (
 						<>
