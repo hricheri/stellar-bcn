@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react"
-import { useMessages, useSend } from "../hooks/useTattoo"
+import { useChat } from "../hooks/useChat"
 import { type Artist, markSeen } from "../lib/tattoo"
 
-/** Short messages stored in the contract, only between connected artists */
+/** Private messages between two artists */
 export const Chat = ({
 	me,
 	other,
@@ -12,13 +12,12 @@ export const Chat = ({
 	other: Artist
 	canChat: boolean
 }) => {
-	const messages = useMessages(me, other.address, true)
-	const send = useSend()
+	const chat = useChat(other.address)
 	const [text, setText] = useState("")
 	const [busy, setBusy] = useState(false)
 	const [error, setError] = useState<string>()
 	const end = useRef<HTMLDivElement>(null)
-	const count = messages.data?.length ?? 0
+	const count = chat.lines.length
 
 	useEffect(() => {
 		markSeen(me, other.address, count)
@@ -31,9 +30,7 @@ export const Chat = ({
 		setBusy(true)
 		setError(undefined)
 		try {
-			await send((c, from, o) =>
-				c.send_message({ from, to: other.address, text: trimmed }, o),
-			)
+			await chat.send(trimmed)
 			setText("")
 		} catch (e) {
 			setError((e as Error).message)
@@ -50,19 +47,21 @@ export const Chat = ({
 						className="hint"
 						style={{ textAlign: "center", padding: "1rem" }}
 					>
-						{canChat
-							? `Write to ${other.name} to sort out dates.`
-							: "You can chat once you match. Established artists can write without a match."}
+						{!chat.reachable
+							? `${other.name} hasn't joined with an account yet, so they can't get messages.`
+							: canChat
+								? `Write to ${other.name} to sort out dates.`
+								: "You can chat once you match. Established artists can write without a match."}
 					</div>
 				)}
-				{messages.data?.map((m, i) => (
-					<div key={i} className={`bubble${m.from === me ? " mine" : ""}`}>
+				{chat.lines.map((m) => (
+					<div key={m.key} className={`bubble${m.mine ? " mine" : ""}`}>
 						{m.text}
 					</div>
 				))}
 				<div ref={end} />
 			</div>
-			{canChat && (
+			{canChat && chat.reachable && (
 				<form
 					className="chat-input"
 					onSubmit={(e) => {
