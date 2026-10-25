@@ -1490,3 +1490,30 @@ button.chip-toggle.on {
 .swap-details .hint {
 	margin: 0;
 }
+
+/* Keep each day's color on hover (the base button style turns it gray) */
+.cal-day:hover:not(:disabled) {
+	background: var(--gray-100);
+}
+
+.cal-day.available:hover:not(:disabled),
+.cal-day.new:hover:not(:disabled) {
+	background: var(--lima-100);
+}
+
+.cal-day.confirmed:hover:not(:disabled) {
+	background: var(--gray-900);
+}
+
+.cal-day.in-range:hover:not(:disabled) {
+	background: var(--lavender-100);
+}
+
+.cal-day.range-end:hover:not(:disabled) {
+	background: var(--lavender-700);
+}
+
+.cal-day.free:disabled,
+.cal-day.swap:disabled {
+	opacity: 1;
+}

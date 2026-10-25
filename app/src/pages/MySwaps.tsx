@@ -450,7 +450,6 @@ const MySwaps = ({ section }: { section: Section }) => {
 								: s
 									? `📅 Free ${formatRange(s.start, s.end)}`
 									: "No dates yet"}
-							{group === "sent" && " · waiting for response"}
 						</div>
 					</div>
 					<div className="swap-icons">
