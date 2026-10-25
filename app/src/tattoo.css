@@ -1239,3 +1239,68 @@ button.chip-toggle.on {
 .explore-filter > button {
 	align-self: flex-start;
 }
+
+/* Sprint 4 day picker: availability and "Set dates" */
+.cal-day:disabled {
+	cursor: default;
+}
+
+.cal-day.past {
+	opacity: 0.3;
+}
+
+.cal-day.free,
+.cal-swatch.free {
+	background: var(--lima-300);
+	color: var(--gray-900);
+}
+
+.cal-day.new,
+.cal-swatch.new {
+	background: var(--lima-100);
+	color: var(--lima-700);
+	box-shadow: inset 0 0 0 2px var(--lima-400);
+}
+
+.cal-day.swap,
+.cal-swatch.swap {
+	background: var(--lavender-300);
+	color: var(--gray-900);
+}
+
+.cal-day.theirs,
+.cal-swatch.theirs {
+	box-shadow: inset 0 0 0 2px var(--lima-400);
+}
+
+.cal-swatch.theirs {
+	background: white;
+}
+
+.cal-day.in-range {
+	background: var(--lavender-100);
+	color: var(--lavender-700);
+}
+
+.cal-day.range-end,
+.cal-swatch.range-end {
+	background: var(--lavender-700);
+	color: white;
+}
+
+.cal-foot {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 0.5rem;
+	flex-wrap: wrap;
+	margin-top: 0.75rem;
+}
+
+.check-row {
+	display: flex;
+	gap: 0.5rem;
+	align-items: center;
+	font-weight: 800;
+	margin-top: 0.75rem;
+}

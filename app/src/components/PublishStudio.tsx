@@ -8,9 +8,9 @@ import {
 	type Studio,
 	studioAvg,
 	studioTier,
-	toUnix,
 } from "../lib/tattoo"
 import { AmenityPicker } from "./AmenityPicker"
+import { AvailabilityCalendar } from "./AvailabilityCalendar"
 import { ErrorNotice, StudioTierBadge, TxNotice } from "./TattooUI"
 
 /** Runs a contract call and keeps its busy / error / tx state */
@@ -32,24 +32,6 @@ const useAction = () => {
 	}
 	return { busy, error, hash, run }
 }
-
-const DateFields = () => (
-	<div className="field-row">
-		<div className="field">
-			<label htmlFor="from">Libre desde</label>
-			<input id="from" name="from" type="date" required />
-		</div>
-		<div className="field">
-			<label htmlFor="to">Hasta</label>
-			<input id="to" name="to" type="date" required />
-		</div>
-	</div>
-)
-
-const dates = (form: FormData) => ({
-	start: BigInt(toUnix(String(form.get("from")))),
-	end: BigInt(toUnix(String(form.get("to")))),
-})
 
 /** One studio I work at: its own reputation, its artists and its supplies */
 const StudioPanel = ({
@@ -239,118 +221,6 @@ const CreateStudio = ({ me }: { me: Artist }) => {
 	)
 }
 
-/** Publish free dates at one of my studios, or only my home if I'm trusted */
-const PublishDates = ({ me, studios }: { me: Artist; studios: Studio[] }) => {
-	const send = useSend()
-	const action = useAction()
-	const [studioId, setStudioId] = useState<number>()
-	const [includeHome, setIncludeHome] = useState(false)
-	const unlocked = reputationOf(me).home_swap_unlocked
-	// 0 = solo mi hogar
-	const selected = studioId ?? studios[0]?.id ?? 0
-	const homeOnly = selected === 0
-
-	if (studios.length === 0 && !unlocked) return null
-
-	return (
-		<section className="ts-card">
-			<form
-				className="ts-card-body"
-				action={(form) =>
-					action.run(() =>
-						send((c, host, o) =>
-							homeOnly
-								? c.publish_home(
-										{
-											host,
-											city: String(form.get("homecity")).trim(),
-											...dates(form),
-										},
-										o,
-									)
-								: c.publish_spot(
-										{
-											host,
-											studio_id: selected,
-											include_home: includeHome,
-											...dates(form),
-										},
-										o,
-									),
-						),
-					)
-				}
-			>
-				<h2 style={{ marginBottom: "0.85rem" }}>Publicar fechas libres</h2>
-				<div className="field">
-					<label htmlFor="studio">¿Qué ofreces?</label>
-					<select
-						id="studio"
-						value={selected}
-						onChange={(e) => setStudioId(Number(e.target.value))}
-					>
-						{studios.map((s) => (
-							<option key={s.id} value={s.id}>
-								{s.name} ({s.city})
-							</option>
-						))}
-						{unlocked && <option value={0}>Solo mi hogar (sin estudio)</option>}
-					</select>
-				</div>
-				{homeOnly && (
-					<div className="field">
-						<label htmlFor="homecity">Ciudad de tu hogar</label>
-						<input
-							id="homecity"
-							name="homecity"
-							required
-							defaultValue={me.city}
-						/>
-					</div>
-				)}
-				<DateFields />
-				{!homeOnly && (
-					<label
-						style={{
-							display: "flex",
-							gap: "0.5rem",
-							alignItems: "center",
-							fontWeight: 800,
-						}}
-					>
-						<input
-							type="checkbox"
-							disabled={!unlocked}
-							checked={includeHome}
-							onChange={(e) => setIncludeHome(e.target.checked)}
-						/>
-						🏠 Incluir también mi hogar
-					</label>
-				)}
-				<p className="hint" style={{ margin: "0.35rem 0 0" }}>
-					{unlocked
-						? "El hogar solo lo pueden reservar artistas establecidxs."
-						: "Ofrecer tu hogar se desbloquea con 3 reseñas y promedio 4 o más."}
-				</p>
-				<button
-					className="btn-lime btn-block"
-					style={{ marginTop: "1rem" }}
-					disabled={action.busy}
-				>
-					{action.busy ? "Publicando..." : "Publicar en Stellar"}
-				</button>
-				<ErrorNotice error={action.error} />
-				{action.hash && (
-					<TxNotice
-						hash={action.hash}
-						text="¡Publicado! Ya aparece en Explorar."
-					/>
-				)}
-			</form>
-		</section>
-	)
-}
-
 /** "Mi estudio" inside the profile */
 export const PublishStudio = ({ me }: { me: Artist }) => {
 	const studios = useStudios()
@@ -385,7 +255,7 @@ export const PublishStudio = ({ me }: { me: Artist }) => {
 					+ Crear otro estudio
 				</button>
 			)}
-			<PublishDates me={me} studios={mine} />
+			<AvailabilityCalendar me={me} studios={mine} />
 		</>
 	)
 }
