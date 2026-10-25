@@ -39,9 +39,9 @@ export interface Candidate {
 const SWIPE = 110
 
 const KIND_LABEL: Record<string, string> = {
-	studio: "Estudio",
-	home: "Estudio + hogar",
-	homeonly: "Solo hogar",
+	studio: "Studio",
+	home: "Studio + home",
+	homeonly: "Home only",
 }
 
 export const ExploreCard = ({
@@ -98,12 +98,12 @@ export const ExploreCard = ({
 			)}
 			{dx < -30 && (
 				<span className="deck-stamp nope" style={{ opacity: -dx / SWIPE }}>
-					✕ PASO
+					✕ NOPE
 				</span>
 			)}
 
 			<div className="flip-inner">
-				{/* Frente: mínimo, como en el Sprint 4 */}
+				{/* Front: minimal, as in the Sprint 4 */}
 				<article className="flip-face ts-card" style={{ cursor: "grab" }}>
 					{c.studio && (
 						<Cover
@@ -121,7 +121,7 @@ export const ExploreCard = ({
 						<Cover
 							kind="home"
 							src={homePhoto(a.name)}
-							title={`Hogar de ${a.name}`}
+							title={`${a.name}'s home`}
 							subtitle={a.city}
 						>
 							{!c.studio && (
@@ -148,10 +148,10 @@ export const ExploreCard = ({
 								<div className="chips" style={{ marginTop: "0.3rem" }}>
 									<TierBadge artist={a} />
 									{m.missing.length === 0 ? (
-										<span className="chip chip-has">✓ Tiene todo</span>
+										<span className="chip chip-full">✓ 100% match</span>
 									) : (
 										<span className="chip chip-missing">
-											Faltan {m.missing.length}
+											{m.missing.length} missing
 										</span>
 									)}
 								</div>
@@ -161,7 +161,7 @@ export const ExploreCard = ({
 						<div className="card-actions" style={{ marginTop: "0.85rem" }}>
 							<button
 								className="icon-btn"
-								title="Fechas disponibles"
+								title="Available dates"
 								aria-pressed={showDates}
 								onClick={() => setShowDates(!showDates)}
 							>
@@ -172,7 +172,7 @@ export const ExploreCard = ({
 							</button>
 							<button
 								className="icon-btn"
-								title="Más información"
+								title="More info"
 								onClick={() => setFlipped(true)}
 							>
 								↻
@@ -180,7 +180,7 @@ export const ExploreCard = ({
 							<Link
 								to={`/artista/${a.address}`}
 								className="icon-btn"
-								title="Ver perfil"
+								title="See profile"
 							>
 								👤
 							</Link>
@@ -190,8 +190,8 @@ export const ExploreCard = ({
 							<div style={{ marginTop: "0.6rem" }}>
 								{c.spots.length === 0 ? (
 									<p className="hint" style={{ margin: 0 }}>
-										Todavía no publicó fechas. Dale like y lo sigues desde tus
-										favoritos.
+										No dates published yet. Like them to follow them from your
+										favorites.
 									</p>
 								) : (
 									c.spots.map((s) => (
@@ -203,7 +203,7 @@ export const ExploreCard = ({
 												s.studio_id === c.studio?.id
 													? undefined
 													: (studios.find((st) => st.id === s.studio_id)
-															?.name ?? `Hogar de ${a.name}`)
+															?.name ?? `${a.name}'s home`)
 											}
 										/>
 									))
@@ -213,12 +213,12 @@ export const ExploreCard = ({
 					</div>
 				</article>
 
-				{/* Dorso: la información adicional */}
+				{/* Back: the extra info */}
 				<article className="flip-face flip-back ts-card">
 					<div className="flip-back-head">
 						<b>{a.name}</b>
 						<button className="btn-ghost" onClick={() => setFlipped(false)}>
-							↩ Volver
+							↩ Back
 						</button>
 					</div>
 					<div className="flip-back-body">
@@ -229,9 +229,9 @@ export const ExploreCard = ({
 							<div className="meta" style={{ marginTop: "0.6rem" }}>
 								<b>{c.studio.name}</b> · ⭐ {studioAvg(c.studio)} (
 								{c.studio.review_count}{" "}
-								{c.studio.review_count === 1 ? "reseña" : "reseñas"}) ·{" "}
+								{c.studio.review_count === 1 ? "review" : "reviews"}) ·{" "}
 								{c.studio.members.length}{" "}
-								{c.studio.members.length === 1 ? "artista" : "artistas"}
+								{c.studio.members.length === 1 ? "artist" : "artists"}
 								<div className="chips" style={{ marginTop: "0.35rem" }}>
 									{c.tier && <StudioTierBadge tier={c.tier} />}
 									<BasicsBadge spot={c.studio} />
@@ -244,7 +244,7 @@ export const ExploreCard = ({
 							className="btn-ghost"
 							style={{ marginTop: "auto", alignSelf: "flex-start" }}
 						>
-							Ver perfil y reseñas →
+							See profile and reviews →
 						</Link>
 					</div>
 				</article>
@@ -259,7 +259,7 @@ const MatchSummary = ({ m }: { m: MatchResult }) => (
 		<div className="chips" style={{ marginTop: "0.85rem" }}>
 			{m.trip.city && (
 				<span className={`chip ${m.cityOk ? "chip-has" : "chip-missing"}`}>
-					📍 {m.cityOk ? m.trip.city : `No es ${m.trip.city}`}
+					📍 {m.cityOk ? m.trip.city : `Not ${m.trip.city}`}
 				</span>
 			)}
 			{m.trip.from && m.trip.to && (
@@ -268,20 +268,20 @@ const MatchSummary = ({ m }: { m: MatchResult }) => (
 				>
 					📅{" "}
 					{m.dateOverlap >= 1
-						? "Cubre tus fechas"
+						? "Covers your dates"
 						: m.dateOverlap > 0
-							? `Cubre el ${Math.round(m.dateOverlap * 100)}% de tus fechas`
-							: "Sin fechas en tu viaje"}
+							? `Covers ${Math.round(m.dateOverlap * 100)}% of your dates`
+							: "No dates in your trip"}
 				</span>
 			)}
 		</div>
 		{m.missing.length === 0 ? (
 			<div className="chips" style={{ marginTop: "0.6rem" }}>
-				<span className="chip chip-has">✓ Tiene todo lo que necesitas</span>
+				<span className="chip chip-full">✓ 100% match on your must-haves</span>
 			</div>
 		) : (
 			<>
-				<div className="section-label missing">Falta</div>
+				<div className="section-label missing">Missing</div>
 				<div className="chips">
 					{m.missing.map((id) => (
 						<span key={id} className="chip chip-missing">
@@ -324,11 +324,11 @@ const DateRow = ({
 	const [hash, setHash] = useState<string>()
 	const needsTrust = spot.kind !== "studio"
 	const blocked = !address
-		? "Entra para reservar"
+		? "Sign in to book"
 		: !me
-			? "Crea tu perfil para reservar"
+			? "Create your profile to book"
 			: needsTrust && !isEstablished(me)
-				? "El hogar es solo para establecidxs"
+				? "Homes are only for established artists"
 				: undefined
 
 	const book = async () => {
@@ -350,7 +350,7 @@ const DateRow = ({
 		<div className="date-row">
 			<span className="date-text">
 				{formatRange(spot.start, spot.end)}
-				{place && <div className="hint">en {place}</div>}
+				{place && <div className="hint">at {place}</div>}
 			</span>
 			<span
 				className={`pill ${spot.kind === "studio" ? "pill-lima" : "pill-lavender"}`}
@@ -358,7 +358,7 @@ const DateRow = ({
 				{KIND_LABEL[spot.kind] ?? spot.kind}
 			</span>
 			{hash ? (
-				<span className="pill pill-dark">✓ Reservado</span>
+				<span className="pill pill-dark">✓ Booked</span>
 			) : (
 				<button
 					className="btn-lime"
@@ -366,7 +366,7 @@ const DateRow = ({
 					title={blocked}
 					onClick={() => void book()}
 				>
-					{busy ? "Reservando..." : "Reservar"}
+					{busy ? "Booking..." : "Book"}
 				</button>
 			)}
 			{blocked && address && <span className="hint">{blocked}</span>}
@@ -374,7 +374,7 @@ const DateRow = ({
 			{hash && (
 				<TxNotice
 					hash={hash}
-					text="¡Guest activado! Las fechas quedan confirmadas."
+					text="Guest spot booked! The dates are confirmed."
 				/>
 			)}
 		</div>
