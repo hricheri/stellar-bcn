@@ -31,6 +31,9 @@ export interface AuthContextType {
 	signUp: (email: string, password: string) => Promise<"confirm" | "in">
 	signOut: () => Promise<void>
 	resetPassword: (email: string) => Promise<void>
+	/** Came from a "choose a new password" email */
+	recovering: boolean
+	updatePassword: (password: string) => Promise<void>
 	deleteAccount: () => Promise<void>
 }
 
@@ -42,6 +45,8 @@ export const AuthContext = createContext<AuthContextType>({
 	signUp: async () => "in",
 	signOut: async () => {},
 	resetPassword: async () => {},
+	recovering: false,
+	updatePassword: async () => {},
 	deleteAccount: async () => {},
 })
 
@@ -69,6 +74,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 	const { enterWithSecret, stopDemo } = useWallet()
 	const [session, setSession] = useState<Session | null>(null)
 	const [loading, setLoading] = useState(supabaseReady)
+	const [recovering, setRecovering] = useState(false)
 	const userId = session?.user.id
 
 	useEffect(() => {
@@ -77,9 +83,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 			setSession(data.session)
 			setLoading(false)
 		})
-		const { data } = supabase.auth.onAuthStateChange((_event, s) =>
-			setSession(s),
-		)
+		const { data } = supabase.auth.onAuthStateChange((event, s) => {
+			setSession(s)
+			if (event === "PASSWORD_RECOVERY") setRecovering(true)
+		})
 		return () => data.subscription.unsubscribe()
 	}, [])
 
@@ -140,6 +147,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 		)
 	}, [])
 
+	const updatePassword = useCallback(async (password: string) => {
+		must(await supabase.auth.updateUser({ password }))
+		setRecovering(false)
+	}, [])
+
 	const deleteAccount = useCallback(async () => {
 		if (!userId) return
 		// Photos first (Storage API), then the account and everything linked
@@ -167,6 +179,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 			signUp,
 			signOut,
 			resetPassword,
+			recovering,
+			updatePassword,
 			deleteAccount,
 		}),
 		[
@@ -178,6 +192,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 			signUp,
 			signOut,
 			resetPassword,
+			recovering,
+			updatePassword,
 			deleteAccount,
 		],
 	)

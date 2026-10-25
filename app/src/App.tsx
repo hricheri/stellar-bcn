@@ -1,5 +1,6 @@
 import { Navigate, NavLink, Outlet, Route, Routes } from "react-router-dom"
 import ConnectAccount from "./components/ConnectAccount"
+import { NewPassword } from "./components/NewPassword"
 import ArtistPage from "./pages/ArtistPage"
 import Calendar from "./pages/Calendar"
 import ClientInvite from "./pages/ClientInvite"
@@ -112,6 +113,7 @@ const AppLayout = () => (
 			<Outlet />
 		</main>
 		<Dock />
+		<NewPassword />
 	</>
 )
 
