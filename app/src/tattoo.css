@@ -1575,6 +1575,171 @@ a.btn-lavender {
 	margin: 0;
 }
 
+/* ---------- Explore card (round 2): city first, full photos ---------- */
+.card-photo {
+	position: relative;
+	background: var(--gray-900);
+	min-height: 200px;
+}
+
+.card-photo + .card-photo {
+	border-top: 2px solid white;
+}
+
+.card-photo img {
+	display: block;
+	width: 100%;
+	height: auto;
+	max-height: 480px;
+	object-fit: contain;
+}
+
+.card-photo .cover-fallback {
+	min-height: 180px;
+	height: auto;
+}
+
+.card-photo-studio .cover-fallback {
+	background: linear-gradient(160deg, var(--lima-100), var(--lima-300));
+}
+
+.card-photo-home .cover-fallback {
+	background: linear-gradient(160deg, var(--lavender-50), var(--lavender-300));
+}
+
+.card-city {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 3.5rem;
+	padding: 0.9rem 1rem 1.6rem;
+	font-size: 1.9rem;
+	font-weight: 900;
+	line-height: 1.05;
+	color: white;
+	text-shadow: 0 1px 8px rgba(0, 0, 0, 0.45);
+	background: linear-gradient(rgba(0, 0, 0, 0.45), transparent);
+	pointer-events: none;
+}
+
+.card-photo-studio:has(.cover-fallback) .card-city {
+	color: var(--gray-900);
+	text-shadow: none;
+	background: none;
+}
+
+.card-flip {
+	position: absolute;
+	top: 0.75rem;
+	right: 0.75rem;
+	width: 42px;
+	height: 42px;
+	border-radius: 50%;
+	border: none;
+	padding: 0;
+	background: white;
+	color: var(--gray-900);
+	font-size: 1.3rem;
+	font-weight: 900;
+	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.card-flip:hover:not(:disabled) {
+	background: var(--lima-300);
+}
+
+.card-tag {
+	position: absolute;
+	bottom: 0.75rem;
+	left: 0.75rem;
+}
+
+.card-name {
+	display: block;
+	font-size: 1rem;
+	text-decoration: none;
+	color: var(--gray-900);
+}
+
+.host-row a {
+	text-decoration: none;
+}
+
+.cal-btn {
+	position: relative;
+	flex-shrink: 0;
+	align-self: flex-start;
+	width: 48px;
+	height: 48px;
+	border-radius: 1rem;
+	border: none;
+	padding: 0;
+	display: grid;
+	place-items: center;
+	background: var(--lavender-50);
+	color: var(--lavender-700);
+}
+
+.cal-btn:hover:not(:disabled),
+.cal-btn.on,
+.cal-btn.on:hover:not(:disabled) {
+	background: var(--lima-300);
+	color: var(--gray-900);
+}
+
+.cal-btn .badge {
+	position: absolute;
+	top: -5px;
+	right: -5px;
+	min-width: 18px;
+	background: var(--gray-900);
+	color: white;
+	font-size: 0.65rem;
+	font-weight: 800;
+	border-radius: var(--radius-pill);
+	padding: 0.05rem 0.35rem;
+}
+
+.chip-trip {
+	background: var(--lavender-100);
+	color: var(--lavender-700);
+	border-color: var(--lavender-300);
+}
+
+/* Previous / next beside the card */
+.deck-stage {
+	position: relative;
+}
+
+.deck-nav {
+	position: absolute;
+	top: 170px;
+	z-index: 3;
+	width: 40px;
+	height: 40px;
+	border-radius: 50%;
+	border: none;
+	padding: 0;
+	background: white;
+	color: var(--gray-900);
+	font-size: 1.6rem;
+	font-weight: 900;
+	line-height: 1;
+	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+}
+
+.deck-nav.prev {
+	left: -0.75rem;
+}
+
+.deck-nav.next {
+	right: -0.75rem;
+}
+
+.deck-nav:disabled {
+	display: none;
+}
+
 /* ---------- Calendar page ---------- */
 .cal-day.travel,
 .cal-swatch.travel {

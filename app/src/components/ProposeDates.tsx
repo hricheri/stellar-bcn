@@ -1,29 +1,38 @@
 import { useState } from "react"
 import { useSend, useSpots, useStudios } from "../hooks/useTattoo"
-import { formatRange, SPOT_OPEN } from "../lib/tattoo"
-import { daysBetween, DayPicker } from "./DayPicker"
+import { useTravelDays } from "../hooks/useTrips"
+import { formatRange } from "../lib/tattoo"
+import { freeDays } from "../lib/travel"
+import { DayPicker } from "./DayPicker"
 import { ErrorNotice, TxNotice } from "./TattooUI"
 
 /**
- * "Set dates" from the Sprint 4: their free days have a lime ring, and you pick
- * your range with two taps (first and last day). Any artist of the studio
- * reviews the proposal and accepts or declines it.
+ * "Set dates" from the Sprint 4: their free days are lime, my travel days have
+ * a lavender ring, and you pick your range with two taps (first and last day).
+ * It's a request: any artist of the studio accepts or declines it.
  */
 export const ProposeDates = ({
 	host,
+	studioId: fixedStudio,
 	label = "📅 Set dates!",
+	inline = false,
 }: {
 	host: string
+	/** Studio to ask; otherwise the first one of the host */
+	studioId?: number
 	label?: string
+	/** Show the calendar right away, without its button */
+	inline?: boolean
 }) => {
 	const send = useSend()
 	const studios = useStudios()
 	const spots = useSpots()
+	const travelDays = useTravelDays().days
 	const theirStudios = (studios.data ?? []).filter((s) =>
 		s.members.includes(host),
 	)
-	const [open, setOpen] = useState(false)
-	const [studioId, setStudioId] = useState<number>()
+	const [open, setOpen] = useState(inline)
+	const [studioId, setStudioId] = useState<number | undefined>(fixedStudio)
 	const [from, setFrom] = useState<number>()
 	const [to, setTo] = useState<number>()
 	const [busy, setBusy] = useState(false)
@@ -53,11 +62,10 @@ export const ProposeDates = ({
 		)
 	}
 
-	const theirFree = new Set(
-		(spots.data ?? [])
-			.filter((s) => s.studio_id === selected && s.status === SPOT_OPEN)
-			.flatMap((s) => daysBetween(Number(s.start), Number(s.end))),
+	const theirFree = freeDays(
+		(spots.data ?? []).filter((s) => s.studio_id === selected),
 	)
+	const travel = new Set(travelDays)
 	const firstFree = [...theirFree].sort((a, b) => a - b)[0]
 
 	const pick = (day: number) => {
@@ -97,15 +105,17 @@ export const ProposeDates = ({
 
 	return (
 		<div className="propose" onClick={(e) => e.stopPropagation()}>
-			<div className="split-title" style={{ margin: "0 0 0.5rem" }}>
-				<div className="section-label" style={{ margin: 0 }}>
-					Set dates
+			{!inline && (
+				<div className="split-title" style={{ margin: "0 0 0.5rem" }}>
+					<div className="section-label" style={{ margin: 0 }}>
+						Set dates
+					</div>
+					<button className="btn-ghost" onClick={() => setOpen(false)}>
+						✕
+					</button>
 				</div>
-				<button className="btn-ghost" onClick={() => setOpen(false)}>
-					✕
-				</button>
-			</div>
-			{theirStudios.length > 1 && (
+			)}
+			{theirStudios.length > 1 && fixedStudio === undefined && (
 				<div className="field">
 					<select
 						aria-label="Studio"
@@ -128,8 +138,14 @@ export const ProposeDates = ({
 					const inside =
 						from !== undefined && to !== undefined && d > from && d < to
 					return [
-						theirFree.has(d) ? "theirs" : "",
-						ends ? "range-end" : inside ? "in-range" : "",
+						ends
+							? "range-end"
+							: inside
+								? "in-range"
+								: theirFree.has(d)
+									? "free"
+									: "",
+						travel.has(d) ? "trip" : "",
 					].join(" ")
 				}}
 				onPick={pick}
@@ -137,8 +153,13 @@ export const ProposeDates = ({
 				<div className="cal-foot">
 					<div>
 						<span className="cal-legend">
-							<span className="cal-swatch theirs" /> They're free
+							<span className="cal-swatch free" /> Free at the studio
 						</span>
+						{travel.size > 0 && (
+							<span className="cal-legend">
+								<span className="cal-swatch trip" /> Your trip
+							</span>
+						)}
 						<span className="cal-legend">
 							<span className="cal-swatch range-end" /> Your dates
 						</span>
@@ -157,13 +178,13 @@ export const ProposeDates = ({
 				disabled={busy || from === undefined}
 				onClick={() => void propose()}
 			>
-				{busy ? "Sending..." : "Send proposal"}
+				{busy ? "Sending..." : "Request these dates"}
 			</button>
 			<ErrorNotice error={error} />
 			{hash && (
 				<TxNotice
 					hash={hash}
-					text="Proposal sent. The studio will accept or decline it."
+					text="Request sent! You'll see it in Guest until the studio answers."
 				/>
 			)}
 		</div>

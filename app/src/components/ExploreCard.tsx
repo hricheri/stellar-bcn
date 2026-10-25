@@ -1,8 +1,9 @@
 import { useRef, useState } from "react"
 import { Link } from "react-router-dom"
-import { useSend, useStudios } from "../hooks/useTattoo"
+import { useStudioImage } from "../hooks/useProfiles"
+import { useSend } from "../hooks/useTattoo"
 import { useWallet } from "../hooks/useWallet"
-import { homePhoto, studioPhoto } from "../lib/photos"
+import { homePhoto } from "../lib/photos"
 import {
 	amenityLabel,
 	type Artist,
@@ -14,12 +15,13 @@ import {
 	studioAvg,
 	type StudioTier,
 } from "../lib/tattoo"
+import { ProposeDates } from "./ProposeDates"
 import {
 	Avatar,
 	BasicsBadge,
-	Cover,
+	CalendarIcon,
 	ErrorNotice,
-	MatchRing,
+	Photo,
 	RatingLine,
 	StudioTierBadge,
 	TierBadge,
@@ -34,37 +36,80 @@ export interface Candidate {
 	spots: Spot[]
 	offersHome: boolean
 	match: MatchResult
+	/** Their free days that fall on my travel days */
+	sharedDays: number
 }
 
 const SWIPE = 110
 
-const KIND_LABEL: Record<string, string> = {
-	studio: "Studio",
-	home: "Studio + home",
-	homeonly: "Home only",
-}
+/** Full photo, 4:3 like the originals, with the city big on top */
+const CardPhoto = ({
+	src,
+	alt,
+	kind,
+	children,
+}: {
+	src: string
+	alt: string
+	kind: "studio" | "home"
+	children?: React.ReactNode
+}) => (
+	<div className={`card-photo card-photo-${kind}`}>
+		<Photo
+			key={src}
+			src={src}
+			alt={alt}
+			fallback={
+				<div className="cover-fallback">
+					<span className="cover-icon" aria-hidden="true">
+						{kind === "studio" ? "✒︎" : "⌂"}
+					</span>
+				</div>
+			}
+		/>
+		{children}
+	</div>
+)
+
+/** What I need that the studio doesn't have, one "✕ item" each */
+export const MaterialsLine = ({ m }: { m: MatchResult }) =>
+	m.missing.length === 0 ? (
+		<span className="chip chip-full">✓ 100% match</span>
+	) : (
+		<>
+			{m.missing.map((id) => (
+				<span key={id} className="chip chip-missing">
+					✕ {amenityLabel(id)}
+				</span>
+			))}
+		</>
+	)
 
 export const ExploreCard = ({
 	c,
 	me,
+	liked,
 	onLike,
 	onNope,
 }: {
 	c: Candidate
 	me?: Artist | null
+	liked: boolean
 	onLike: () => void
 	onNope: () => void
 }) => {
 	const [dx, setDx] = useState(0)
 	const [flipped, setFlipped] = useState(false)
-	const [showDates, setShowDates] = useState(false)
+	const [showCal, setShowCal] = useState(false)
 	const startX = useRef<number | null>(null)
 	const a = c.artist
 	const m = c.match
-	const studios = useStudios().data ?? []
+	const city = c.studio?.city ?? c.spots[0]?.city ?? a.city
+	const profile = `/artista/${a.address}`
+	const studioImage = useStudioImage(c.studio)
 
 	const onPointerDown = (e: React.PointerEvent<HTMLElement>) => {
-		if ((e.target as HTMLElement).closest("button, a, input")) return
+		if ((e.target as HTMLElement).closest("button, a, input, select")) return
 		startX.current = e.clientX
 		e.currentTarget.setPointerCapture(e.pointerId)
 	}
@@ -103,110 +148,87 @@ export const ExploreCard = ({
 			)}
 
 			<div className="flip-inner">
-				{/* Front: minimal, as in the Sprint 4 */}
-				<article className="flip-face ts-card" style={{ cursor: "grab" }}>
-					{c.studio && (
-						<Cover
-							kind="studio"
-							src={studioPhoto(c.studio.name)}
-							title={c.studio.name}
-							subtitle={c.studio.city}
+				{/* Front: city, photos, who, what's missing and the calendar */}
+				<article className="flip-face ts-card explore-card">
+					<CardPhoto
+						kind={c.studio ? "studio" : "home"}
+						src={c.studio ? studioImage : homePhoto(a.name)}
+						alt={c.studio?.name ?? `${a.name}'s home`}
+					>
+						<span className="card-city">{city}</span>
+						<button
+							className="card-flip"
+							aria-label="More info"
+							onClick={() => setFlipped(true)}
 						>
-							<div className="cover-corner">
-								<MatchRing percent={m.percent} />
-							</div>
-						</Cover>
-					)}
-					{c.offersHome && (
-						<Cover
-							kind="home"
-							src={homePhoto(a.name)}
-							title={`${a.name}'s home`}
-							subtitle={a.city}
-						>
-							{!c.studio && (
-								<div className="cover-corner">
-									<MatchRing percent={m.percent} />
-								</div>
-							)}
-						</Cover>
+							→
+						</button>
+					</CardPhoto>
+					{c.offersHome && c.studio && (
+						<CardPhoto kind="home" src={homePhoto(a.name)} alt="Home">
+							<span className="pill pill-lavender card-tag">+ HOME</span>
+						</CardPhoto>
 					)}
 
 					<div className="ts-card-body">
 						<div className="host-row">
-							<Avatar artist={a} big />
+							<Link to={profile} aria-label={`${a.name}'s profile`}>
+								<Avatar artist={a} big />
+							</Link>
 							<div style={{ flex: 1, minWidth: 0 }}>
-								<div className="host-name" style={{ fontSize: "1.35rem" }}>
+								<Link to={profile} className="host-name card-name">
 									{a.name}
-								</div>
-								<div
-									className="meta"
-									style={{ color: "var(--lavender-700)", fontWeight: 700 }}
-								>
-									{c.studio?.city ?? a.city}
-								</div>
-								<div className="chips" style={{ marginTop: "0.3rem" }}>
-									<TierBadge artist={a} />
-									{m.missing.length === 0 ? (
-										<span className="chip chip-full">✓ 100% match</span>
-									) : (
-										<span className="chip chip-missing">
-											{m.missing.length} missing
-										</span>
-									)}
+								</Link>
+								<div className="meta">
+									{c.studio?.name ?? "Home only"} · <TierBadge artist={a} />
 								</div>
 							</div>
-						</div>
-
-						<div className="card-actions" style={{ marginTop: "0.85rem" }}>
 							<button
-								className="icon-btn"
+								className={`cal-btn${showCal ? " on" : ""}`}
 								title="Available dates"
-								aria-pressed={showDates}
-								onClick={() => setShowDates(!showDates)}
+								aria-pressed={showCal}
+								onClick={() => setShowCal(!showCal)}
 							>
-								📅
+								<CalendarIcon />
 								{c.spots.length > 0 && (
 									<span className="badge">{c.spots.length}</span>
 								)}
 							</button>
-							<button
-								className="icon-btn"
-								title="More info"
-								onClick={() => setFlipped(true)}
-							>
-								↻
-							</button>
-							<Link
-								to={`/artista/${a.address}`}
-								className="icon-btn"
-								title="See profile"
-							>
-								👤
-							</Link>
 						</div>
 
-						{showDates && (
-							<div style={{ marginTop: "0.6rem" }}>
-								{c.spots.length === 0 ? (
-									<p className="hint" style={{ margin: 0 }}>
-										No dates published yet. Like them to follow them from your
-										favorites.
-									</p>
-								) : (
-									c.spots.map((s) => (
-										<DateRow
-											key={s.id}
-											spot={s}
-											me={me}
-											place={
-												s.studio_id === c.studio?.id
-													? undefined
-													: (studios.find((st) => st.id === s.studio_id)
-															?.name ?? `${a.name}'s home`)
-											}
+						<div className="chips" style={{ marginTop: "0.75rem" }}>
+							<MaterialsLine m={m} />
+							{c.sharedDays > 0 && (
+								<span className="chip chip-trip">
+									✈ {c.sharedDays} {c.sharedDays === 1 ? "day" : "days"} on your
+									trip
+								</span>
+							)}
+						</div>
+
+						{c.spots.length === 0 && !showCal && (
+							<p className="hint" style={{ margin: "0.6rem 0 0" }}>
+								No free dates published yet.
+							</p>
+						)}
+
+						{showCal && (
+							<div style={{ marginTop: "0.85rem" }}>
+								{c.studio ? (
+									me ? (
+										<ProposeDates
+											host={a.address}
+											studioId={c.studio.id}
+											inline
 										/>
-									))
+									) : (
+										<p className="hint">
+											<Link to="/perfil">Create your profile</Link> to request
+											dates.
+										</p>
+									)
+								) : (
+									c.spots.map((s) => <DateRow key={s.id} spot={s} me={me} />)
 								)}
 							</div>
 						)}
@@ -216,12 +238,15 @@ export const ExploreCard = ({
 				{/* Back: the extra info */}
 				<article className="flip-face flip-back ts-card">
 					<div className="flip-back-head">
-						<b>{a.name}</b>
 						<button className="btn-ghost" onClick={() => setFlipped(false)}>
-							↩ Back
+							← Back
 						</button>
+						{liked && <span className="pill pill-dark">♥ In favorites</span>}
 					</div>
 					<div className="flip-back-body">
+						<Link to={profile} className="host-name">
+							{a.name}
+						</Link>
 						<div className="meta">
 							{a.instagram} · <RatingLine artist={a} />
 						</div>
@@ -238,9 +263,33 @@ export const ExploreCard = ({
 								</div>
 							</div>
 						)}
-						<MatchSummary m={m} />
+						{c.spots.length > 0 && (
+							<>
+								<div className="section-label">Free dates</div>
+								<div className="chips">
+									{c.spots.map((s) => (
+										<span key={s.id} className="chip chip-has">
+											{formatRange(s.start, s.end)}
+											{s.kind !== "studio" ? " · + home" : ""}
+										</span>
+									))}
+								</div>
+							</>
+						)}
+						{m.extras.length > 0 && (
+							<>
+								<div className="section-label has">Extras</div>
+								<div className="chips">
+									{m.extras.map((id) => (
+										<span key={id} className="chip chip-has">
+											{amenityLabel(id)}
+										</span>
+									))}
+								</div>
+							</>
+						)}
 						<Link
-							to={`/artista/${a.address}`}
+							to={profile}
 							className="btn-ghost"
 							style={{ marginTop: "auto", alignSelf: "flex-start" }}
 						>
@@ -253,81 +302,18 @@ export const ExploreCard = ({
 	)
 }
 
-/** Why this card matches: city, dates and supplies, Sprint 4 style chips */
-const MatchSummary = ({ m }: { m: MatchResult }) => (
-	<>
-		<div className="chips" style={{ marginTop: "0.85rem" }}>
-			{m.trip.city && (
-				<span className={`chip ${m.cityOk ? "chip-has" : "chip-missing"}`}>
-					📍 {m.cityOk ? m.trip.city : `Not ${m.trip.city}`}
-				</span>
-			)}
-			{m.trip.from && m.trip.to && (
-				<span
-					className={`chip ${m.dateOverlap > 0 ? "chip-has" : "chip-missing"}`}
-				>
-					📅{" "}
-					{m.dateOverlap >= 1
-						? "Covers your dates"
-						: m.dateOverlap > 0
-							? `Covers ${Math.round(m.dateOverlap * 100)}% of your dates`
-							: "No dates in your trip"}
-				</span>
-			)}
-		</div>
-		{m.missing.length === 0 ? (
-			<div className="chips" style={{ marginTop: "0.6rem" }}>
-				<span className="chip chip-full">✓ 100% match on your must-haves</span>
-			</div>
-		) : (
-			<>
-				<div className="section-label missing">Missing</div>
-				<div className="chips">
-					{m.missing.map((id) => (
-						<span key={id} className="chip chip-missing">
-							{amenityLabel(id)}
-						</span>
-					))}
-				</div>
-			</>
-		)}
-		{m.extras.length > 0 && (
-			<>
-				<div className="section-label has">Extras</div>
-				<div className="chips">
-					{m.extras.map((id) => (
-						<span key={id} className="chip chip-has">
-							{amenityLabel(id)}
-						</span>
-					))}
-				</div>
-			</>
-		)}
-	</>
-)
-
-/** One published date range, claimable right away with book_spot */
-const DateRow = ({
-	spot,
-	me,
-	place,
-}: {
-	spot: Spot
-	me?: Artist | null
-	/** Shown when the dates are not at the studio on the cover */
-	place?: string
-}) => {
+/** A home-only date range, booked right away (homes have no studio to ask) */
+const DateRow = ({ spot, me }: { spot: Spot; me?: Artist | null }) => {
 	const { address } = useWallet()
 	const send = useSend()
 	const [busy, setBusy] = useState(false)
 	const [error, setError] = useState<string>()
 	const [hash, setHash] = useState<string>()
-	const needsTrust = spot.kind !== "studio"
 	const blocked = !address
 		? "Sign in to book"
 		: !me
 			? "Create your profile to book"
-			: needsTrust && !isEstablished(me)
+			: !isEstablished(me)
 				? "Homes are only for established artists"
 				: undefined
 
@@ -348,15 +334,7 @@ const DateRow = ({
 
 	return (
 		<div className="date-row">
-			<span className="date-text">
-				{formatRange(spot.start, spot.end)}
-				{place && <div className="hint">at {place}</div>}
-			</span>
-			<span
-				className={`pill ${spot.kind === "studio" ? "pill-lima" : "pill-lavender"}`}
-			>
-				{KIND_LABEL[spot.kind] ?? spot.kind}
-			</span>
+			<span className="date-text">{formatRange(spot.start, spot.end)}</span>
 			{hash ? (
 				<span className="pill pill-dark">✓ Booked</span>
 			) : (
@@ -371,12 +349,7 @@ const DateRow = ({
 			)}
 			{blocked && address && <span className="hint">{blocked}</span>}
 			<ErrorNotice error={error} />
-			{hash && (
-				<TxNotice
-					hash={hash}
-					text="Guest spot booked! The dates are confirmed."
-				/>
-			)}
+			{hash && <TxNotice hash={hash} text="Booked! The dates are confirmed." />}
 		</div>
 	)
 }

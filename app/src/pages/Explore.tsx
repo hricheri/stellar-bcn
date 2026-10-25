@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import { type Candidate, ExploreCard } from "../components/ExploreCard"
 import { Avatar, PageTitle } from "../components/TattooUI"
@@ -11,32 +11,30 @@ import {
 	useSpots,
 	useStudios,
 } from "../hooks/useTattoo"
+import { useTravelDays } from "../hooks/useTrips"
 import { useWallet } from "../hooks/useWallet"
 import {
 	type Artist,
 	isEstablished,
 	loadWishlist,
-	type MatchResult,
 	matchSpot,
 	NO_STUDIO,
+	type Spot,
 	SPOT_OPEN,
+	type Studio,
 	studioTier,
-	type Wishlist,
 } from "../lib/tattoo"
+import { freeDays, sharedDays } from "../lib/travel"
 
-// TATTOO APP: Explore as in the Sprint 4. One card at a time, sorted by match.
-// Four filters on top: everyone, what I'm looking for (edited in the profile),
-// who liked me and one city. A mutual like opens the "It's a match!" pop-up.
+// TATTOO APP: Explore as in the Sprint 4. One card per studio (or home), and
+// you can go back and forth. Studios with free dates come first. Filters on
+// top: everyone, matching dates (with my travel days from the Calendar), who
+// liked me and one city. A mutual like opens the "It's a match!" pop-up.
 
 const DISMISSED_KEY = "tattoo-dismissed"
 const FILTER_KEY = "tattoo-explore-filter"
 
-/** Matches at least the city or the dates of one of my trips */
-const fitsMyTrips = (m: MatchResult) =>
-	(!!m.trip.city && m.cityOk) ||
-	(!!m.trip.from && !!m.trip.to && m.dateOverlap > 0)
-
-type FilterMode = "all" | "wish" | "likedMe" | "city"
+type FilterMode = "all" | "dates" | "likedMe" | "city"
 
 interface Filter {
 	mode: FilterMode
@@ -49,9 +47,10 @@ const loadFilter = (): Filter => {
 			| Filter
 			| string
 			| null
-		if (saved && typeof saved === "object") return saved
+		if (saved && typeof saved === "object" && saved.mode !== ("wish" as string))
+			return saved
 	} catch {
-		// no storage, or an older "on" / "off" value
+		// no storage, or an older value
 	}
 	return { mode: "all" }
 }
@@ -63,9 +62,6 @@ const saveFilter = (f: Filter) => {
 		// no storage
 	}
 }
-
-const hasTrips = (w: Wishlist) =>
-	w.trips.some((t) => t.city || (t.from && t.to))
 
 const loadDismissed = (): string[] => {
 	try {
@@ -85,23 +81,21 @@ const saveDismissed = (list: string[]) => {
 
 const FilterButton = ({
 	on,
-	disabled,
 	onClick,
 	children,
 }: {
 	on: boolean
-	disabled?: boolean
 	onClick: () => void
 	children: React.ReactNode
 }) => (
-	<button
-		className={`filter-btn${on ? " on" : ""}`}
-		disabled={disabled}
-		onClick={onClick}
-	>
+	<button className={`filter-btn${on ? " on" : ""}`} onClick={onClick}>
 		{children}
 	</button>
 )
+
+/** A card's id: its studio, or the artist for a home-only listing */
+const cardId = (c: Candidate) =>
+	c.studio ? `studio-${c.studio.id}` : `home-${c.artist.address}`
 
 const Explore = () => {
 	const { address } = useWallet()
@@ -118,80 +112,105 @@ const Explore = () => {
 	const send = useSend()
 
 	const wish = useMemo(loadWishlist, [])
+	const travel = useTravelDays().days
 	const [filter, setFilterState] = useState<Filter>(loadFilter)
 	const [cityMenu, setCityMenu] = useState(false)
-	const setFilter = (f: Filter) => {
-		setFilterState(f)
-		saveFilter(f)
-		setCityMenu(false)
-	}
+	const [index, setIndex] = useState(0)
 	const [dismissed, setDismissed] = useState<string[]>(loadDismissed)
 	const [justLiked, setJustLiked] = useState<string[]>([])
 	const [notice, setNotice] = useState<React.ReactNode>()
 	const [matched, setMatched] = useState<Artist>()
-	const canFilter = hasTrips(wish)
+	const hasProfile = !!me.data
+
+	const setFilter = (f: Filter) => {
+		setCityMenu(false)
+		if ((f.mode === "dates" || f.mode === "likedMe") && !hasProfile) {
+			setNotice(
+				<>
+					To use this filter, first{" "}
+					<Link to="/perfil">create your profile</Link>.
+				</>,
+			)
+			return
+		}
+		if (f.mode === "dates" && travel.length === 0) {
+			setNotice(
+				<>
+					Mark the days you'd like to travel in your{" "}
+					<Link to="/calendario">Calendar</Link> first.
+				</>,
+			)
+			return
+		}
+		setNotice(undefined)
+		setFilterState(f)
+		saveFilter(f)
+		setIndex(0)
+	}
 
 	const candidates = useMemo<Candidate[]>(() => {
 		const byAddress = new Map((artists.data ?? []).map((a) => [a.address, a]))
-		const allStudios = studios.data ?? []
 		const open = (spots.data ?? []).filter((s) => s.status === SPOT_OPEN)
+		const byStart = (x: Spot, y: Spot) => Number(x.start) - Number(y.start)
+		const build = (
+			artist: Artist,
+			studio: Studio | undefined,
+			theirSpots: Spot[],
+		): Candidate => ({
+			artist,
+			studio,
+			tier: studio ? studioTier(studio, byAddress) : undefined,
+			spots: theirSpots.sort(byStart),
+			offersHome: theirSpots.some((s) => s.kind !== "studio"),
+			match: matchSpot(
+				studio
+					? {
+							city: studio.city,
+							amenities: studio.amenities,
+							start: 0n,
+							end: 0n,
+						}
+					: theirSpots[0]!,
+				wish,
+			),
+			sharedDays: sharedDays(travel, freeDays(theirSpots)),
+		})
+
 		const out: Candidate[] = []
+		for (const studio of studios.data ?? []) {
+			if (address && studio.members.includes(address)) continue
+			const theirSpots = open.filter((s) => s.studio_id === studio.id)
+			// Show the artist who published its latest dates, or its first artist
+			const host =
+				byAddress.get(theirSpots[theirSpots.length - 1]?.host ?? "") ??
+				byAddress.get(studio.members[0] ?? "")
+			if (host) out.push(build(host, studio, theirSpots))
+		}
+		// Homes offered without a studio
 		for (const artist of artists.data ?? []) {
 			if (artist.address === address) continue
-			const theirStudios = allStudios.filter((s) =>
-				s.members.includes(artist.address),
+			const homes = open.filter(
+				(s) => s.studio_id === NO_STUDIO && s.host === artist.address,
 			)
-			const ids = new Set(theirStudios.map((s) => s.id))
-			const theirSpots = open.filter((s) =>
-				s.studio_id === NO_STUDIO
-					? s.host === artist.address
-					: ids.has(s.studio_id),
-			)
-			if (theirStudios.length === 0 && theirSpots.length === 0) continue
-
-			// Best option: one of their open dates, or a studio with no dates yet
-			const options = [
-				...theirSpots.map((s) => ({
-					studioId: s.studio_id,
-					match: matchSpot(s, wish),
-				})),
-				...theirStudios.map((st) => ({
-					studioId: st.id,
-					match: matchSpot(
-						{ city: st.city, amenities: st.amenities, start: 0n, end: 0n },
-						wish,
-					),
-				})),
-			]
-			const best = options.reduce((x, y) =>
-				y.match.percent > x.match.percent ? y : x,
-			)
-			const studio =
-				allStudios.find((s) => s.id === best.studioId) ?? theirStudios[0]
-			out.push({
-				artist,
-				studio,
-				tier: studio ? studioTier(studio, byAddress) : undefined,
-				spots: theirSpots.sort((x, y) => Number(x.start) - Number(y.start)),
-				offersHome: theirSpots.some(
-					(s) => s.host === artist.address && s.kind !== "studio",
-				),
-				match: best.match,
-			})
+			if (homes.length) out.push(build(artist, undefined, homes))
 		}
 		return out.sort(
 			(x, y) =>
-				y.match.percent - x.match.percent ||
+				Number(y.spots.length > 0) - Number(x.spots.length > 0) ||
+				y.sharedDays - x.sharedDays ||
+				x.match.missing.length - y.match.missing.length ||
 				Number(isEstablished(y.artist)) - Number(isEstablished(x.artist)),
 		)
-	}, [artists.data, studios.data, spots.data, address, wish])
+	}, [artists.data, studios.data, spots.data, address, wish, travel])
 
 	// Cities with at least one studio or published home, A to Z
 	const cities = useMemo(
 		() =>
 			[
 				...new Set(
-					candidates.map((c) => (c.studio?.city ?? c.artist.city).trim()),
+					candidates.map((c) =>
+						(c.studio?.city ?? c.spots[0]?.city ?? "").trim(),
+					),
 				),
 			]
 				.filter(Boolean)
@@ -206,29 +225,42 @@ const Explore = () => {
 
 	const liked = new Set([...(likes.data ?? []), ...justLiked])
 	const shown = candidates.filter((c) => {
+		if (dismissed.includes(cardId(c))) return false
 		switch (filter.mode) {
-			case "wish":
-				return !canFilter || fitsMyTrips(c.match)
+			case "dates":
+				return !hasProfile || c.sharedDays > 0
 			case "likedMe":
-				return likedMe.has(c.artist.address)
+				return !hasProfile || likedMe.has(c.artist.address)
 			case "city":
 				return (
 					!filter.city ||
-					(c.studio?.city ?? c.artist.city).trim() === filter.city
+					(c.studio?.city ?? c.spots[0]?.city ?? "").trim() === filter.city
 				)
 			default:
 				return true
 		}
 	})
-	const deck = shown.filter(
-		(c) =>
-			!liked.has(c.artist.address) && !dismissed.includes(c.artist.address),
-	)
-	const current = deck[0]
+	const at = shown.length ? Math.min(index, shown.length - 1) : 0
+	const current = shown[at]
+	const go = (step: number) => {
+		if (shown.length < 2) return
+		setIndex((at + step + shown.length) % shown.length)
+	}
+
+	// ← and → on the keyboard move between cards
+	useEffect(() => {
+		const onKey = (e: KeyboardEvent) => {
+			if ((e.target as HTMLElement).closest("input, textarea, select")) return
+			if (e.key === "ArrowLeft") go(-1)
+			if (e.key === "ArrowRight") go(1)
+		}
+		window.addEventListener("keydown", onKey)
+		return () => window.removeEventListener("keydown", onKey)
+	})
 
 	const nope = () => {
 		if (!current) return
-		const next = [...dismissed, current.artist.address]
+		const next = [...dismissed, cardId(current)]
 		setDismissed(next)
 		saveDismissed(next)
 		setNotice(undefined)
@@ -243,12 +275,14 @@ const Explore = () => {
 		if (!me.data) {
 			setNotice(
 				<>
-					First <Link to="/perfil">create your profile</Link> to like artists.
+					First <Link to="/perfil">create your profile</Link> to save favorites.
 				</>,
 			)
 			return
 		}
 		const who = current.artist
+		go(1)
+		if (liked.has(who.address)) return
 		setJustLiked((l) => [...l, who.address])
 		setNotice(`♥ ${who.name} is in your favorites.`)
 		try {
@@ -272,7 +306,7 @@ const Explore = () => {
 		<>
 			<PageTitle
 				title="Explore"
-				subtitle="Artists and their studios, sorted by how well they match what you're looking for."
+				subtitle="Studios with free dates come first. Tap the calendar to ask for yours."
 			/>
 
 			<div className="ts-card explore-filters">
@@ -284,11 +318,10 @@ const Explore = () => {
 						See everyone
 					</FilterButton>
 					<FilterButton
-						on={filter.mode === "wish"}
-						onClick={() => setFilter({ mode: "wish" })}
-						disabled={!canFilter}
+						on={filter.mode === "dates"}
+						onClick={() => setFilter({ mode: "dates" })}
 					>
-						What I'm looking for
+						Matching dates
 					</FilterButton>
 					<FilterButton
 						on={filter.mode === "likedMe"}
@@ -324,44 +357,16 @@ const Explore = () => {
 						)}
 					</div>
 				</div>
-				{filter.mode === "wish" && canFilter && (
-					<div className="chips" style={{ marginTop: "0.6rem" }}>
-						{wish.trips
-							.filter((t) => t.city || (t.from && t.to))
-							.map((t, i) => (
-								<span key={i} className="pill pill-gray">
-									📍 {t.city || "Any city"}
-									{t.from && t.to
-										? ` · ${t.from.slice(5)} → ${t.to.slice(5)}`
-										: ""}
-								</span>
-							))}
-						<Link to="/perfil#lo-que-busco" className="hint">
-							Edit in my profile
-						</Link>
+				{notice && (
+					<div className="alert alert-info" style={{ margin: "0.75rem 0 0" }}>
+						{notice}
 					</div>
 				)}
-				{!canFilter && (
-					<Link
-						to="/perfil#lo-que-busco"
-						className="hint"
-						style={{ display: "block", marginTop: "0.6rem" }}
-					>
-						Tell us where you want to go, in your profile →
-					</Link>
-				)}
-			</div>
-
-			<div className="legend" style={{ margin: "0 0 1rem" }}>
-				<span className="pill pill-lima">STUDIO</span>
-				<span className="pill pill-lavender">HOME</span>
-				<span className="pill pill-dark">★ Established</span>
-				<span className="pill pill-outline">✦ New</span>
 			</div>
 
 			{loading && (
 				<div className="empty-state">
-					Loading artists from the blockchain...
+					Loading studios from the blockchain...
 				</div>
 			)}
 			{error && (
@@ -374,35 +379,57 @@ const Explore = () => {
 				<div className="deck">
 					{current ? (
 						<>
-							<ExploreCard
-								key={current.artist.address}
-								c={current}
-								me={me.data}
-								onLike={() => void like()}
-								onNope={nope}
-							/>
+							<div className="deck-stage">
+								<button
+									className="deck-nav prev"
+									aria-label="Previous card"
+									disabled={shown.length < 2}
+									onClick={() => go(-1)}
+								>
+									‹
+								</button>
+								<ExploreCard
+									key={cardId(current)}
+									c={current}
+									me={me.data}
+									liked={liked.has(current.artist.address)}
+									onLike={() => void like()}
+									onNope={nope}
+								/>
+								<button
+									className="deck-nav next"
+									aria-label="Next card"
+									disabled={shown.length < 2}
+									onClick={() => go(1)}
+								>
+									›
+								</button>
+							</div>
 							<div className="deck-actions">
 								<button className="btn-ghost" onClick={nope}>
 									✕ Discard
 								</button>
-								<button className="btn-lime" onClick={() => void like()}>
-									♥ Like
+								<button
+									className="btn-lime"
+									disabled={liked.has(current.artist.address)}
+									onClick={() => void like()}
+								>
+									{liked.has(current.artist.address) ? "♥ Saved" : "♥ Like"}
 								</button>
 							</div>
 							<p className="hint deck-count">
-								{shown.length - deck.length + 1} of {shown.length} · swipe the
-								card or use the buttons
+								{at + 1} of {shown.length}
 							</p>
 						</>
 					) : (
 						<div className="ts-card empty-state">
 							{candidates.length === 0
 								? "No studios published yet."
-								: shown.length === 0
-									? filter.mode === "likedMe"
-										? "Nobody new liked you yet. Keep exploring!"
-										: "Nobody matches this filter. Try See everyone."
-									: "You've seen every card."}
+								: filter.mode === "likedMe"
+									? "Nobody new liked you yet. Keep exploring!"
+									: filter.mode === "dates"
+										? "No studio is free on your travel days yet."
+										: "Nothing here. Try See everyone."}
 							{dismissed.length > 0 && (
 								<div style={{ marginTop: "0.75rem" }}>
 									<button
@@ -416,11 +443,6 @@ const Explore = () => {
 									</button>
 								</div>
 							)}
-						</div>
-					)}
-					{notice && (
-						<div className="alert alert-ok" style={{ marginTop: "0.75rem" }}>
-							{notice}
 						</div>
 					)}
 				</div>
@@ -462,7 +484,7 @@ const MatchPopup = ({
 			</div>
 			<h2 id="match-title">It's a match! 🎨</h2>
 			<p>{them.name} likes you too. Pick your dates or say hi in the chat.</p>
-			<Link to="/swaps" className="btn-lime btn-block">
+			<Link to="/favoritos" className="btn-lime btn-block">
 				📅 Set dates!
 			</Link>
 			<button className="btn-ghost btn-block" onClick={onClose}>
