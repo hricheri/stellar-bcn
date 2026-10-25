@@ -3,15 +3,22 @@ import { createClient } from "@supabase/supabase-js"
 // TATTOO APP: private data (accounts, photos, trips, likes, visit requests and
 // chat) lives in Supabase, protected per user. See supabase/migrations.
 
-const url = import.meta.env.PUBLIC_SUPABASE_URL as string | undefined
-const key = import.meta.env.PUBLIC_SUPABASE_ANON_KEY as string | undefined
+// The project's URL and publishable key are public on purpose (they ship in
+// the app anyway); every table is protected with Row Level Security. .env can
+// point to another project.
+const url =
+	(import.meta.env.PUBLIC_SUPABASE_URL as string | undefined) ||
+	"https://biudyszuzgpmtjfpiezu.supabase.co"
+const key =
+	(import.meta.env.PUBLIC_SUPABASE_ANON_KEY as string | undefined) ||
+	"sb_publishable_hjBJdPpPWSvTKlqHFQ1aTA_OPLa847k"
 
-/** False until PUBLIC_SUPABASE_URL and PUBLIC_SUPABASE_ANON_KEY are set in .env */
+/** Accounts are on (kept for the old Stellar-only fallbacks) */
 export const supabaseReady = !!url && !!key
 
 export const supabase = createClient(
-	url ?? "http://localhost:54321",
-	key ?? "missing-key",
+	url,
+	key,
 	// PKCE: email links come back with ?code=, which doesn't clash with the
 	// HashRouter's #/ routes
 	{ auth: { flowType: "pkce" } },
