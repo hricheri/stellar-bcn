@@ -1,6 +1,8 @@
 import { tattooGuestSpot } from "@stellar-scaffold/app-lib/clients"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useCallback } from "react"
+import { type Profile } from "../lib/supabase"
+import { useProfiles } from "./useProfiles"
 import { useWallet } from "./useWallet"
 
 // TATTOO APP: reads and writes of the tattoo_guest_spot contract
@@ -131,19 +133,52 @@ export const useReviewsBy = (address?: string) => {
 	})
 }
 
-export const useArtists = () =>
-	useQuery({
+type Artist = Awaited<
+	ReturnType<typeof tattooGuestSpot.list_artists>
+>["result"][number]
+
+/** Name, city and Instagram can be edited in the account (Supabase) */
+const withProfile = (a: Artist, p?: Profile): Artist =>
+	p
+		? {
+				...a,
+				name: p.name || a.name,
+				city: p.city || a.city,
+				instagram: p.instagram || a.instagram,
+			}
+		: a
+
+export const useArtists = () => {
+	const profiles = useProfiles().data
+	const select = useCallback(
+		(list: Artist[]) =>
+			profiles
+				? list.map((a) => withProfile(a, profiles.get(a.address)))
+				: list,
+		[profiles],
+	)
+	return useQuery({
 		queryKey: ["artists"],
 		queryFn: async () => (await tattooGuestSpot.list_artists()).result,
+		select,
 	})
+}
 
-export const useArtist = (address?: string) =>
-	useQuery({
+export const useArtist = (address?: string) => {
+	const profiles = useProfiles().data
+	const select = useCallback(
+		(a: Artist | null) =>
+			a && profiles ? withProfile(a, profiles.get(a.address)) : a,
+		[profiles],
+	)
+	return useQuery({
 		queryKey: ["artist", address],
 		enabled: !!address,
 		queryFn: async () =>
 			(await tattooGuestSpot.get_artist({ artist: address! })).result ?? null,
+		select,
 	})
+}
 
 export const useReviews = (address?: string) =>
 	useQuery({
