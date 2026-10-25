@@ -56,6 +56,8 @@ export const ExploreCard = ({
 	onNope: () => void
 }) => {
 	const [dx, setDx] = useState(0)
+	const [flipped, setFlipped] = useState(false)
+	const [showDates, setShowDates] = useState(false)
 	const startX = useRef<number | null>(null)
 	const a = c.artist
 	const m = c.match
@@ -78,8 +80,8 @@ export const ExploreCard = ({
 	}
 
 	return (
-		<article
-			className={`ts-card deck-card${dx ? " dragging" : ""}`}
+		<div
+			className={`flip deck-card${flipped ? " flipped" : ""}${dx ? " dragging" : ""}`}
 			style={{
 				position: "relative",
 				transform: `translateX(${dx}px) rotate(${dx / 22}deg)`,
@@ -100,94 +102,154 @@ export const ExploreCard = ({
 				</span>
 			)}
 
-			{c.studio && (
-				<Cover
-					kind="studio"
-					src={studioPhoto(c.studio.name)}
-					title={c.studio.name}
-					subtitle={c.studio.city}
-				>
-					<div className="cover-corner">
-						<MatchRing percent={m.percent} />
-					</div>
-				</Cover>
-			)}
-			{c.offersHome && (
-				<Cover
-					kind="home"
-					src={homePhoto(a.name)}
-					title={`Hogar de ${a.name}`}
-					subtitle={a.city}
-				>
-					{!c.studio && (
-						<div className="cover-corner">
-							<MatchRing percent={m.percent} />
-						</div>
+			<div className="flip-inner">
+				{/* Frente: mínimo, como en el Sprint 4 */}
+				<article className="flip-face ts-card" style={{ cursor: "grab" }}>
+					{c.studio && (
+						<Cover
+							kind="studio"
+							src={studioPhoto(c.studio.name)}
+							title={c.studio.name}
+							subtitle={c.studio.city}
+						>
+							<div className="cover-corner">
+								<MatchRing percent={m.percent} />
+							</div>
+						</Cover>
 					)}
-				</Cover>
-			)}
+					{c.offersHome && (
+						<Cover
+							kind="home"
+							src={homePhoto(a.name)}
+							title={`Hogar de ${a.name}`}
+							subtitle={a.city}
+						>
+							{!c.studio && (
+								<div className="cover-corner">
+									<MatchRing percent={m.percent} />
+								</div>
+							)}
+						</Cover>
+					)}
 
-			<div className="ts-card-body">
-				<div className="host-row">
-					<Avatar artist={a} big />
-					<div style={{ flex: 1, minWidth: 0 }}>
+					<div className="ts-card-body">
+						<div className="host-row">
+							<Avatar artist={a} big />
+							<div style={{ flex: 1, minWidth: 0 }}>
+								<div className="host-name" style={{ fontSize: "1.35rem" }}>
+									{a.name}
+								</div>
+								<div
+									className="meta"
+									style={{ color: "var(--lavender-700)", fontWeight: 700 }}
+								>
+									{c.studio?.city ?? a.city}
+								</div>
+								<div className="chips" style={{ marginTop: "0.3rem" }}>
+									<TierBadge artist={a} />
+									{m.missing.length === 0 ? (
+										<span className="chip chip-has">✓ Tiene todo</span>
+									) : (
+										<span className="chip chip-missing">
+											Faltan {m.missing.length}
+										</span>
+									)}
+								</div>
+							</div>
+						</div>
+
+						<div className="card-actions" style={{ marginTop: "0.85rem" }}>
+							<button
+								className="icon-btn"
+								title="Fechas disponibles"
+								aria-pressed={showDates}
+								onClick={() => setShowDates(!showDates)}
+							>
+								📅
+								{c.spots.length > 0 && (
+									<span className="badge">{c.spots.length}</span>
+								)}
+							</button>
+							<button
+								className="icon-btn"
+								title="Más información"
+								onClick={() => setFlipped(true)}
+							>
+								↻
+							</button>
+							<Link
+								to={`/artista/${a.address}`}
+								className="icon-btn"
+								title="Ver perfil"
+							>
+								👤
+							</Link>
+						</div>
+
+						{showDates && (
+							<div style={{ marginTop: "0.6rem" }}>
+								{c.spots.length === 0 ? (
+									<p className="hint" style={{ margin: 0 }}>
+										Todavía no publicó fechas. Dale like y lo sigues desde tus
+										favoritos.
+									</p>
+								) : (
+									c.spots.map((s) => (
+										<DateRow
+											key={s.id}
+											spot={s}
+											me={me}
+											place={
+												s.studio_id === c.studio?.id
+													? undefined
+													: (studios.find((st) => st.id === s.studio_id)
+															?.name ?? `Hogar de ${a.name}`)
+											}
+										/>
+									))
+								)}
+							</div>
+						)}
+					</div>
+				</article>
+
+				{/* Dorso: la información adicional */}
+				<article className="flip-face flip-back ts-card">
+					<div className="flip-back-head">
+						<b>{a.name}</b>
+						<button className="btn-ghost" onClick={() => setFlipped(false)}>
+							↩ Volver
+						</button>
+					</div>
+					<div className="flip-back-body">
+						<div className="meta">
+							{a.instagram} · <RatingLine artist={a} />
+						</div>
+						{c.studio && (
+							<div className="meta" style={{ marginTop: "0.6rem" }}>
+								<b>{c.studio.name}</b> · ⭐ {studioAvg(c.studio)} (
+								{c.studio.review_count}{" "}
+								{c.studio.review_count === 1 ? "reseña" : "reseñas"}) ·{" "}
+								{c.studio.members.length}{" "}
+								{c.studio.members.length === 1 ? "artista" : "artistas"}
+								<div className="chips" style={{ marginTop: "0.35rem" }}>
+									{c.tier && <StudioTierBadge tier={c.tier} />}
+									<BasicsBadge spot={c.studio} />
+								</div>
+							</div>
+						)}
+						<MatchSummary m={m} />
 						<Link
 							to={`/artista/${a.address}`}
-							className="host-name"
-							style={{ fontSize: "1.35rem" }}
+							className="btn-ghost"
+							style={{ marginTop: "auto", alignSelf: "flex-start" }}
 						>
-							{a.name}
+							Ver perfil y reseñas →
 						</Link>
-						<div
-							className="meta"
-							style={{ color: "var(--lavender-700)", fontWeight: 700 }}
-						>
-							{c.studio?.city ?? a.city} · {a.instagram}
-						</div>
-						<div className="chips" style={{ marginTop: "0.3rem" }}>
-							<TierBadge artist={a} />
-							<RatingLine artist={a} />
-						</div>
 					</div>
-				</div>
-
-				{c.studio && (
-					<div className="meta" style={{ marginTop: "0.85rem" }}>
-						<b>{c.studio.name}</b> · ⭐ {studioAvg(c.studio)} (
-						{c.studio.review_count}{" "}
-						{c.studio.review_count === 1 ? "reseña" : "reseñas"})
-						<div className="chips" style={{ marginTop: "0.35rem" }}>
-							{c.tier && <StudioTierBadge tier={c.tier} />}
-							<BasicsBadge spot={c.studio} />
-						</div>
-					</div>
-				)}
-
-				<MatchSummary m={m} />
-
-				<div className="section-label">Fechas disponibles</div>
-				{c.spots.length === 0 ? (
-					<p className="hint" style={{ margin: 0 }}>
-						Todavía no publicó fechas. Dale like y lo sigues desde tus
-						favoritos.
-					</p>
-				) : (
-					c.spots.map((s) => (
-						<DateRow
-							key={s.id}
-							spot={s}
-							me={me}
-							place={
-								s.studio_id === c.studio?.id
-									? undefined
-									: (studios.find((st) => st.id === s.studio_id)?.name ??
-										`Hogar de ${a.name}`)
-							}
-						/>
-					))
-				)}
+				</article>
 			</div>
-		</article>
+		</div>
 	)
 }
 

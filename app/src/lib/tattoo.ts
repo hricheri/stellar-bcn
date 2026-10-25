@@ -154,7 +154,7 @@ export const toUnix = (date: string) =>
 	Math.floor(new Date(`${date}T00:00:00Z`).getTime() / 1000)
 
 /** Match against every trip and keep the best one */
-export function matchSpot(spot: Spot, wish: Wishlist): MatchResult {
+export function matchSpot(spot: Place, wish: Wishlist): MatchResult {
 	const trips = wish.trips.length ? wish.trips : [EMPTY_TRIP]
 	return trips
 		.map((trip) => matchTrip(spot, trip, wish.wanted))

@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react"
 import { Link } from "react-router-dom"
-import { AmenityPicker } from "../components/AmenityPicker"
 import { type Candidate, ExploreCard } from "../components/ExploreCard"
 import { PageTitle } from "../components/TattooUI"
 import {
@@ -15,23 +14,28 @@ import { useWallet } from "../hooks/useWallet"
 import {
 	isEstablished,
 	loadWishlist,
-	matchTrip,
+	type MatchResult,
+	matchSpot,
 	NO_STUDIO,
-	saveWishlist,
 	SPOT_OPEN,
 	studioTier,
-	type Trip,
+	type Wishlist,
 } from "../lib/tattoo"
 
-// TATTOO APP: Explorar como en el Sprint 4. 1) dónde, cuándo y qué materiales
-// 2) tarjetas de a una, ordenadas por match 3) like = favoritos 4) reservar fechas
-
-interface Search {
-	trip: Trip
-	wanted: string[]
-}
+// TATTOO APP: Explorar como en el Sprint 4. "Lo que busco" (ciudades, fechas y
+// materiales) se edita en el perfil; aquí un botón filtra las tarjetas con eso.
+// Tarjetas de a una, ordenadas por match. Like = favoritos. Reservar fechas.
 
 const DISMISSED_KEY = "tattoo-dismissed"
+const FILTER_KEY = "tattoo-explore-filter"
+
+/** Matches at least the city or the dates of one of my trips */
+const fitsMyTrips = (m: MatchResult) =>
+	(!!m.trip.city && m.cityOk) ||
+	(!!m.trip.from && !!m.trip.to && m.dateOverlap > 0)
+
+const hasTrips = (w: Wishlist) =>
+	w.trips.some((t) => t.city || (t.from && t.to))
 
 const loadDismissed = (): string[] => {
 	try {
@@ -58,34 +62,26 @@ const Explore = () => {
 	const likes = useLikes(address)
 	const send = useSend()
 
-	const saved = useMemo(loadWishlist, [])
-	const [search, setSearch] = useState<Search>(() => ({
-		trip: saved.trips[0] ?? { city: "", from: "", to: "" },
-		wanted: saved.wanted,
-	}))
-	const [showSupplies, setShowSupplies] = useState(false)
+	const wish = useMemo(loadWishlist, [])
+	const [filtered, setFiltered] = useState(() => {
+		try {
+			return localStorage.getItem(FILTER_KEY) !== "off"
+		} catch {
+			return true
+		}
+	})
+	const toggleFilter = () => {
+		setFiltered(!filtered)
+		try {
+			localStorage.setItem(FILTER_KEY, filtered ? "off" : "on")
+		} catch {
+			// no storage
+		}
+	}
 	const [dismissed, setDismissed] = useState<string[]>(loadDismissed)
 	const [justLiked, setJustLiked] = useState<string[]>([])
 	const [notice, setNotice] = useState<React.ReactNode>()
-
-	const update = (next: Search) => {
-		setSearch(next)
-		// The first trip of "Lo que busco" is what Explore searches
-		saveWishlist({
-			trips: [next.trip, ...saved.trips.slice(1)],
-			wanted: next.wanted,
-		})
-	}
-	const setTrip = (patch: Partial<Trip>) =>
-		update({ ...search, trip: { ...search.trip, ...patch } })
-
-	const cities = useMemo(
-		() =>
-			[...new Set((studios.data ?? []).map((s) => s.city))].sort((a, b) =>
-				a.localeCompare(b),
-			),
-		[studios.data],
-	)
+	const canFilter = hasTrips(wish)
 
 	const candidates = useMemo<Candidate[]>(() => {
 		const byAddress = new Map((artists.data ?? []).map((a) => [a.address, a]))
@@ -109,14 +105,13 @@ const Explore = () => {
 			const options = [
 				...theirSpots.map((s) => ({
 					studioId: s.studio_id,
-					match: matchTrip(s, search.trip, search.wanted),
+					match: matchSpot(s, wish),
 				})),
 				...theirStudios.map((st) => ({
 					studioId: st.id,
-					match: matchTrip(
+					match: matchSpot(
 						{ city: st.city, amenities: st.amenities, start: 0n, end: 0n },
-						search.trip,
-						search.wanted,
+						wish,
 					),
 				})),
 			]
@@ -141,10 +136,13 @@ const Explore = () => {
 				y.match.percent - x.match.percent ||
 				Number(isEstablished(y.artist)) - Number(isEstablished(x.artist)),
 		)
-	}, [artists.data, studios.data, spots.data, address, search])
+	}, [artists.data, studios.data, spots.data, address, wish])
 
 	const liked = new Set([...(likes.data ?? []), ...justLiked])
-	const deck = candidates.filter(
+	const shown = candidates.filter(
+		(c) => !filtered || !canFilter || fitsMyTrips(c.match),
+	)
+	const deck = shown.filter(
 		(c) =>
 			!liked.has(c.artist.address) && !dismissed.includes(c.artist.address),
 	)
@@ -199,74 +197,37 @@ const Explore = () => {
 		<>
 			<PageTitle
 				title="Explorar"
-				subtitle="¿A dónde quieres ir y cuándo? Te mostramos artistas y estudios ordenados por match."
+				subtitle="Artistas y sus estudios, ordenados por match con lo que buscas."
 			/>
 
-			<section className="ts-card search-card">
-				<div className="ts-card-body">
-					<div className="field-grid">
-						<label className="span-2">
-							Ciudad
-							<input
-								list="explore-cities"
-								placeholder="Cualquier ciudad"
-								value={search.trip.city}
-								onChange={(e) => setTrip({ city: e.target.value })}
-							/>
-							<datalist id="explore-cities">
-								{cities.map((c) => (
-									<option key={c} value={c} />
-								))}
-							</datalist>
-						</label>
-						<label>
-							Desde
-							<input
-								type="date"
-								value={search.trip.from}
-								onChange={(e) => setTrip({ from: e.target.value })}
-							/>
-						</label>
-						<label>
-							Hasta
-							<input
-								type="date"
-								value={search.trip.to}
-								min={search.trip.from}
-								onChange={(e) => setTrip({ to: e.target.value })}
-							/>
-						</label>
-					</div>
-					<div className="split-title" style={{ margin: "0.75rem 0 0" }}>
-						<span className="meta">
-							Necesito <b>{search.wanted.length}</b> materiales del estudio
-						</span>
-						<button
-							className="btn-ghost"
-							onClick={() => setShowSupplies(!showSupplies)}
-						>
-							{showSupplies ? "Listo" : "Elegir materiales"}
-						</button>
-					</div>
-					{showSupplies && (
-						<div style={{ marginTop: "0.6rem" }}>
-							<AmenityPicker
-								selected={search.wanted}
-								onChange={(wanted) => update({ ...search, wanted })}
-							/>
-						</div>
-					)}
-					{(search.trip.city || search.trip.from) && (
-						<button
-							className="btn-ghost"
-							style={{ marginTop: "0.6rem" }}
-							onClick={() => setTrip({ city: "", from: "", to: "" })}
-						>
-							Limpiar búsqueda
-						</button>
-					)}
+			<div className="explore-filter">
+				<button
+					className={filtered && canFilter ? "btn-primary" : "btn-ghost"}
+					onClick={toggleFilter}
+					disabled={!canFilter}
+				>
+					{filtered && canFilter
+						? "✓ Filtrado por lo que busco"
+						: "Filtrar por lo que busco"}
+				</button>
+				<div className="chips">
+					{wish.trips
+						.filter((t) => t.city || (t.from && t.to))
+						.map((t, i) => (
+							<span key={i} className="pill pill-gray">
+								📍 {t.city || "Cualquier ciudad"}
+								{t.from && t.to
+									? ` · ${t.from.slice(5)} → ${t.to.slice(5)}`
+									: ""}
+							</span>
+						))}
+					<Link to="/perfil#lo-que-busco" className="hint">
+						{canFilter
+							? "Editar en mi perfil"
+							: "Dinos a dónde quieres ir, en tu perfil →"}
+					</Link>
 				</div>
-			</section>
+			</div>
 
 			<div className="legend" style={{ margin: "0 0 1rem" }}>
 				<span className="pill pill-lima">ESTUDIO</span>
@@ -306,15 +267,17 @@ const Explore = () => {
 								</button>
 							</div>
 							<p className="hint deck-count">
-								{candidates.length - deck.length + 1} de {candidates.length} ·
-								desliza la tarjeta o usa los botones
+								{shown.length - deck.length + 1} de {shown.length} · desliza la
+								tarjeta o usa los botones
 							</p>
 						</>
 					) : (
 						<div className="ts-card empty-state">
 							{candidates.length === 0
 								? "Todavía no hay estudios publicados."
-								: "Ya viste todas las tarjetas."}
+								: shown.length === 0
+									? "Nadie coincide con tus ciudades o fechas. Quita el filtro para ver a todxs."
+									: "Ya viste todas las tarjetas."}
 							{dismissed.length > 0 && (
 								<div style={{ marginTop: "0.75rem" }}>
 									<button

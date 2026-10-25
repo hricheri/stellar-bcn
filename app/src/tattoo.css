@@ -1228,3 +1228,14 @@ button.chip-toggle.on {
 	width: 100%;
 	box-sizing: border-box;
 }
+
+.explore-filter {
+	display: flex;
+	flex-direction: column;
+	gap: 0.6rem;
+	margin-bottom: 1rem;
+}
+
+.explore-filter > button {
+	align-self: flex-start;
+}
