@@ -1,8 +1,10 @@
+import { useQueryClient } from "@tanstack/react-query"
 import { useEffect, useState } from "react"
-import { Link, useLocation } from "react-router-dom"
+import { Link, Navigate, useLocation } from "react-router-dom"
+import { AmenityPicker } from "../components/AmenityPicker"
+import { PhotoPicker } from "../components/PhotoPicker"
 import { PublishStudio } from "../components/PublishStudio"
 import { ReviewList } from "../components/ReviewList"
-import { SpotCard } from "../components/SpotCard"
 import {
 	Avatar,
 	ErrorNotice,
@@ -11,39 +13,63 @@ import {
 	RatingLine,
 	TierBadge,
 } from "../components/TattooUI"
-import { WishlistEditor } from "../components/WishlistEditor"
-import { useArtist, useReviews, useSend, useSpots } from "../hooks/useTattoo"
+import { useAuth } from "../hooks/useAuth"
+import { useArtist, useReviews, useSend } from "../hooks/useTattoo"
 import { useWallet } from "../hooks/useWallet"
-import {
-	loadWishlist,
-	reputationOf,
-	saveWishlist,
-	type Wishlist,
-} from "../lib/tattoo"
+import { must, type Profile as ProfileRow, supabase } from "../lib/supabase"
+import { loadWishlist, reputationOf, saveWishlist } from "../lib/tattoo"
+
+// TATTOO APP: My profile, ordered like the Sprint 4: about you, your studio,
+// what you need and your home. Photos and bio are private (Supabase); name,
+// city and reputation live on Stellar.
 
 const scrollTo = (id: string) =>
 	document.getElementById(id)?.scrollIntoView({ behavior: "smooth" })
 
-const RegisterForm = () => {
+/** First time: photo, name, city, Instagram and bio */
+const RegisterForm = ({ registered }: { registered: boolean }) => {
+	const { userId, profile, ready } = useAuth()
+	const { address } = useWallet()
 	const send = useSend()
+	const queryClient = useQueryClient()
+	const [avatar, setAvatar] = useState<string | null>(null)
 	const [busy, setBusy] = useState(false)
 	const [error, setError] = useState<string>()
 
 	const submit = async (form: FormData) => {
+		const field = (k: string) => String(form.get(k) ?? "").trim()
 		setBusy(true)
 		setError(undefined)
 		try {
-			await send((c, artist, opts) =>
-				c.register_artist(
-					{
-						artist,
-						name: String(form.get("name") ?? "").trim(),
-						city: String(form.get("city") ?? "").trim(),
-						instagram: String(form.get("instagram") ?? "").trim(),
-					},
-					opts,
-				),
-			)
+			if (ready && userId) {
+				const row = {
+					name: field("name"),
+					city: field("city"),
+					instagram: field("instagram"),
+					bio: field("bio"),
+					avatar_path: avatar,
+					wanted: loadWishlist().wanted,
+				}
+				must(
+					profile
+						? await supabase.from("profiles").update(row).eq("id", userId)
+						: await supabase.from("profiles").insert({ id: userId, ...row }),
+				)
+				if (address) must(await supabase.rpc("claim_my_address", { address }))
+				await queryClient.invalidateQueries({ queryKey: ["profile"] })
+			}
+			if (!registered)
+				await send((c, artist, opts) =>
+					c.register_artist(
+						{
+							artist,
+							name: field("name"),
+							city: field("city"),
+							instagram: field("instagram"),
+						},
+						opts,
+					),
+				)
 		} catch (e) {
 			setError((e as Error).message)
 		} finally {
@@ -54,15 +80,38 @@ const RegisterForm = () => {
 	return (
 		<section className="ts-card">
 			<form className="ts-card-body" action={submit}>
-				<h2 style={{ marginBottom: "0.85rem" }}>Create your artist profile</h2>
+				<h2 style={{ marginBottom: "0.85rem" }}>About you</h2>
+				{ready && (
+					<div className="field">
+						<PhotoPicker
+							name="avatar"
+							previous={avatar}
+							label={avatar ? "✓ Photo ready · change" : "📷 Add your photo"}
+							maxSide={800}
+							onUploaded={setAvatar}
+						/>
+					</div>
+				)}
 				<div className="field">
 					<label htmlFor="name">Artist name</label>
-					<input id="name" name="name" required maxLength={40} />
+					<input
+						id="name"
+						name="name"
+						required
+						maxLength={40}
+						defaultValue={profile?.name}
+					/>
 				</div>
 				<div className="field-row">
 					<div className="field">
-						<label htmlFor="city">City of your studio</label>
-						<input id="city" name="city" required maxLength={40} />
+						<label htmlFor="city">Your city</label>
+						<input
+							id="city"
+							name="city"
+							required
+							maxLength={40}
+							defaultValue={profile?.city}
+						/>
 					</div>
 					<div className="field">
 						<label htmlFor="instagram">Instagram</label>
@@ -71,11 +120,25 @@ const RegisterForm = () => {
 							name="instagram"
 							placeholder="@"
 							maxLength={40}
+							defaultValue={profile?.instagram}
 						/>
 					</div>
 				</div>
-				<button className="btn-lime btn-block" disabled={busy}>
-					{busy ? "Creating..." : "Create profile on Stellar"}
+				{ready && (
+					<div className="field">
+						<label htmlFor="bio">About you</label>
+						<textarea
+							id="bio"
+							name="bio"
+							rows={3}
+							maxLength={500}
+							placeholder="Your style, how long you've been tattooing, what you're looking for..."
+							defaultValue={profile?.bio}
+						/>
+					</div>
+				)}
+				<button className="btn-lime btn-block" disabled={busy || !address}>
+					{busy ? "Saving..." : !address ? "Getting ready..." : "Save profile"}
 				</button>
 				<ErrorNotice error={error} />
 			</form>
@@ -83,52 +146,202 @@ const RegisterForm = () => {
 	)
 }
 
+/** Edit the private part of the profile: photo, Instagram and bio */
+const EditAbout = ({
+	row,
+	onDone,
+}: {
+	row: ProfileRow
+	onDone: () => void
+}) => {
+	const queryClient = useQueryClient()
+	const [bio, setBio] = useState(row.bio)
+	const [instagram, setInstagram] = useState(row.instagram)
+	const [busy, setBusy] = useState(false)
+	const [error, setError] = useState<string>()
+
+	const save = async (patch: Partial<ProfileRow>) => {
+		must(await supabase.from("profiles").update(patch).eq("id", row.id))
+		await queryClient.invalidateQueries({ queryKey: ["profile"] })
+		await queryClient.invalidateQueries({ queryKey: ["profiles"] })
+	}
+
+	return (
+		<div style={{ marginTop: "1rem" }}>
+			<PhotoPicker
+				name="avatar"
+				previous={row.avatar_path}
+				label="📷 Change photo"
+				maxSide={800}
+				onUploaded={(avatar_path) => save({ avatar_path })}
+			/>
+			<div className="field" style={{ marginTop: "0.75rem" }}>
+				<label htmlFor="instagram">Instagram</label>
+				<input
+					id="instagram"
+					value={instagram}
+					maxLength={40}
+					onChange={(e) => setInstagram(e.target.value)}
+				/>
+			</div>
+			<div className="field">
+				<label htmlFor="bio">About you</label>
+				<textarea
+					id="bio"
+					rows={4}
+					maxLength={500}
+					value={bio}
+					onChange={(e) => setBio(e.target.value)}
+				/>
+			</div>
+			<div className="field-row">
+				<button
+					className="btn-lime"
+					disabled={busy}
+					onClick={() => {
+						setBusy(true)
+						setError(undefined)
+						save({ bio: bio.trim(), instagram: instagram.trim() })
+							.then(onDone)
+							.catch((e: Error) => setError(e.message))
+							.finally(() => setBusy(false))
+					}}
+				>
+					{busy ? "Saving..." : "Save"}
+				</button>
+				<button className="btn-ghost" onClick={onDone}>
+					Cancel
+				</button>
+			</div>
+			<ErrorNotice error={error} />
+		</div>
+	)
+}
+
+/** Email, password and deleting the account */
+const AccountSection = () => {
+	const { session, signOut, deleteAccount, resetPassword } = useAuth()
+	const [confirming, setConfirming] = useState(false)
+	const [msg, setMsg] = useState<string>()
+	const [error, setError] = useState<string>()
+	const email = session?.user.email ?? ""
+
+	return (
+		<section className="ts-card" id="account">
+			<div className="ts-card-body">
+				<div className="meta">Signed in as {email}</div>
+				<div className="field-row" style={{ marginTop: "0.75rem" }}>
+					<button
+						className="btn-ghost"
+						onClick={() =>
+							resetPassword(email)
+								.then(() =>
+									setMsg(`We sent a link to ${email} to change your password.`),
+								)
+								.catch((e: Error) => setError(e.message))
+						}
+					>
+						Change password
+					</button>
+					<button className="btn-ghost" onClick={() => void signOut()}>
+						Log out
+					</button>
+				</div>
+				{msg && <div className="alert alert-ok">{msg}</div>}
+				<div style={{ marginTop: "1rem" }}>
+					{confirming ? (
+						<div className="alert alert-error">
+							This deletes your account, photos, trips, likes and chats for
+							good. Reviews on Stellar stay, because nobody can delete them.
+							<div className="field-row" style={{ marginTop: "0.6rem" }}>
+								<button
+									className="btn-danger"
+									onClick={() =>
+										deleteAccount().catch((e: Error) => setError(e.message))
+									}
+								>
+									Yes, delete my account
+								</button>
+								<button
+									className="btn-ghost"
+									onClick={() => setConfirming(false)}
+								>
+									Cancel
+								</button>
+							</div>
+						</div>
+					) : (
+						<button
+							className="link-btn danger"
+							onClick={() => setConfirming(true)}
+						>
+							Delete my account
+						</button>
+					)}
+				</div>
+				<ErrorNotice error={error} />
+			</div>
+		</section>
+	)
+}
+
 const Profile = () => {
+	const { ready, session, loading, profile } = useAuth()
 	const { address } = useWallet()
 	const me = useArtist(address)
 	const reviews = useReviews(address)
-	const spots = useSpots()
-	const [wish, setWish] = useState<Wishlist>(loadWishlist)
+	const queryClient = useQueryClient()
+	const [editing, setEditing] = useState(false)
+	const [wanted, setWanted] = useState(() => loadWishlist().wanted)
 	const location = useLocation()
-	// Links like /perfil#lo-que-busco jump to that section once it's rendered
+	// Links like /perfil#account jump to that section once it's rendered
 	const section = location.hash.slice(1)
-	const ready = !!me.data
+	const done = !!me.data
 	useEffect(() => {
-		if (ready && section) scrollTo(section)
-	}, [ready, section])
+		if (done && section) scrollTo(section)
+	}, [done, section])
 
-	if (!address) {
+	if (ready && !loading && !session) return <Navigate to="/entrar" replace />
+	if (!address)
 		return (
 			<>
 				<PageTitle title="My profile" />
 				<div className="alert alert-info">
-					Tap <b>Sign in</b> at the top to create your profile on testnet.
+					{ready
+						? "Getting your account ready..."
+						: "Tap «Sign in» at the top."}
 				</div>
 			</>
 		)
-	}
-
 	if (me.isLoading) return <div className="empty-state">Loading...</div>
-	if (!me.data) {
+	if (!me.data || (ready && !profile))
 		return (
 			<>
 				<PageTitle
-					title="Welcome"
-					subtitle="Your profile and reputation are stored on Stellar."
+					title="Welcome!"
+					subtitle="Tell other artists who you are. Your reputation is stored on Stellar, where nobody can delete it."
 				/>
-				<RegisterForm />
+				<RegisterForm registered={!!me.data} />
 			</>
 		)
-	}
 
 	const a = me.data
-	const mySpots = (spots.data ?? []).filter((s) => s.host === a.address)
-	const studioSpots = mySpots.filter((s) => s.kind !== "homeonly")
-	const homeSpots = mySpots.filter((s) => s.kind !== "studio")
 	const unlocked = reputationOf(a).home_swap_unlocked
+
+	const saveWanted = (next: string[]) => {
+		setWanted(next)
+		saveWishlist({ ...loadWishlist(), wanted: next })
+		if (profile)
+			void supabase
+				.from("profiles")
+				.update({ wanted: next })
+				.eq("id", profile.id)
+				.then(() => queryClient.invalidateQueries({ queryKey: ["profile"] }))
+	}
 
 	return (
 		<>
+			{/* About you */}
 			<section className="ts-card">
 				<div className="ts-card-body">
 					<div className="host-row">
@@ -139,149 +352,97 @@ const Profile = () => {
 								className="meta"
 								style={{ color: "var(--lavender-700)", fontWeight: 700 }}
 							>
-								{a.city} · {a.instagram}
+								{a.city} · {profile?.instagram || a.instagram}
 							</div>
-							<div
-								style={{
-									display: "flex",
-									gap: "0.5rem",
-									alignItems: "center",
-									marginTop: "0.25rem",
-									flexWrap: "wrap",
-								}}
-							>
+							<div className="chips" style={{ marginTop: "0.3rem" }}>
 								<TierBadge artist={a} />
 								<RatingLine artist={a} />
 							</div>
 						</div>
 					</div>
-					<div style={{ marginTop: "1rem" }}>
-						<HomeSwapProgress artist={a} />
-					</div>
-					<div className="field-row" style={{ marginTop: "1rem" }}>
-						<button
-							className="btn-lime btn-block"
-							style={{ flex: 1 }}
-							onClick={() => scrollTo("mi-estudio")}
-						>
-							My studio
-						</button>
-						<button
-							className="btn-ghost btn-block"
-							style={{ flex: 1 }}
-							onClick={() => scrollTo("availability")}
-						>
-							Availability
-						</button>
-						<button
-							className="btn-ghost btn-block"
-							style={{ flex: 1 }}
-							onClick={() => scrollTo("mi-hogar")}
-						>
-							My home
-						</button>
-						<button
-							className="btn-ghost btn-block"
-							style={{ flex: 1 }}
-							onClick={() => scrollTo("lo-que-busco")}
-						>
-							What I'm looking for
-						</button>
-						<Link to="/clientes" style={{ flex: 1 }}>
-							<button className="btn-ghost btn-block">Client QR</button>
-						</Link>
-						<Link to={`/artista/${a.address}`} style={{ flex: 1 }}>
-							<button className="btn-ghost btn-block">Public view</button>
-						</Link>
-					</div>
+					{profile?.bio && !editing && (
+						<p style={{ margin: "0.85rem 0 0" }}>{profile.bio}</p>
+					)}
+					{editing && profile ? (
+						<EditAbout row={profile} onDone={() => setEditing(false)} />
+					) : (
+						<div className="field-row" style={{ marginTop: "1rem" }}>
+							{profile && (
+								<button className="btn-lime" onClick={() => setEditing(true)}>
+									Edit profile
+								</button>
+							)}
+							<Link to={`/artista/${a.address}`} className="btn-ghost">
+								Preview
+							</Link>
+						</div>
+					)}
 				</div>
 			</section>
 
-			<div className="ts-card">
-				<div
-					className="ts-card-body"
-					style={{
-						display: "flex",
-						justifyContent: "space-between",
-						alignItems: "center",
-						gap: "0.75rem",
-						flexWrap: "wrap",
-					}}
-				>
-					<span>
-						Your matches, swaps, chats and calendar are all in one place.
-					</span>
-					<Link to="/swaps">
-						<button className="btn-lavender">Go to my swaps</button>
-					</Link>
-				</div>
-			</div>
-
+			{/* Your studio */}
 			<div className="split-title" id="mi-estudio">
 				<h2>My studio</h2>
-				<span className="hint">A studio can have several artists</span>
+				<Link to="/calendario" className="hint">
+					Free dates are set in the Calendar →
+				</Link>
 			</div>
 			<PublishStudio me={a} />
-			{studioSpots.length > 0 && (
-				<div className="split-title">
-					<h2>My studio's free dates</h2>
-				</div>
-			)}
-			{studioSpots.map((s) => (
-				<SpotCard key={s.id} spot={s} host={a} me={a} />
-			))}
 
+			{/* What you need */}
+			<div className="split-title" id="lo-que-busco">
+				<h2>What I need</h2>
+				<span className="hint">
+					Studios show what they're missing from this
+				</span>
+			</div>
+			<section className="ts-card">
+				<div className="ts-card-body">
+					<AmenityPicker selected={wanted} onChange={saveWanted} />
+				</div>
+			</section>
+
+			{/* Your home */}
 			<div className="split-title" id="mi-hogar">
 				<h2>My home</h2>
-				<span className="hint">Only for established artists</span>
 			</div>
 			<section className="ts-card">
 				<div className="ts-card-body">
 					{unlocked ? (
-						<p style={{ margin: 0 }}>
-							You can now offer your home: with your studio, or only your home
-							if you don't have a studio. Choose it in <b>Availability</b>,
-							above.
+						<p style={{ marginTop: 0 }}>
+							You can now offer your home, with your studio or on its own.
+							Choose it when you publish free dates in the Calendar.
 						</p>
 					) : (
-						<>
-							<p style={{ marginTop: 0 }}>
-								Offering your home unlocks once you're established.
-							</p>
-							<HomeSwapProgress artist={a} />
-						</>
+						<p style={{ marginTop: 0 }}>
+							Offering your home unlocks once you're established.
+						</p>
 					)}
-				</div>
-			</section>
-			{homeSpots.map((s) => (
-				<SpotCard key={s.id} spot={s} host={a} me={a} />
-			))}
-
-			<div className="split-title" id="lo-que-busco">
-				<h2>What I'm looking for</h2>
-				<span className="hint">This is what the match % is based on</span>
-			</div>
-			<section className="ts-card">
-				<div className="ts-card-body">
-					<WishlistEditor
-						wish={wish}
-						onChange={(next) => {
-							setWish(next)
-							saveWishlist(next)
-						}}
-					/>
+					<HomeSwapProgress artist={a} />
 				</div>
 			</section>
 
+			{/* Reviews */}
 			<div className="split-title">
 				<h2>My reviews</h2>
-				<span className="hint">Stored on Stellar, nobody can delete them</span>
+				<Link to="/clientes" className="hint">
+					Ask a client for a review with a QR →
+				</Link>
 			</div>
 			<section className="ts-card">
 				<div className="ts-card-body">
 					<ReviewList reviews={reviews.data ?? []} />
 				</div>
 			</section>
+
+			{ready && session && (
+				<>
+					<div className="split-title">
+						<h2>Account</h2>
+					</div>
+					<AccountSection />
+				</>
+			)}
 		</>
 	)
 }

@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { Link } from "react-router-dom"
+import { usePhotoUrl, useProfileOf } from "../hooks/useProfiles"
 import { txLink } from "../hooks/useTattoo"
 import { artistPhoto } from "../lib/photos"
 import {
@@ -56,16 +57,21 @@ export const Photo = ({
 	)
 }
 
-export const Avatar = ({ artist, big }: { artist: Artist; big?: boolean }) => (
-	<div className={`avatar${big ? " big" : ""}`}>
-		<Photo
-			key={artist.name}
-			src={artistPhoto(artist.name)}
-			alt={artist.name}
-			fallback={artist.name.slice(0, 1).toUpperCase()}
-		/>
-	</div>
-)
+/** Their own photo (private, from their account), or a sample one */
+export const Avatar = ({ artist, big }: { artist: Artist; big?: boolean }) => {
+	const own = usePhotoUrl(useProfileOf(artist.address)?.avatar_path)
+	const src = own.data ?? artistPhoto(artist.name)
+	return (
+		<div className={`avatar${big ? " big" : ""}`}>
+			<Photo
+				key={src}
+				src={src}
+				alt={artist.name}
+				fallback={artist.name.slice(0, 1).toUpperCase()}
+			/>
+		</div>
+	)
+}
 
 /** Photo cover with its label: lime = studio, lavender = home (Sprint 4) */
 export const Cover = ({
@@ -274,3 +280,34 @@ export const StudioTierBadge = ({ tier }: { tier: StudioTier }) => {
 		</span>
 	)
 }
+
+/** Our own calendar icon: dates guide the whole app */
+export const CalendarIcon = ({ size = 22 }: { size?: number }) => (
+	<svg
+		width={size}
+		height={size}
+		viewBox="0 0 24 24"
+		fill="none"
+		stroke="currentColor"
+		strokeWidth="2"
+		strokeLinecap="round"
+		strokeLinejoin="round"
+		aria-hidden="true"
+	>
+		<rect x="3" y="4.5" width="18" height="16.5" rx="4.5" />
+		<path d="M3 9.5h18M8 2.5v4M16 2.5v4" />
+		<circle cx="8.5" cy="14" r="1.1" fill="currentColor" stroke="none" />
+		<circle cx="12" cy="14" r="1.1" fill="currentColor" stroke="none" />
+		<rect
+			x="14.3"
+			y="12.7"
+			width="3.2"
+			height="5.6"
+			rx="1.6"
+			fill="currentColor"
+			stroke="none"
+		/>
+		<circle cx="8.5" cy="17.4" r="1.1" fill="currentColor" stroke="none" />
+		<circle cx="12" cy="17.4" r="1.1" fill="currentColor" stroke="none" />
+	</svg>
+)

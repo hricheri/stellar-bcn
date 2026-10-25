@@ -1,11 +1,41 @@
 import { connectWallet, disconnectWallet } from "@stellar-scaffold/app-lib"
 import { useState } from "react"
+import { Link } from "react-router-dom"
+import { useAuth } from "../hooks/useAuth"
 import { useArtist } from "../hooks/useTattoo"
 import { useWallet } from "../hooks/useWallet"
 
 // TATTOO APP: no money moves here. The account is only your identity: every
 // like, booking and review is signed with it, so nobody can fake your reputation.
 export const WalletButton = () => {
+	const auth = useAuth()
+	if (auth.ready) return <AccountButton />
+	return <DemoButton />
+}
+
+/** With Supabase: log in with email, or your name and Log out */
+const AccountButton = () => {
+	const { session, profile, signOut } = useAuth()
+	if (!session)
+		return (
+			<Link to="/entrar" className="btn-primary">
+				Sign in
+			</Link>
+		)
+	return (
+		<div className="wallet-connected">
+			<Link to="/perfil" className="wallet-profile">
+				{profile?.name || session.user.email}
+			</Link>
+			<button className="btn-ghost" onClick={() => void signOut()}>
+				Log out
+			</button>
+		</div>
+	)
+}
+
+/** Without Supabase (local tests): the in-browser demo account */
+const DemoButton = () => {
 	const { address, isPending, isDemo, startDemo, enterWithSecret, stopDemo } =
 		useWallet()
 	const me = useArtist(address)

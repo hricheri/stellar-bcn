@@ -1,5 +1,9 @@
+import { useQueryClient } from "@tanstack/react-query"
 import { useMemo, useState } from "react"
+import { useAuth } from "../hooks/useAuth"
+import { useStudioImage, useStudioPhotoPath } from "../hooks/useProfiles"
 import { useArtists, useSend, useStudios } from "../hooks/useTattoo"
+import { must, supabase } from "../lib/supabase"
 import {
 	amenityLabel,
 	type Artist,
@@ -10,8 +14,8 @@ import {
 	studioTier,
 } from "../lib/tattoo"
 import { AmenityPicker } from "./AmenityPicker"
-import { AvailabilityCalendar } from "./AvailabilityCalendar"
-import { ErrorNotice, StudioTierBadge, TxNotice } from "./TattooUI"
+import { PhotoPicker } from "./PhotoPicker"
+import { ErrorNotice, Photo, StudioTierBadge, TxNotice } from "./TattooUI"
 
 /** Runs a contract call and keeps its busy / error / tx state */
 const useAction = () => {
@@ -51,10 +55,45 @@ const StudioPanel = ({
 	const others = [...artists.values()].filter(
 		(a) => !studio.members.includes(a.address),
 	)
+	const { userId } = useAuth()
+	const queryClient = useQueryClient()
+	const image = useStudioImage(studio)
+	const photoPath = useStudioPhotoPath(studio)
+
+	const savePhoto = async (path: string) => {
+		must(
+			await supabase.from("studio_photos").upsert({
+				studio_id: studio.id,
+				uploaded_by: userId!,
+				photo_path: path,
+				updated_at: new Date().toISOString(),
+			}),
+		)
+		await queryClient.invalidateQueries({ queryKey: ["studio-photos"] })
+	}
 
 	return (
 		<section className="ts-card">
+			<div className="card-photo card-photo-studio">
+				<Photo
+					key={image}
+					src={image}
+					alt={studio.name}
+					fallback={<div className="cover-fallback" />}
+				/>
+				<span className="card-city">{studio.city}</span>
+			</div>
 			<div className="ts-card-body">
+				{userId && (
+					<div style={{ marginBottom: "0.75rem" }}>
+						<PhotoPicker
+							name={`studio-${studio.id}`}
+							previous={photoPath}
+							label="📷 Change studio photo"
+							onUploaded={savePhoto}
+						/>
+					</div>
+				)}
 				<div className="split-title" style={{ margin: 0 }}>
 					<h2>🏠 {studio.name}</h2>
 					<StudioTierBadge tier={studioTier(studio, artists)} />
@@ -254,7 +293,6 @@ export const PublishStudio = ({ me }: { me: Artist }) => {
 					+ Create another studio
 				</button>
 			)}
-			<AvailabilityCalendar me={me} studios={mine} />
 		</>
 	)
 }

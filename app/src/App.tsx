@@ -7,6 +7,7 @@ import Debug from "./pages/Debug"
 import Explore from "./pages/Explore"
 import MySwaps from "./pages/MySwaps"
 import Profile from "./pages/Profile"
+import SignIn from "./pages/SignIn"
 
 function App() {
 	return (
@@ -19,6 +20,7 @@ function App() {
 				<Route path="/swaps" element={<MySwaps section="swaps" />} />
 				<Route path="/calendario" element={<MySwaps section="calendario" />} />
 				<Route path="/perfil" element={<Profile />} />
+				<Route path="/entrar" element={<SignIn />} />
 				<Route path="/publicar" element={<Navigate to="/perfil" replace />} />
 				<Route path="/clientes" element={<ClientInvite />} />
 				<Route path="/resena/:secret" element={<ClientReview />} />

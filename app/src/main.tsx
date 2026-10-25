@@ -5,6 +5,7 @@ import { HashRouter } from "react-router-dom"
 import "@stellar-scaffold/app-lib/styles.css"
 import "./tattoo.css"
 import App from "./App.tsx"
+import { AuthProvider } from "./providers/AuthProvider.tsx"
 import { NotificationProvider } from "./providers/NotificationProvider.tsx"
 import { WalletProvider } from "./providers/WalletProvider.tsx"
 
@@ -22,10 +23,12 @@ createRoot(document.getElementById("root") as HTMLElement).render(
 		<NotificationProvider>
 			<QueryClientProvider client={queryClient}>
 				<WalletProvider>
-					{/* TATTOO APP: HashRouter so the static build works on GitHub Pages */}
-					<HashRouter>
-						<App />
-					</HashRouter>
+					<AuthProvider>
+						{/* TATTOO APP: HashRouter so the static build works on GitHub Pages */}
+						<HashRouter>
+							<App />
+						</HashRouter>
+					</AuthProvider>
 				</WalletProvider>
 			</QueryClientProvider>
 		</NotificationProvider>

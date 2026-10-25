@@ -1,7 +1,8 @@
 import { useState } from "react"
 import { Link } from "react-router-dom"
+import { useStudioImage } from "../hooks/useProfiles"
 import { useSend, useStudios } from "../hooks/useTattoo"
-import { homePhoto, studioPhoto } from "../lib/photos"
+import { homePhoto } from "../lib/photos"
 import {
 	ACTION_LABELS,
 	type Artist,
@@ -111,6 +112,7 @@ export const FlipCard = ({
 	const studio = (studios.data ?? []).find((s) =>
 		c.spot ? s.id === c.spot.studio_id : s.members.includes(a.address),
 	)
+	const studioImage = useStudioImage(studio)
 
 	return (
 		<div className={`flip${flipped ? " flipped" : ""}`}>
@@ -119,11 +121,7 @@ export const FlipCard = ({
 				<div className="flip-face ts-card" onClick={() => open("chat")}>
 					<Cover
 						kind={c.spot?.kind === "homeonly" ? "home" : "studio"}
-						src={
-							c.spot?.kind === "homeonly"
-								? homePhoto(a.name)
-								: studioPhoto(studio?.name ?? "")
-						}
+						src={c.spot?.kind === "homeonly" ? homePhoto(a.name) : studioImage}
 						title={
 							c.spot?.kind === "homeonly"
 								? `${a.name}'s home`

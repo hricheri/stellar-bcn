@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react"
+import { useStudioImage } from "../hooks/useProfiles"
 import { useArtists, useSend, useStudios } from "../hooks/useTattoo"
 import { useWallet } from "../hooks/useWallet"
-import { homePhoto, studioPhoto } from "../lib/photos"
+import { homePhoto } from "../lib/photos"
 import {
 	amenityLabel,
 	type Artist,
@@ -45,6 +46,7 @@ export const SpotCard = ({
 	const isHome = spot.kind === "home"
 	const homeOnly = spot.kind === "homeonly"
 	const studio = (studios.data ?? []).find((s) => s.id === spot.studio_id)
+	const studioImage = useStudioImage(studio)
 	const tier = useMemo(
 		() =>
 			studio
@@ -77,11 +79,7 @@ export const SpotCard = ({
 		<article className="ts-card">
 			<Cover
 				kind={homeOnly ? "home" : "studio"}
-				src={
-					homeOnly
-						? homePhoto(host?.name ?? "")
-						: studioPhoto(studio?.name ?? "")
-				}
+				src={homeOnly ? homePhoto(host?.name ?? "") : studioImage}
 				title={
 					homeOnly ? `${host?.name ?? ""}'s home` : (studio?.name ?? "Studio")
 				}
