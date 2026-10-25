@@ -3,8 +3,9 @@ import { Link } from "react-router-dom"
 import { BookingActions } from "../components/BookingActions"
 import { Chat } from "../components/Chat"
 import { Avatar, PageTitle, Photo } from "../components/TattooUI"
+import { OfferDates, requestRange } from "../components/VisitRequest"
 import { useAuth } from "../hooks/useAuth"
-import { useStudioImage } from "../hooks/useProfiles"
+import { useProfiles, useStudioImage } from "../hooks/useProfiles"
 import {
 	useArtist,
 	useArtists,
@@ -12,6 +13,7 @@ import {
 	useSpots,
 	useStudios,
 } from "../hooks/useTattoo"
+import { useVisitRequests } from "../hooks/useVisitRequests"
 import { useWallet } from "../hooks/useWallet"
 import {
 	type Artist,
@@ -175,6 +177,82 @@ const StayRow = ({
 	)
 }
 
+/** "I want to visit!" requests: sent ones (Guest) or received ones (Studio) */
+const VisitRequests = ({ side }: { side: Side }) => {
+	const { userId } = useAuth()
+	const requests = useVisitRequests()
+	const profiles = useProfiles()
+	const artists = useArtists()
+	const studios = useStudios()
+	const byId = new Map(
+		[...(profiles.data?.values() ?? [])].map((p) => [p.id, p]),
+	)
+	const byAddress = new Map((artists.data ?? []).map((a) => [a.address, a]))
+	const mine = (requests.data ?? []).filter((r) =>
+		side === "guest"
+			? r.guest === userId && r.status !== "closed"
+			: r.host === userId && r.status === "open",
+	)
+	if (mine.length === 0) return null
+
+	return (
+		<div>
+			<div className="split-title">
+				<h2>{side === "guest" ? "✈ Visit requests" : "✈ Want to visit you"}</h2>
+				<span className="hint">{mine.length}</span>
+			</div>
+			<div className="ts-card">
+				{mine.map((r) => {
+					const other = byId.get(side === "guest" ? r.host : r.guest)
+					const artist = other?.stellar_address
+						? byAddress.get(other.stellar_address)
+						: undefined
+					const studio = (studios.data ?? []).find((s) => s.id === r.studio_id)
+					const dates = requestRange(r)
+					return (
+						<div key={r.id} className="stay-row">
+							<div className="stay-main">
+								{artist && <Avatar artist={artist} big />}
+								<div style={{ flex: 1, minWidth: 0 }}>
+									<div className="stay-city">
+										{side === "guest"
+											? (studio?.city ?? "")
+											: (other?.name ?? "An artist")}
+									</div>
+									<div className="meta">
+										{side === "guest"
+											? `${studio?.name ?? "Studio"}${other ? ` · ${other.name}` : ""}`
+											: `${other?.city ?? ""} → ${studio?.name ?? "your studio"}`}
+									</div>
+									<div className="meta">📅 {dates ?? "Flexible dates"}</div>
+								</div>
+								{side === "studio" && (
+									<span className="dot-alert" title="To do" />
+								)}
+							</div>
+							{r.message && <p className="visit-msg">“{r.message}”</p>}
+							{side === "studio" ? (
+								<OfferDates r={r} />
+							) : r.status === "answered" ? (
+								<div className="alert alert-info">
+									🎉 {studio?.name ?? "The studio"} offered you dates.{" "}
+									{artist && (
+										<Link to={`/artista/${artist.address}`}>Pick yours →</Link>
+									)}
+								</div>
+							) : (
+								<span className="pill pill-outline">
+									⏳ Waiting for the studio to offer dates
+								</span>
+							)}
+						</div>
+					)
+				})}
+			</div>
+		</div>
+	)
+}
+
 const Stays = ({ side }: { side: Side }) => {
 	const { address } = useWallet()
 	const { ready, session } = useAuth()
@@ -235,6 +313,7 @@ const Stays = ({ side }: { side: Side }) => {
 	return (
 		<>
 			<PageTitle title={copy.title} subtitle={copy.subtitle} />
+			<VisitRequests side={side} />
 			{mine.length === 0 && (
 				<div className="ts-card empty-state">{copy.empty}</div>
 			)}

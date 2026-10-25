@@ -1595,7 +1595,7 @@ a.btn-lavender {
 }
 
 .card-photo .cover-fallback {
-	min-height: 180px;
+	min-height: 200px;
 	height: auto;
 }
 
@@ -1832,4 +1832,18 @@ a.btn-lavender {
 
 .btn-ghost.on {
 	background: var(--lavender-100);
+}
+
+/* ---------- "I want to visit!" ---------- */
+.visit-form textarea {
+	width: 100%;
+	resize: vertical;
+}
+
+.visit-msg {
+	margin: 0.6rem 0;
+	padding: 0.6rem 0.85rem;
+	border-radius: 0.9rem;
+	background: var(--lavender-50);
+	font-style: italic;
 }

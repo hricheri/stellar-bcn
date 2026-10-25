@@ -27,6 +27,7 @@ import {
 	TierBadge,
 	TxNotice,
 } from "./TattooUI"
+import { WantToVisit } from "./VisitRequest"
 
 /** One artist in Explore: their studio, their home if they offer it, and their open dates */
 export interface Candidate {
@@ -207,9 +208,26 @@ export const ExploreCard = ({
 						</div>
 
 						{c.spots.length === 0 && !showCal && (
-							<p className="hint" style={{ margin: "0.6rem 0 0" }}>
-								No free dates published yet.
-							</p>
+							<div style={{ marginTop: "0.85rem" }}>
+								{c.studio && me ? (
+									<WantToVisit
+										host={a.address}
+										studioId={c.studio.id}
+										studioName={c.studio.name}
+									/>
+								) : (
+									<p className="hint" style={{ margin: 0 }}>
+										No free dates published yet.
+										{c.studio && (
+											<>
+												{" "}
+												<Link to="/perfil">Create your profile</Link> to ask for
+												a visit.
+											</>
+										)}
+									</p>
+								)}
+							</div>
 						)}
 
 						{showCal && (
