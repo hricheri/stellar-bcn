@@ -1,8 +1,9 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
-import { BrowserRouter } from "react-router-dom"
+import { HashRouter } from "react-router-dom"
 import "@stellar-scaffold/app-lib/styles.css"
+import "./tattoo.css"
 import App from "./App.tsx"
 import { NotificationProvider } from "./providers/NotificationProvider.tsx"
 import { WalletProvider } from "./providers/WalletProvider.tsx"
@@ -21,9 +22,10 @@ createRoot(document.getElementById("root") as HTMLElement).render(
 		<NotificationProvider>
 			<QueryClientProvider client={queryClient}>
 				<WalletProvider>
-					<BrowserRouter>
+					{/* TATTOO APP: HashRouter so the static build works on GitHub Pages */}
+					<HashRouter>
 						<App />
-					</BrowserRouter>
+					</HashRouter>
 				</WalletProvider>
 			</QueryClientProvider>
 		</NotificationProvider>

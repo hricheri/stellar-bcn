@@ -1,0 +1,22 @@
+[package]
+name = "tattoo-guest-spot"
+description = "Guest spots between tattoo artists with on-chain reputation and Poseidon-committed client reviews"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+version.workspace = true
+
+[package.metadata.stellar]
+cargo_inherit = true
+
+[lib]
+crate-type = ["cdylib"]
+doctest = false
+
+[dependencies]
+soroban-sdk = { workspace = true, features = ["hazmat-crypto"] }
+soroban-poseidon = "26.0.0"
+
+[dev-dependencies]
+soroban-sdk = { workspace = true, features = ["testutils", "hazmat-crypto"] }

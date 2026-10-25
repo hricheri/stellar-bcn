@@ -1,15 +1,29 @@
-import { labPrefix } from "@stellar-scaffold/app-lib"
 import { NavLink, Outlet, Route, Routes } from "react-router-dom"
-import styles from "./App.module.css"
 import ConnectAccount from "./components/ConnectAccount"
+import ArtistPage from "./pages/ArtistPage"
+import Artists from "./pages/Artists"
+import ClientInvite from "./pages/ClientInvite"
+import ClientReview from "./pages/ClientReview"
 import Debug from "./pages/Debug"
-import Home from "./pages/Home"
+import Explore from "./pages/Explore"
+import MySwaps from "./pages/MySwaps"
+import Profile from "./pages/Profile"
+import Publish from "./pages/Publish"
 
 function App() {
 	return (
 		<Routes>
 			<Route element={<AppLayout />}>
-				<Route path="/" element={<Home />} />
+				<Route path="/" element={<Explore />} />
+				<Route path="/artistas" element={<Artists />} />
+				<Route path="/artista/:address" element={<ArtistPage />} />
+				<Route path="/favoritos" element={<MySwaps section="favoritos" />} />
+				<Route path="/swaps" element={<MySwaps section="swaps" />} />
+				<Route path="/calendario" element={<MySwaps section="calendario" />} />
+				<Route path="/perfil" element={<Profile />} />
+				<Route path="/publicar" element={<Publish />} />
+				<Route path="/clientes" element={<ClientInvite />} />
+				<Route path="/resena/:secret" element={<ClientReview />} />
 				<Route path="/debug" element={<Debug />} />
 				<Route path="/debug/:contractName" element={<Debug />} />
 			</Route>
@@ -17,50 +31,86 @@ function App() {
 	)
 }
 
-const AppLayout = () => (
-	<div className={styles.AppLayout}>
-		<header className={styles.header}>
-			<span className={styles.logo}>Scaffold</span>
-			<nav className={styles.headerNav}>
-				<NavLink
-					to="/debug"
-					className={({ isActive }) => (isActive ? styles.active : "")}
+// Iconos del dock (heroicons outline, como en el diseño del Sprint 4)
+const icons: Record<string, React.ReactNode> = {
+	explore: (
+		<>
+			<path d="M12 21a9 9 0 100-18 9 9 0 000 18z" />
+			<path d="M3.6 9h16.8M3.6 15h16.8M12 3a14.5 14.5 0 010 18M12 3a14.5 14.5 0 000 18" />
+		</>
+	),
+	artists: (
+		<path d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198v.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+	),
+	favorites: (
+		<path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+	),
+	swaps: (
+		<path d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-9L21 3m0 0l-4.5 4.5M21 3H7.5" />
+	),
+	calendar: (
+		<path d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+	),
+	publish: <path d="M12 4.5v15m7.5-7.5h-15" />,
+	qr: (
+		<path d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5zM6.75 6.75h.75v.75h-.75v-.75zM6.75 16.5h.75v.75h-.75v-.75zM16.5 6.75h.75v.75h-.75v-.75zM13.5 13.5h.75v.75h-.75v-.75zM13.5 19.5h.75v.75h-.75v-.75zM19.5 13.5h.75v.75h-.75v-.75zM19.5 19.5h.75v.75h-.75v-.75zM16.5 16.5h.75v.75h-.75v-.75z" />
+	),
+	profile: (
+		<path d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+	),
+}
+
+const dock = [
+	{ to: "/", icon: "explore", label: "Explorar" },
+	{ to: "/artistas", icon: "artists", label: "Artistas" },
+	{ to: "/favoritos", icon: "favorites", label: "Favoritos" },
+	{ to: "/swaps", icon: "swaps", label: "Swaps" },
+	{ to: "/calendario", icon: "calendar", label: "Agenda" },
+	{ to: "/perfil", icon: "profile", label: "Perfil" },
+]
+
+const Dock = () => (
+	<nav className="dock" aria-label="Navegación">
+		{dock.map((d) => (
+			<NavLink
+				key={d.to}
+				to={d.to}
+				end={d.to === "/"}
+				title={d.label}
+				className={({ isActive }) => `dock-item${isActive ? " active" : ""}`}
+			>
+				<svg
+					width="20"
+					height="20"
+					fill="none"
+					viewBox="0 0 24 24"
+					stroke="currentColor"
+					strokeWidth="1.8"
+					strokeLinecap="round"
+					strokeLinejoin="round"
+					aria-hidden="true"
 				>
-					Contract Explorer
-				</NavLink>
-				<a href={labPrefix()} target="_blank" rel="noreferrer">
-					Transaction Explorer
-				</a>
-			</nav>
+					{icons[d.icon]}
+				</svg>
+				<span className="dock-label">{d.label}</span>
+			</NavLink>
+		))}
+	</nav>
+)
+
+const AppLayout = () => (
+	<>
+		<header className="ts-header">
+			<NavLink to="/" className="ts-logo">
+				Tattoo Swap <span>on Stellar</span>
+			</NavLink>
 			<ConnectAccount />
 		</header>
-
-		<main className={styles.main}>
+		<main className="ts-main">
 			<Outlet />
 		</main>
-
-		<footer className={styles.footer}>
-			<nav className={styles.footerNav}>
-				<a
-					href="https://github.com/stellar-scaffold/cli"
-					target="_blank"
-					rel="noreferrer"
-				>
-					GitHub
-				</a>
-				<a
-					href="https://www.youtube.com/watch?v=0syGaIn3ULk&list=PLmr3tp_7-7Gjj6gn5-bBn-QTMyaWzwOU5"
-					target="_blank"
-					rel="noreferrer"
-				>
-					Tutorial
-				</a>
-				<a href="https://scaffoldstellar.org" target="_blank" rel="noreferrer">
-					View docs
-				</a>
-			</nav>
-		</footer>
-	</div>
+		<Dock />
+	</>
 )
 
 export default App

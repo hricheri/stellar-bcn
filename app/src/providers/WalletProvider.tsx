@@ -1,3 +1,4 @@
+import  { type Keypair } from "@stellar/stellar-sdk"
 import {
 	fetchBalances,
 	type MappedBalances,
@@ -5,6 +6,12 @@ import {
 	signTransaction,
 } from "@stellar-scaffold/app-lib"
 import { createContext, useCallback, useEffect, useMemo, useState } from "react"
+import {
+	createDemoAccount,
+	demoSigner,
+	forgetDemoAccount,
+	loadDemoAccount,
+} from "../lib/demoAccount"
 
 /**
  * A good-enough implementation of deepEqual.
@@ -35,6 +42,10 @@ export interface WalletContextType {
 	networkPassphrase?: string
 	signTransaction: typeof signTransaction
 	updateBalances: () => Promise<void>
+	/** TATTOO APP: true when signing with the in-browser demo account */
+	isDemo: boolean
+	startDemo: () => Promise<void>
+	stopDemo: () => void
 }
 
 export const WalletContext = // @ts-ignore
@@ -43,6 +54,9 @@ export const WalletContext = // @ts-ignore
 		balances: {},
 		updateBalances: async () => {},
 		signTransaction,
+		isDemo: false,
+		startDemo: async () => {},
+		stopDemo: () => {},
 	})
 
 export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
@@ -50,6 +64,8 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
 	const [address, setAddress] = useState<string>()
 	const [networkPassphrase, setNetworkPassphrase] = useState<string>()
 	const [isPending, setIsPending] = useState(true)
+	const [walletAddress, setWalletAddress] = useState<string>()
+	const [demo, setDemo] = useState<Keypair | undefined>(loadDemoAccount)
 
 	const updateBalances = useCallback(async () => {
 		if (!address) {
@@ -74,12 +90,34 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
 	// change: connect, disconnect, and the wallet switching networks.
 	useEffect(() => {
 		return onWalletChange((state) => {
-			setAddress(state.address)
+			setWalletAddress(state.address)
 			setNetworkPassphrase(state.networkPassphrase)
 			setIsPending(false)
-			if (!state.address) setBalances({})
 		})
 	}, [])
+
+	// A connected wallet wins over the demo account
+	useEffect(() => {
+		const next = walletAddress ?? demo?.publicKey()
+		setAddress(next)
+		if (!next) setBalances({})
+	}, [walletAddress, demo])
+
+	const startDemo = useCallback(async () => {
+		setIsPending(true)
+		try {
+			setDemo(await createDemoAccount())
+		} finally {
+			setIsPending(false)
+		}
+	}, [])
+
+	const stopDemo = useCallback(() => {
+		forgetDemoAccount()
+		setDemo(undefined)
+	}, [])
+
+	const isDemo = !walletAddress && !!demo
 
 	const contextValue = useMemo(
 		() => ({
@@ -88,9 +126,24 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
 			balances,
 			updateBalances,
 			isPending,
-			signTransaction,
+			signTransaction: (isDemo && demo
+				? demoSigner(demo)
+				: signTransaction) as typeof signTransaction,
+			isDemo,
+			startDemo,
+			stopDemo,
 		}),
-		[address, networkPassphrase, balances, updateBalances, isPending],
+		[
+			address,
+			networkPassphrase,
+			balances,
+			updateBalances,
+			isPending,
+			isDemo,
+			demo,
+			startDemo,
+			stopDemo,
+		],
 	)
 
 	return <WalletContext value={contextValue}>{children}</WalletContext>

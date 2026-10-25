@@ -5,6 +5,8 @@ import wasm from "vite-plugin-wasm"
 
 // https://vite.dev/config/
 export default defineConfig({
+	// TATTOO APP: relative paths so the build can be served from any folder
+	base: "./",
 	plugins: [
 		react(),
 		nodePolyfills({
