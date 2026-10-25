@@ -275,6 +275,8 @@ export const TAG_LABELS: Record<string, string> = {
 	grafica: "Hizo su gráfica a tiempo",
 }
 export const HOST_TAGS = ["higiene", "insumos_ok", "responde", "promocion"]
+/** About the place itself, when the guest reviews the studio */
+export const STUDIO_TAGS = ["higiene", "insumos_ok"]
 export const GUEST_TAGS = [
 	"higiene",
 	"respetuosx",
@@ -357,10 +359,11 @@ export function pendingActions(
 		const started = Date.now() / 1000 >= Number(b.start)
 		if (amHost && started) out.push("confirmar_estancia")
 	}
-	if (
-		b.status === BK_COMPLETED &&
-		!(amHost ? b.host_reviewed : b.guest_reviewed)
-	)
-		out.push("resenar")
+	if (b.status === BK_COMPLETED) {
+		const studioPending =
+			!amHost && b.studio_id !== NO_STUDIO && !b.studio_reviewed
+		if (!(amHost ? b.host_reviewed : b.guest_reviewed) || studioPending)
+			out.push("resenar")
+	}
 	return out
 }

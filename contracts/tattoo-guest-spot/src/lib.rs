@@ -19,9 +19,10 @@ pub const HOME_SWAP_MIN_REVIEWS: u32 = 3;
 /// Minimum average score (1-5) to unlock studio + home swaps
 pub const HOME_SWAP_MIN_AVG: u32 = 4;
 
-// Keep data alive for ~30 days on testnet (5s ledgers)
-const TTL_THRESHOLD: u32 = 17_280 * 7;
-const TTL_EXTEND_TO: u32 = 17_280 * 30;
+// No TTL extensions: on testnet the rent to keep the ~40 KB contract code
+// alive for 30 days costs more XLM than Friendbot gives an account. Entries
+// keep the network's default TTL and can be extended or restored later with
+// `stellar contract extend` / `stellar contract restore`.
 
 const STUDIO: Symbol = symbol_short!("studio");
 const STUDIO_HOME: Symbol = symbol_short!("home");
@@ -156,6 +157,8 @@ pub struct Booking {
     pub guest_promo_sent: bool,
     pub host_reviewed: bool,
     pub guest_reviewed: bool,
+    /// The guest reviews the studio separately from its host artist
+    pub studio_reviewed: bool,
 }
 
 #[contracttype]
@@ -656,27 +659,50 @@ impl TattooGuestSpot {
             return Err(Error::NotPartOfBooking);
         };
         Self::save(env, &DataKey::Booking(booking_id), &booking);
-        if role == ReviewerRole::Guest && booking.studio_id != NO_STUDIO {
-            // The guest also reviews the studio, which keeps its own reputation
-            if let Some(mut studio) = Self::get_studio(env, booking.studio_id) {
-                if (1..=5).contains(&score) {
-                    studio.review_count += 1;
-                    studio.score_sum += score;
-                    Self::save(env, &DataKey::Studio(studio.id), &studio);
-                    let mut reviews = Self::list_studio_reviews(env, studio.id);
-                    reviews.push_back(Review {
-                        from: reviewer.clone(),
-                        role,
-                        score,
-                        tags: tags.clone(),
-                        comment: comment.clone(),
-                        timestamp: env.ledger().timestamp(),
-                    });
-                    Self::save(env, &DataKey::StudioReviews(studio.id), &reviews);
-                }
-            }
-        }
         Self::add_review(env, reviewed, reviewer, role, score, tags, comment)
+    }
+
+    /// After a completed stay the guest can review the studio, once. It has
+    /// its own reputation, separate from the host artist's.
+    pub fn review_studio(
+        env: &Env,
+        guest: Address,
+        booking_id: u32,
+        score: u32,
+        tags: Vec<Symbol>,
+        comment: String,
+    ) -> Result<(), Error> {
+        guest.require_auth();
+        let mut booking = Self::get_booking(env, booking_id).ok_or(Error::BookingNotFound)?;
+        if booking.guest != guest {
+            return Err(Error::NotPartOfBooking);
+        }
+        if booking.status != BookingStatus::Completed {
+            return Err(Error::StayNotCompleted);
+        }
+        if booking.studio_reviewed {
+            return Err(Error::AlreadyReviewed);
+        }
+        if !(1..=5).contains(&score) {
+            return Err(Error::InvalidScore);
+        }
+        let mut studio = Self::get_studio(env, booking.studio_id).ok_or(Error::StudioNotFound)?;
+        booking.studio_reviewed = true;
+        Self::save(env, &DataKey::Booking(booking_id), &booking);
+        studio.review_count += 1;
+        studio.score_sum += score;
+        Self::save(env, &DataKey::Studio(studio.id), &studio);
+        let mut reviews = Self::list_studio_reviews(env, studio.id);
+        reviews.push_back(Review {
+            from: guest,
+            role: ReviewerRole::Guest,
+            score,
+            tags,
+            comment,
+            timestamp: env.ledger().timestamp(),
+        });
+        Self::save(env, &DataKey::StudioReviews(studio.id), &reviews);
+        Ok(())
     }
 
     // ----- Likes and matches -----
@@ -940,6 +966,7 @@ impl TattooGuestSpot {
             guest_promo_sent: false,
             host_reviewed: false,
             guest_reviewed: false,
+            studio_reviewed: false,
         };
         Self::save(env, &DataKey::Booking(id), &booking);
         Self::index_booking(env, &host, id);
@@ -1027,17 +1054,11 @@ impl TattooGuestSpot {
     fn next_id(env: &Env, key: &DataKey) -> u32 {
         let id: u32 = env.storage().instance().get(key).unwrap_or(0) + 1;
         env.storage().instance().set(key, &id);
-        env.storage()
-            .instance()
-            .extend_ttl(TTL_THRESHOLD, TTL_EXTEND_TO);
         id
     }
 
     fn save<V: soroban_sdk::IntoVal<Env, soroban_sdk::Val>>(env: &Env, key: &DataKey, value: &V) {
         env.storage().persistent().set(key, value);
-        env.storage()
-            .persistent()
-            .extend_ttl(key, TTL_THRESHOLD, TTL_EXTEND_TO);
     }
 }
 

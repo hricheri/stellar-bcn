@@ -8,6 +8,8 @@ import {
 	formatDate,
 	GUEST_TAGS,
 	HOST_TAGS,
+	NO_STUDIO,
+	STUDIO_TAGS,
 	isStudioArtist,
 	pendingActions,
 	promoDeadline,
@@ -33,7 +35,7 @@ export const BookingActions = ({
 		booking.host === me || (studioArtist && booking.status === BK_PENDING)
 	const actions = pendingActions(booking, me, studioArtist)
 
-	const [reviewing, setReviewing] = useState(false)
+	const [reviewing, setReviewing] = useState<false | "artist" | "studio">(false)
 	const [score, setScore] = useState(5)
 	const [tags, setTags] = useState<string[]>([])
 	const [comment, setComment] = useState("")
@@ -60,7 +62,14 @@ export const BookingActions = ({
 	}
 
 	const id = { booking_id: booking.id }
-	const tagOptions = amHost ? GUEST_TAGS : HOST_TAGS
+	const tagOptions =
+		reviewing === "studio" ? STUDIO_TAGS : amHost ? GUEST_TAGS : HOST_TAGS
+	const studio = (studios.data ?? []).find((s) => s.id === booking.studio_id)
+	const artistReviewPending = !(amHost
+		? booking.host_reviewed
+		: booking.guest_reviewed)
+	const studioReviewPending =
+		!amHost && booking.studio_id !== NO_STUDIO && !booking.studio_reviewed
 
 	return (
 		<div>
@@ -136,9 +145,20 @@ export const BookingActions = ({
 						{busy === "complete" ? "..." : "🏁 Confirmar que terminó"}
 					</button>
 				)}
-				{actions.includes("resenar") && !reviewing && (
-					<button className="btn-lavender" onClick={() => setReviewing(true)}>
-						★ Dejar reseña
+				{actions.includes("resenar") && !reviewing && artistReviewPending && (
+					<button
+						className="btn-lavender"
+						onClick={() => setReviewing("artist")}
+					>
+						★ Reseñar a {other?.name ?? (amHost ? "tu guest" : "tu host")}
+					</button>
+				)}
+				{actions.includes("resenar") && !reviewing && studioReviewPending && (
+					<button
+						className="btn-lavender"
+						onClick={() => setReviewing("studio")}
+					>
+						🏠 Reseñar el estudio
 					</button>
 				)}
 			</div>
@@ -146,7 +166,9 @@ export const BookingActions = ({
 			{reviewing && (
 				<div style={{ marginTop: "0.75rem" }}>
 					<div className="section-label">
-						Reseña a {other?.name ?? (amHost ? "tu guest" : "tu host")}
+						{reviewing === "studio"
+							? `Reseña al estudio ${studio?.name ?? ""}`
+							: `Reseña a ${other?.name ?? (amHost ? "tu guest" : "tu host")}`}
 					</div>
 					<StarPicker value={score} onChange={setScore} />
 					<div className="chips" style={{ margin: "0.5rem 0" }}>
@@ -184,10 +206,15 @@ export const BookingActions = ({
 								"review",
 								() =>
 									send((c, reviewer, o) =>
-										c.review_artist(
-											{ reviewer, ...id, score, tags, comment },
-											o,
-										),
+										reviewing === "studio"
+											? c.review_studio(
+													{ guest: reviewer, ...id, score, tags, comment },
+													o,
+												)
+											: c.review_artist(
+													{ reviewer, ...id, score, tags, comment },
+													o,
+												),
 									),
 								"Reseña guardada on-chain. Ya no se puede borrar ni editar.",
 							)

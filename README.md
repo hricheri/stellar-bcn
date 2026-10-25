@@ -95,9 +95,9 @@ npm start
 
 El primer `npm start` hace todo esto solo:
 
-1. Crea y fondea en testnet las cuentas `me`, `bea`, `cata` y `dani`.
+1. Crea y fondea en testnet una cuenta `deployer` (solo despliega), las de 9 artistas y una de cliente.
 2. Compila y despliega `tattoo_guest_spot`.
-3. Carga **datos de ejemplo** (bloque `after_deploy` de `environments.toml`): 4 artistas, estudios en Berlín, CDMX, Lisboa y Barcelona, tres estancias completas con reseñas (Dani y Cata quedan *establecidxs*), una reserva pendiente en tu estudio, likes y un mensaje.
+3. Carga **datos de ejemplo** basados en casos reales (bloque `after_deploy` de `environments.toml`, unas 190 transacciones): 6 estudios en Barcelona, Berlín, Lisboa y Perth (Tattoo Club, 140, Baby, Vision Studio, Marketplace y Casa Angelita), estancias con reseñas de estudios y artistas, reseñas de clientes por QR, una estadía próxima en Lisboa, una propuesta de fechas pendiente, likes y mensajes. El test `demo_seed_replays` repite exactamente las mismas llamadas contra el contrato.
 4. Levanta la app en `http://localhost:5173`.
 
 ### Variables de entorno (`app/.env`)
@@ -109,6 +109,8 @@ El primer `npm start` hace todo esto solo:
 | `PUBLIC_STELLAR_NETWORK_PASSPHRASE` | `Test SDF Network ; September 2015` |
 | `PUBLIC_STELLAR_RPC_URL` | `https://soroban-testnet.stellar.org` |
 | `PUBLIC_STELLAR_HORIZON_URL` | `https://horizon-testnet.stellar.org` |
+
+> **Nota sobre testnet:** el contrato no extiende el TTL de sus datos, porque hoy en testnet la renta para mantener el código vivo 30 días cuesta más XLM del que da Friendbot. Si el contrato o algún dato se archiva, se recupera con `stellar contract restore`.
 
 ### Tests del contrato
 
