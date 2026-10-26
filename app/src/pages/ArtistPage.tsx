@@ -139,7 +139,7 @@ const ArtistPage = () => {
 					{profile?.bio && (
 						<p style={{ margin: "0.85rem 0 0" }}>{profile.bio}</p>
 					)}
-					{reputationOf(a).home_swap_unlocked && (
+					{reputationOf(a).home_swap_unlocked && profile?.home_description && (
 						<div className="chips" style={{ marginTop: "0.6rem" }}>
 							<span className="pill pill-lavender">
 								🏠 Can host at home too

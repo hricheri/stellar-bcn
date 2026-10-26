@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useProfileOf } from "../hooks/useProfiles"
 import { useArtist, useBookings, useSend, useSpots } from "../hooks/useTattoo"
 import { useWallet } from "../hooks/useWallet"
 import {
@@ -27,7 +28,13 @@ export const StudioDates = ({ studios }: { studios: Studio[] }) => {
 	const [error, setError] = useState<string>()
 	const [hash, setHash] = useState<string>()
 
-	const unlocked = me.data ? reputationOf(me.data).home_swap_unlocked : false
+	const myProfile = useProfileOf(address)
+	// Home dates only once the home is unlocked and filled in on my profile
+	const hasHome = !!(
+		myProfile?.home_description.trim() || myProfile?.home_photo_path
+	)
+	const unlocked =
+		hasHome && (me.data ? reputationOf(me.data).home_swap_unlocked : false)
 	// 0 = only my home
 	const selected = studioId ?? studios[0]?.id ?? 0
 	const homeOnly = selected === 0
@@ -141,7 +148,7 @@ export const StudioDates = ({ studios }: { studios: Studio[] }) => {
 					<div className="cal-foot">
 						<div>
 							<span className="cal-legend">
-								<span className="cal-swatch free" /> Free
+								<span className="cal-swatch free" /> Availability
 							</span>
 							<span className="cal-legend">
 								<span className="cal-swatch new" /> Not published yet
@@ -178,7 +185,7 @@ export const StudioDates = ({ studios }: { studios: Studio[] }) => {
 				>
 					{busy ||
 						(pending.length === 0
-							? "Tap the days your studio is free"
+							? "Tap the days your studio is available"
 							: `Publish ${pending.length} ${pending.length === 1 ? "day" : "days"}`)}
 				</button>
 				<ErrorNotice error={error} />
