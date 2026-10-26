@@ -88,7 +88,7 @@ export const MyStudioCard = ({ me }: { me: string }) => {
 						Want to share your studio with the community? Create it here so
 						other artists can find it!
 					</p>
-					<Link to="/perfil#mi-estudio" className="btn-lime">
+					<Link to="/perfil?create#mi-estudio" className="btn-lime">
 						+ Create my studio
 					</Link>
 				</div>

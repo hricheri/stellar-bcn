@@ -1,5 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query"
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { useSearchParams } from "react-router-dom"
 import { useAuth } from "../hooks/useAuth"
 import {
 	usePhotoUrl,
@@ -328,7 +329,9 @@ const CreateStudio = ({ me }: { me: Artist }) => {
 export const PublishStudio = ({ me }: { me: Artist }) => {
 	const studios = useStudios()
 	const artists = useArtists()
-	const [creating, setCreating] = useState(false)
+	// Collapsed until you tap Create, unless you came here to create it
+	const [params] = useSearchParams()
+	const [creating, setCreating] = useState(params.has("create"))
 	const byAddress = useMemo(
 		() => new Map((artists.data ?? []).map((a) => [a.address, a])),
 		[artists.data],
@@ -336,20 +339,38 @@ export const PublishStudio = ({ me }: { me: Artist }) => {
 	const mine = (studios.data ?? []).filter((s) =>
 		s.members.includes(me.address),
 	)
+	// Once the new studio shows up, the form closes
+	const count = mine.length
+	const before = useRef(count)
+	useEffect(() => {
+		if (count > before.current) setCreating(false)
+		before.current = count
+	}, [count])
 
 	return (
 		<>
 			{mine.map((s) => (
 				<StudioPanel key={s.id} studio={s} me={me} artists={byAddress} />
 			))}
-			{mine.length === 0 && (
-				<p className="section-sub">
-					Want to share your studio with the community? Create it here and set
-					its availability!
-				</p>
-			)}
-			{creating || mine.length === 0 ? (
-				<CreateStudio me={me} />
+			{mine.length === 0 && !creating ? (
+				<section className="ts-card">
+					<div className="ts-card-body">
+						<p style={{ marginTop: 0, fontWeight: 700 }}>
+							Want to share your studio with the community? Create it here so
+							other artists can find it!
+						</p>
+						<button className="btn-lime" onClick={() => setCreating(true)}>
+							+ Create my studio
+						</button>
+					</div>
+				</section>
+			) : creating ? (
+				<>
+					<CreateStudio me={me} />
+					<button className="btn-ghost" onClick={() => setCreating(false)}>
+						Cancel
+					</button>
+				</>
 			) : (
 				<button className="btn-ghost" onClick={() => setCreating(true)}>
 					+ Create another studio
