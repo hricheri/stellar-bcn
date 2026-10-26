@@ -29,7 +29,6 @@ import { useWallet } from "../hooks/useWallet"
 import { loadSeen, saveSeen, type Seen } from "../lib/favoritesSeen"
 import {
 	type Artist,
-	formatRange,
 	isEstablished,
 	type Spot,
 	SPOT_OPEN,
@@ -38,7 +37,7 @@ import {
 import { freeDays, sharedDays } from "../lib/travel"
 
 // TATTOO APP: my favorites as flip cards, like in the Swaps of the hackathon
-// version. Front: their studio and what's new (dates, trips, reviews, unread
+// version. Front: their studio and what's new (dates, reviews, unread
 // messages). Back: the chat, their dates and their reviews.
 
 interface TripRange {
@@ -120,7 +119,6 @@ const FavoriteCard = ({
 
 	const free = spots.filter((s) => s.status === SPOT_OPEN)
 	const newSpots = seen ? free.filter((s) => !seen.spots.includes(s.id)) : []
-	const newTrips = seen ? trips.filter((t) => !seen.trips.includes(t.key)) : []
 	const newReviews = seen ? Math.max(0, a.review_count - seen.reviews) : 0
 	// Their studio availability that fall on the days I can travel
 	const shared = sharedDays(travel, freeDays(spots))
@@ -201,12 +199,6 @@ const FavoriteCard = ({
 								{kind === "likedMe" && !likedBack && (
 									<span className="pill pill-outline-dark">♥ Liked you</span>
 								)}
-								{trips.map((t) => (
-									<span key={t.key} className="chip chip-trip">
-										✈ Available to guest {formatRange(t.start, t.end)}
-										{newTrips.includes(t) && <b> · new</b>}
-									</span>
-								))}
 								{newReviews > 0 && (
 									<span className="chip chip-full">
 										★ {newReviews} new {newReviews === 1 ? "review" : "reviews"}
@@ -261,13 +253,6 @@ const FavoriteCard = ({
 						)}
 						{tab === "dates" && (
 							<>
-								{trips.length > 0 && (
-									<p className="hint" style={{ marginTop: 0 }}>
-										{a.name} is available to guest{" "}
-										{trips.map((t) => formatRange(t.start, t.end)).join(", ")}.
-										If your studio is available then, offer it in the chat.
-									</p>
-								)}
 								{studio ? (
 									<ProposeDates host={a.address} studioId={studio.id} inline />
 								) : (
@@ -417,7 +402,7 @@ const Favorites = () => {
 					save it here.
 				</div>
 			)}
-			{section("liked", "♡ My favorites", "New dates, trips and reviews")}
+			{section("liked", "♡ My favorites", "New dates and reviews")}
 			{section("likedMe", "They liked you", "Like them back to stay updated")}
 		</>
 	)
