@@ -11,6 +11,9 @@
 // runs.
 
 import { execSync } from "node:child_process"
+import { existsSync, readdirSync, readFileSync } from "node:fs"
+import { homedir } from "node:os"
+import { dirname, join } from "node:path"
 import { Keypair } from "@stellar/stellar-sdk"
 import { createClient } from "@supabase/supabase-js"
 
@@ -46,18 +49,55 @@ const must = ({ data, error }) => {
 	return data
 }
 
-// Scaffold keeps the project's keys in .config/stellar. Newer Stellar CLIs
-// have `keys secret`, older ones `keys show`.
+// Where the Stellar CLI keeps identities: Scaffold may use the project's own
+// config folder, otherwise it's the user's one. We look for <name>.toml.
+const configDirs = () => {
+	const found = new Set()
+	const walk = (dir, depth) => {
+		if (depth < 0 || !existsSync(dir)) return
+		for (const e of readdirSync(dir, { withFileTypes: true })) {
+			if (
+				!e.isDirectory() ||
+				["node_modules", "target", ".git"].includes(e.name)
+			)
+				continue
+			const full = join(dir, e.name)
+			if (e.name === "identity") found.add(dirname(full))
+			else walk(full, depth - 1)
+		}
+	}
+	walk(process.cwd(), 4)
+	const home = homedir()
+	for (const d of [
+		process.env.XDG_CONFIG_HOME && join(process.env.XDG_CONFIG_HOME, "stellar"),
+		join(home, ".config", "stellar"),
+		join(home, "Library", "Application Support", "stellar"),
+		join(home, ".stellar"),
+		join(home, ".soroban"),
+	])
+		if (d && existsSync(join(d, "identity"))) found.add(d)
+	return [...found]
+}
+const DIRS = configDirs()
+
 const secretOf = (id) => {
-	let last
-	for (const dir of [".config/stellar", ".stellar", ""])
-		for (const sub of ["secret", "show"]) {
-			const cmd = `stellar keys ${sub} ${id}${dir ? ` --config-dir ${dir}` : ""}`
+	let last = "no identity folders found"
+	for (const dir of DIRS) {
+		const file = join(dir, "identity", `${id}.toml`)
+		if (!existsSync(file)) continue
+		// A plain secret key in the file
+		const inFile = readFileSync(file, "utf8").match(/S[A-Z2-7]{55}/)?.[0]
+		if (inFile) return inFile
+		// A seed phrase: the CLI turns it into the key
+		for (const sub of ["secret", "show"])
 			try {
-				const out = execSync(cmd, {
-					encoding: "utf8",
-					stdio: ["ignore", "pipe", "pipe"],
-				})
+				const out = execSync(
+					`stellar keys ${sub} ${id} --config-dir "${dir}"`,
+					{
+						encoding: "utf8",
+						stdio: ["ignore", "pipe", "pipe"],
+					},
+				)
 				const key = out.match(/S[A-Z2-7]{55}/)?.[0]
 				if (key) return key
 			} catch (e) {
@@ -66,8 +106,8 @@ const secretOf = (id) => {
 					.split("\n")
 					.pop()
 			}
-		}
-	throw new Error(`No key for ${id}: ${last ?? "not found"}`)
+	}
+	throw new Error(`No key for ${id} (${last})`)
 }
 
 const rows = []
@@ -107,4 +147,5 @@ for (const [id, name, city, instagram] of ARTISTS) {
 		rows.push({ artist: name, email: login, password: `ERROR: ${e.message}` })
 	}
 }
+console.log("Keys looked for in:", DIRS.join(", ") || "nowhere")
 console.table(rows)
