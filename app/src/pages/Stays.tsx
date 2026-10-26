@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { Link } from "react-router-dom"
+import { AccessView } from "../components/Access"
 import { BookingActions } from "../components/BookingActions"
 import { Chat } from "../components/Chat"
 import { MyStudioCard } from "../components/MyStudioCard"
@@ -83,6 +84,7 @@ const StayRow = ({
 	other,
 	studio,
 	city,
+	home,
 }: {
 	b: Booking
 	side: Side
@@ -90,6 +92,8 @@ const StayRow = ({
 	other?: Artist
 	studio?: Studio
 	city: string
+	/** The stay includes the host's home */
+	home: boolean
 }) => {
 	const [open, setOpen] = useState<"chat" | "details">()
 	const image = useStudioImage(studio)
@@ -156,10 +160,14 @@ const StayRow = ({
 					<div>
 						<b>When:</b> {formatRange(b.start, b.end)}
 					</div>
-					<p className="hint">
-						Share the exact address and how to get in through the chat: it's
-						private, only the two of you can read it.
-					</p>
+					{side === "guest" ? (
+						<AccessView host={b.host} studioId={b.studio_id} home={home} />
+					) : (
+						<p className="hint">
+							Your guest sees your address and access instructions from your
+							profile. Anything else, tell them in the chat.
+						</p>
+					)}
 					<div className="alert alert-info">
 						📸 Post the guest artist graphic before{" "}
 						{formatDate(promoDeadline(b.start))}, so clients know the dates.
@@ -307,6 +315,7 @@ const Stays = ({ side }: { side: Side }) => {
 				other={other}
 				studio={studio}
 				city={studio?.city ?? spot?.city ?? other?.city ?? ""}
+				home={!!spot && spot.kind !== "studio"}
 			/>
 		)
 	}

@@ -169,6 +169,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 					.from("photos")
 					.remove(files.map((f) => `${userId}/${f.name}`)),
 			)
+		const access = must(
+			await supabase.storage.from("access").list(userId, { limit: 1000 }),
+		)
+		if (access.length)
+			must(
+				await supabase.storage
+					.from("access")
+					.remove(access.map((f) => `${userId}/${f.name}`)),
+			)
 		must(await supabase.rpc("delete_my_account"))
 		await signOut()
 	}, [userId, signOut])

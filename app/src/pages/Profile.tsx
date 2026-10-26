@@ -1,6 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query"
 import { useEffect, useState } from "react"
 import { Link, Navigate, useLocation } from "react-router-dom"
+import { AccessEditor } from "../components/Access"
 import { AmenityPicker } from "../components/AmenityPicker"
 import { PhotoPicker } from "../components/PhotoPicker"
 import { PublishStudio } from "../components/PublishStudio"
@@ -14,6 +15,7 @@ import {
 	TierBadge,
 } from "../components/TattooUI"
 import { useAuth } from "../hooks/useAuth"
+import { usePhotoUrl } from "../hooks/useProfiles"
 import { useArtist, useReviews, useSend, useStudios } from "../hooks/useTattoo"
 import { useWallet } from "../hooks/useWallet"
 import { must, type Profile as ProfileRow, supabase } from "../lib/supabase"
@@ -246,6 +248,69 @@ const EditAbout = ({
 	)
 }
 
+/** Home photo and description, shown when you offer your home */
+const HomeEditor = ({ row }: { row: ProfileRow }) => {
+	const queryClient = useQueryClient()
+	const photo = usePhotoUrl(row.home_photo_path)
+	const [text, setText] = useState<string>()
+	const [busy, setBusy] = useState(false)
+	const [error, setError] = useState<string>()
+
+	const save = async (patch: Partial<ProfileRow>) => {
+		must(await supabase.from("profiles").update(patch).eq("id", row.id))
+		await queryClient.invalidateQueries({ queryKey: ["profile"] })
+		await queryClient.invalidateQueries({ queryKey: ["profiles"] })
+	}
+
+	return (
+		<>
+			{photo.data && (
+				<div className="card-photo card-photo-home">
+					<img src={photo.data} alt="My home" />
+				</div>
+			)}
+			<div className="ts-card-body" style={{ paddingBottom: 0 }}>
+				<PhotoPicker
+					name="home"
+					previous={row.home_photo_path}
+					label={
+						row.home_photo_path ? "📷 Change home photo" : "📷 Add a home photo"
+					}
+					onUploaded={(home_photo_path) => save({ home_photo_path })}
+				/>
+				<div className="field" style={{ marginTop: "0.75rem" }}>
+					<label htmlFor="home-description">About your home</label>
+					<textarea
+						id="home-description"
+						rows={4}
+						maxLength={800}
+						placeholder="Tell guests what they should know: pets, roommates, stairs, smoking, quiet hours, how far the studio is..."
+						value={text ?? row.home_description}
+						onChange={(e) => setText(e.target.value)}
+					/>
+				</div>
+				{text !== undefined && text !== row.home_description && (
+					<button
+						className="btn-lime"
+						disabled={busy}
+						onClick={() => {
+							setBusy(true)
+							setError(undefined)
+							save({ home_description: text.trim() })
+								.then(() => setText(undefined))
+								.catch((e: Error) => setError(e.message))
+								.finally(() => setBusy(false))
+						}}
+					>
+						{busy ? "Saving..." : "Save"}
+					</button>
+				)}
+				<ErrorNotice error={error} />
+			</div>
+		</>
+	)
+}
+
 /** Email, password and deleting the account */
 const AccountSection = () => {
 	const { session, signOut, deleteAccount, resetPassword } = useAuth()
@@ -445,6 +510,7 @@ const Profile = () => {
 				<h2>My home</h2>
 			</div>
 			<section className="ts-card">
+				{profile && <HomeEditor row={profile} />}
 				<div className="ts-card-body">
 					{unlocked ? (
 						<p style={{ marginTop: 0 }}>
@@ -457,6 +523,19 @@ const Profile = () => {
 						</p>
 					)}
 					<HomeSwapProgress artist={a} />
+				</div>
+			</section>
+
+			{/* Access instructions */}
+			<div className="split-title" id="acceso">
+				<h2>Access instructions</h2>
+				<span className="hint">
+					🔒 Only guests with a confirmed stay see them
+				</span>
+			</div>
+			<section className="ts-card">
+				<div className="ts-card-body">
+					<AccessEditor offersHome={unlocked} />
 				</div>
 			</section>
 

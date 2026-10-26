@@ -134,3 +134,24 @@ export const useSaveStudioAddress = () => {
 		[userId, queryClient],
 	)
 }
+
+/** The exact address of a studio I'm a confirmed guest at (null otherwise) */
+export const useStudioAddressForGuest = (studioId: number) => {
+	const { userId } = useAuth()
+	return useQuery({
+		queryKey: ["studio-address", "guest", studioId, userId],
+		enabled: !!userId,
+		refetchInterval: 60_000,
+		queryFn: async () =>
+			(
+				must(
+					await supabase
+						.from("studio_addresses")
+						.select("address, lat, lng")
+						.eq("studio_id", studioId)
+						.neq("set_by", userId!)
+						.limit(1),
+				) as { address: string; lat: number; lng: number }[]
+			)[0] ?? null,
+	})
+}

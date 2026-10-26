@@ -33,6 +33,15 @@ export interface Profile {
 	bio: string
 	avatar_path: string | null
 	wanted: string[]
+	home_description: string
+	home_photo_path: string | null
+}
+
+export interface AccessInfo {
+	owner: string
+	studio_text: string
+	home_text: string
+	photo_paths: string[]
 }
 
 export interface Trip {

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { studioPhoto } from "../lib/photos"
+import { homePhoto, studioPhoto } from "../lib/photos"
 import { must, type Profile, supabase } from "../lib/supabase"
 import { useAuth } from "./useAuth"
 
@@ -18,7 +18,7 @@ export const useProfiles = () => {
 				await supabase
 					.from("profiles")
 					.select(
-						"id, stellar_address, name, city, instagram, bio, avatar_path",
+						"id, stellar_address, name, city, instagram, bio, avatar_path, home_description, home_photo_path",
 					),
 			) as Profile[]
 			return new Map(
@@ -33,14 +33,17 @@ export const useProfiles = () => {
 export const useProfileOf = (address?: string) =>
 	useProfiles().data?.get(address ?? "")
 
+/** "photos" for profiles and studios; "access" for access instructions */
+export type Bucket = "photos" | "access"
+
 /** A temporary link to a private photo */
-export const usePhotoUrl = (path?: string | null) =>
+export const usePhotoUrl = (path?: string | null, bucket: Bucket = "photos") =>
 	useQuery({
-		queryKey: ["photo", path],
+		queryKey: ["photo", bucket, path],
 		enabled: !!path,
 		staleTime: 50 * 60_000,
 		queryFn: async () =>
-			must(await supabase.storage.from("photos").createSignedUrl(path!, 3600))
+			must(await supabase.storage.from(bucket).createSignedUrl(path!, 3600))
 				.signedUrl,
 	})
 
@@ -72,16 +75,23 @@ export async function uploadPhoto(
 	name: string,
 	previous?: string | null,
 	maxSide = 1600,
+	bucket: Bucket = "photos",
 ) {
 	const blob = await shrink(file, maxSide)
 	const path = `${userId}/${name}-${Date.now()}.jpg`
 	must(
 		await supabase.storage
-			.from("photos")
+			.from(bucket)
 			.upload(path, blob, { contentType: "image/jpeg" }),
 	)
-	if (previous) await supabase.storage.from("photos").remove([previous])
+	if (previous) await supabase.storage.from(bucket).remove([previous])
 	return path
+}
+
+/** Their own home photo, or the sample one from public/fotos */
+export const useHomeImage = (artist: { address: string; name: string }) => {
+	const own = usePhotoUrl(useProfileOf(artist.address)?.home_photo_path)
+	return own.data ?? homePhoto(artist.name)
 }
 
 interface StudioPhotoRow {

@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom"
+import { useProfileOf } from "../hooks/useProfiles"
 import { useStudioArea } from "../hooks/useStudioPlace"
 import {
 	useArtists,
@@ -115,6 +116,7 @@ export const CardBack = ({
 	match: m,
 	liked,
 	signedIn,
+	offersHome,
 	me,
 	canChat,
 	onBack,
@@ -126,12 +128,14 @@ export const CardBack = ({
 	match: MatchResult
 	liked: boolean
 	signedIn: boolean
+	offersHome: boolean
 	/** My address, once I have a profile */
 	me?: string
 	canChat: boolean
 	onBack: () => void
 }) => {
 	const profile = `/artista/${a.address}`
+	const home = useProfileOf(a.address)
 	return (
 		<article className="flip-face flip-back ts-card">
 			<div className="flip-back-head">
@@ -167,6 +171,15 @@ export const CardBack = ({
 						<Link to="/entrar">Sign in</Link> to see their reviews and where
 						their studio is.
 					</p>
+				)}
+
+				{signedIn && home?.home_description && offersHome && (
+					<>
+						<div className="section-label">The home</div>
+						<p className="pre" style={{ marginTop: 0 }}>
+							{home.home_description}
+						</p>
+					</>
 				)}
 
 				{studio && (

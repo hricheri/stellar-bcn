@@ -1,6 +1,6 @@
 import { useRef, useState } from "react"
 import { useAuth } from "../hooks/useAuth"
-import { uploadPhoto } from "../hooks/useProfiles"
+import { type Bucket, uploadPhoto } from "../hooks/useProfiles"
 import { ErrorNotice } from "./TattooUI"
 
 /** A button that uploads a private photo to my folder and returns its path */
@@ -9,6 +9,7 @@ export const PhotoPicker = ({
 	previous,
 	label,
 	maxSide,
+	bucket,
 	onUploaded,
 }: {
 	/** File name prefix, e.g. "avatar" or "studio-3" */
@@ -16,6 +17,7 @@ export const PhotoPicker = ({
 	previous?: string | null
 	label: string
 	maxSide?: number
+	bucket?: Bucket
 	onUploaded: (path: string) => Promise<void> | void
 }) => {
 	const { userId } = useAuth()
@@ -29,7 +31,9 @@ export const PhotoPicker = ({
 		setBusy(true)
 		setError(undefined)
 		try {
-			await onUploaded(await uploadPhoto(userId, file, name, previous, maxSide))
+			await onUploaded(
+				await uploadPhoto(userId, file, name, previous, maxSide, bucket),
+			)
 		} catch (e) {
 			setError((e as Error).message)
 		} finally {

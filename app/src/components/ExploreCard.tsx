@@ -1,10 +1,9 @@
 import { useRef, useState } from "react"
 import { Link } from "react-router-dom"
 import { useAuth } from "../hooks/useAuth"
-import { useStudioImage } from "../hooks/useProfiles"
+import { useHomeImage, useStudioImage } from "../hooks/useProfiles"
 import { useSend } from "../hooks/useTattoo"
 import { useWallet } from "../hooks/useWallet"
-import { homePhoto } from "../lib/photos"
 import {
 	amenityLabel,
 	type Artist,
@@ -123,6 +122,7 @@ export const ExploreCard = ({
 	const city = c.studio?.city ?? c.spots[0]?.city ?? a.city
 	const profile = `/artista/${a.address}`
 	const studioImage = useStudioImage(c.studio)
+	const homeImage = useHomeImage(a)
 	const { session, ready } = useAuth()
 	const signedIn = !ready || !!session
 
@@ -170,7 +170,7 @@ export const ExploreCard = ({
 				<article className="flip-face ts-card explore-card">
 					<CardPhoto
 						kind={c.studio ? "studio" : "home"}
-						src={c.studio ? studioImage : homePhoto(a.name)}
+						src={c.studio ? studioImage : homeImage}
 						alt={c.studio?.name ?? `${a.name}'s home`}
 					>
 						<span className="card-city">{city}</span>
@@ -183,7 +183,7 @@ export const ExploreCard = ({
 						</button>
 					</CardPhoto>
 					{c.offersHome && c.studio && (
-						<CardPhoto kind="home" src={homePhoto(a.name)} alt="Home">
+						<CardPhoto kind="home" src={homeImage} alt="Home">
 							<span className="pill pill-lavender card-tag">+ HOME</span>
 						</CardPhoto>
 					)}
@@ -277,6 +277,7 @@ export const ExploreCard = ({
 					match={m}
 					liked={liked}
 					signedIn={signedIn}
+					offersHome={c.offersHome || !c.studio}
 					me={me ? me.address : undefined}
 					canChat={canChat}
 					onBack={() => setFlipped(false)}

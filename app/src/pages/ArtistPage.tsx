@@ -159,6 +159,11 @@ const ArtistPage = () => {
 							</span>
 						</div>
 					)}
+					{reputationOf(a).home_swap_unlocked && profile?.home_description && (
+						<p className="hint pre" style={{ marginTop: "0.5rem" }}>
+							🏠 {profile.home_description}
+						</p>
+					)}
 				</div>
 			</section>
 
