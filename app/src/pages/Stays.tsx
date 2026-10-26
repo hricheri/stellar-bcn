@@ -45,7 +45,7 @@ const COPY: Record<
 	}
 > = {
 	guest: {
-		title: "Guest",
+		title: "Guest spots",
 		subtitle: "The studios you asked to visit, from request to review.",
 		groups: {
 			pending: "Waiting for the studio",
@@ -120,12 +120,24 @@ const StayRow = ({
 				<div style={{ flex: 1, minWidth: 0 }}>
 					<div className="stay-city">{city}</div>
 					<div className="meta">
-						{side === "guest"
-							? `${studio?.name ?? "Home"}${other ? ` · ${other.name}` : ""}`
-							: (other?.name ?? "A guest")}
+						{side === "guest" &&
+							`${studio?.name ?? "Home"}${other ? " · " : ""}`}
+						{other ? (
+							<Link to={`/artista/${other.address}`} className="stay-artist">
+								{other.name}
+							</Link>
+						) : (
+							side === "studio" && "A guest"
+						)}
 					</div>
-					<div className="meta">📅 {formatRange(b.start, b.end)}</div>
 				</div>
+				<Link
+					to={`/calendario?month=${Number(b.start)}`}
+					className="stay-dates"
+					title="See it in my calendar"
+				>
+					📅 {formatRange(b.start, b.end)}
+				</Link>
 				{toDo.length > 0 && <span className="dot-alert" title="To do" />}
 			</div>
 			<div className="card-actions">
@@ -142,7 +154,11 @@ const StayRow = ({
 						className="btn-ghost"
 						onClick={() => setOpen(open === "details" ? undefined : "details")}
 					>
-						{open === "details" ? "Hide details" : "View details"}
+						{open === "details"
+							? "Hide"
+							: side === "guest"
+								? "🔑 Access & graphics"
+								: "📣 Graphics"}
 					</button>
 				)}
 				{toDo.includes("enviar_grafica") && open !== "details" && (
@@ -150,27 +166,11 @@ const StayRow = ({
 						📣 Upload the graphic
 					</button>
 				)}
-				{other && (
-					<Link to={`/artista/${other.address}`} className="btn-ghost">
-						Profile
-					</Link>
-				)}
 			</div>
 			{open === "details" && (
 				<div className="swap-details">
-					<div>
-						<b>Where:</b> {studio ? `${studio.name}, ${city}` : city}
-					</div>
-					<div>
-						<b>When:</b> {formatRange(b.start, b.end)}
-					</div>
-					{side === "guest" ? (
+					{side === "guest" && (
 						<AccessView host={b.host} studioId={b.studio_id} home={home} />
-					) : (
-						<p className="hint">
-							Your guest sees your address and access instructions from your
-							profile. Anything else, tell them in the chat.
-						</p>
 					)}
 					<PromoGraphics booking={b} me={me} other={other} city={city} />
 				</div>

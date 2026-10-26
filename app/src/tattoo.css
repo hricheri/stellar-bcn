@@ -2164,3 +2164,26 @@ a.btn-lavender {
 	background: var(--lavender-300);
 	color: var(--gray-900);
 }
+
+/* Stays: artist name links to the profile, dates go to my calendar */
+.stay-artist {
+	color: inherit;
+	font-weight: 700;
+}
+
+.stay-dates {
+	flex-shrink: 0;
+	align-self: center;
+	padding: 0.35rem 0.75rem;
+	border-radius: var(--radius-pill);
+	background: var(--lavender-50);
+	color: var(--lavender-700);
+	font-size: 0.8rem;
+	font-weight: 800;
+	text-decoration: none;
+	white-space: nowrap;
+}
+
+.stay-dates:hover {
+	background: var(--lavender-100);
+}

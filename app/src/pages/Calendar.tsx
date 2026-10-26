@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react"
-import { Link } from "react-router-dom"
+import { Link, useSearchParams } from "react-router-dom"
 import {
 	DAY,
 	daysBetween,
@@ -50,6 +50,9 @@ const Calendar = () => {
 	const bookings = useBookings(address)
 	const likes = useLikes()
 	const travel = useTravelDays()
+	// "📅 10 - 30 Nov" on a stay opens its month
+	const [params] = useSearchParams()
+	const month = Number(params.get("month")) || undefined
 	const send = useSend()
 
 	const [trip, setTrip] = useState<number[]>()
@@ -191,6 +194,7 @@ const Calendar = () => {
 			<section className="ts-card trip-cal">
 				<div className="ts-card-body">
 					<DayPicker
+						startMonth={month}
 						dayClass={(d) =>
 							[
 								confirmed.has(d)
