@@ -2234,3 +2234,10 @@ a.btn-lavender {
 	text-decoration: none;
 	cursor: default;
 }
+
+/* Back of an Explore card: in my favorites */
+.back-heart {
+	font-size: 1.4rem;
+	line-height: 1;
+	color: var(--gray-900);
+}

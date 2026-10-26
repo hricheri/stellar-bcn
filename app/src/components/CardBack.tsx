@@ -1,40 +1,24 @@
 import { Link } from "react-router-dom"
 import { useProfileOf } from "../hooks/useProfiles"
 import { useStudioArea } from "../hooks/useStudioPlace"
-import {
-	useArtists,
-	useBookings,
-	useReviews,
-	useStudios,
-} from "../hooks/useTattoo"
+import { useArtists, useReviews } from "../hooks/useTattoo"
 import {
 	amenityLabel,
 	type Artist,
-	BK_COMPLETED,
-	BK_CONFIRMED,
-	formatDate,
-	formatRange,
+	isEstablished,
 	type MatchResult,
-	type Spot,
+	missingBasics,
 	type Studio,
-	studioAvg,
-	type StudioTier,
 } from "../lib/tattoo"
 import { AreaMap } from "./AreaMap"
-import { Chat } from "./Chat"
-import {
-	Avatar,
-	BasicsBadge,
-	NameLine,
-	Stars,
-	StudioTierBadge,
-} from "./TattooUI"
+import { Avatar, NameLine, Stars } from "./TattooUI"
 
 // TATTOO APP: the back of an Explore card. Who they are (bigger photo),
-// their best reviews, where the studio is and where they last guested.
+// their best review and where the studio is, more or less. The rest
+// (studio, dates) is already on the front.
 
-/** Their two best reviews that have a comment */
-const BestReviews = ({
+/** Their best written review; the newest one if several tie */
+const BestReview = ({
 	artist,
 	profile,
 }: {
@@ -43,51 +27,25 @@ const BestReviews = ({
 }) => {
 	const reviews = useReviews(artist.address)
 	const artists = useArtists()
-	const names = new Map((artists.data ?? []).map((a) => [a.address, a.name]))
 	const best = [...(reviews.data ?? [])]
 		.filter((r) => r.comment.trim())
 		.sort(
 			(a, b) => b.score - a.score || Number(b.timestamp) - Number(a.timestamp),
-		)
-		.slice(0, 2)
-	if (reviews.isLoading) return <div className="hint">Loading reviews...</div>
-	if (best.length === 0)
-		return <div className="hint">No written reviews yet.</div>
+		)[0]
+	if (!best) return null
+	const from = artists.data?.find((a) => a.address === best.from)?.name
 	return (
-		<Link to={`${profile}?see=reviews`} className="best-reviews">
-			{best.map((r, i) => (
-				<div key={i} className="best-review">
-					<Stars score={r.score} />
-					<p>“{r.comment}”</p>
-					<span className="hint">— {names.get(r.from) ?? "An artist"}</span>
+		<>
+			<div className="section-label">Best review</div>
+			<Link to={`${profile}?see=reviews`} className="best-reviews">
+				<div className="best-review">
+					<Stars score={best.score} />
+					<p>“{best.comment}”</p>
+					<span className="hint">— {from ?? "An artist"}</span>
 				</div>
-			))}
-			<span className="link-more">All reviews →</span>
-		</Link>
-	)
-}
-
-/** Where they did their last guest spot */
-const LastGuestSpot = ({ artist }: { artist: Artist }) => {
-	const bookings = useBookings(artist.address)
-	const studios = useStudios()
-	const now = Date.now() / 1000
-	const last = (bookings.data ?? [])
-		.filter(
-			(b) =>
-				b.guest === artist.address &&
-				(b.status === BK_CONFIRMED || b.status === BK_COMPLETED) &&
-				Number(b.start) <= now,
-		)
-		.sort((a, b) => Number(b.start) - Number(a.start))[0]
-	if (!last) return null
-	const studio = (studios.data ?? []).find((s) => s.id === last.studio_id)
-	return (
-		<div className="meta" style={{ marginTop: "0.6rem" }}>
-			✈ Last guest spot:{" "}
-			<b>{studio ? `${studio.name}, ${studio.city}` : "a studio"}</b> ·{" "}
-			{formatDate(last.start)}
-		</div>
+				<span className="link-more">All reviews →</span>
+			</Link>
+		</>
 	)
 }
 
@@ -110,38 +68,34 @@ const StudioMap = ({ studio }: { studio: Studio }) => {
 export const CardBack = ({
 	artist: a,
 	studio,
-	tier,
-	spots,
 	match: m,
 	liked,
 	signedIn,
 	offersHome,
-	me,
-	canChat,
 	onBack,
 }: {
 	artist: Artist
 	studio?: Studio
-	tier?: StudioTier
-	spots: Spot[]
 	match: MatchResult
 	liked: boolean
 	signedIn: boolean
 	offersHome: boolean
-	/** My address, once I have a profile */
-	me?: string
-	canChat: boolean
 	onBack: () => void
 }) => {
 	const profile = `/artista/${a.address}`
 	const home = useProfileOf(a.address)
+	const missing = studio ? missingBasics(studio) : []
 	return (
 		<article className="flip-face flip-back ts-card">
 			<div className="flip-back-head">
 				<button className="btn-ghost" onClick={onBack}>
 					← Back
 				</button>
-				{liked && <span className="pill pill-dark">♥ In favorites</span>}
+				{liked && (
+					<span className="back-heart" title="In my favorites">
+						♥
+					</span>
+				)}
 			</div>
 			<div className="flip-back-body">
 				<div className="back-who">
@@ -156,9 +110,13 @@ export const CardBack = ({
 
 				{signedIn ? (
 					<>
-						<div className="section-label">Best reviews</div>
-						<BestReviews artist={a} profile={profile} />
-						<LastGuestSpot artist={a} />
+						{isEstablished(a) && <BestReview artist={a} profile={profile} />}
+						{studio && (
+							<>
+								<div className="section-label">Where</div>
+								<StudioMap studio={studio} />
+							</>
+						)}
 					</>
 				) : (
 					<p className="hint">
@@ -176,50 +134,24 @@ export const CardBack = ({
 					</>
 				)}
 
-				{studio && (
-					<>
-						<div className="section-label">The studio</div>
-						<div className="meta">
-							<b>{studio.name}</b> · ⭐ {studioAvg(studio)} (
-							{studio.review_count}{" "}
-							{studio.review_count === 1 ? "review" : "reviews"}) ·{" "}
-							{studio.members.length}{" "}
-							{studio.members.length === 1 ? "artist" : "artists"}
-						</div>
-						<div className="chips" style={{ margin: "0.35rem 0 0.6rem" }}>
-							{tier && <StudioTierBadge tier={tier} />}
-							<BasicsBadge spot={studio} />
-						</div>
-						{signedIn && <StudioMap studio={studio} />}
-					</>
-				)}
-
-				{signedIn && me && me !== a.address && (
-					<>
-						<div className="section-label">Chat</div>
-						<Chat me={me} other={a} canChat={canChat} />
-					</>
-				)}
-
-				{spots.length > 0 && (
-					<>
-						<div className="section-label">Available dates</div>
-						<div className="chips">
-							{spots.map((s) => (
-								<span key={s.id} className="chip chip-has">
-									{formatRange(s.start, s.end)}
-									{s.kind !== "studio" ? " · + home" : ""}
-								</span>
-							))}
-						</div>
-					</>
-				)}
 				{m.extras.length > 0 && (
 					<>
 						<div className="section-label has">Extras</div>
 						<div className="chips">
 							{m.extras.map((id) => (
 								<span key={id} className="chip chip-has">
+									{amenityLabel(id)}
+								</span>
+							))}
+						</div>
+					</>
+				)}
+				{missing.length > 0 && (
+					<>
+						<div className="section-label missing">Missing</div>
+						<div className="chips">
+							{missing.map((id) => (
+								<span key={id} className="chip chip-missing">
 									{amenityLabel(id)}
 								</span>
 							))}
