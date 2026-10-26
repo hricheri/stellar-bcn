@@ -86,6 +86,16 @@ const Calendar = () => {
 	)
 	const marking = useRangeMarking(tripDays, setTripDays, () => false)
 
+	// I already asked this studio for these days
+	const asked = (a: Alert) =>
+		visits.some(
+			(b) =>
+				b.status === BK_PENDING &&
+				b.studio_id === a.studio?.id &&
+				Number(b.start) <= a.trip.end &&
+				Number(b.end) >= a.trip.start,
+		)
+
 	// Favorites free on my trips, give or take a day
 	const alerts = useMemo<Alert[]>(() => {
 		const liked = new Set(likes.data ?? [])
@@ -167,7 +177,7 @@ const Calendar = () => {
 			{alerts.length > 0 && (
 				<section className="ts-card trip-alerts">
 					<div className="ts-card-body">
-						<h3>✈ Your favorites are free on your trip</h3>
+						<h3>✈ One of your favorites is available!</h3>
 						{alerts.map((a) => (
 							<div key={a.key} className="trip-alert">
 								<div style={{ flex: 1 }}>
@@ -176,15 +186,20 @@ const Calendar = () => {
 										{formatRange(a.trip.start, a.trip.end)}
 									</div>
 								</div>
-								{a.studio && (
-									<button
-										className="btn-lime"
-										disabled={!!busy}
-										onClick={() => void request(a)}
-									>
-										{busy === a.key ? "..." : "Request"}
-									</button>
-								)}
+								{a.studio &&
+									(asked(a) ? (
+										<span className="pill pill-gray">
+											⏳ Waiting confirmation
+										</span>
+									) : (
+										<button
+											className="btn-lime"
+											disabled={!!busy}
+											onClick={() => void request(a)}
+										>
+											{busy === a.key ? "..." : "Request"}
+										</button>
+									))}
 							</div>
 						))}
 					</div>
