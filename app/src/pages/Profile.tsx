@@ -9,11 +9,10 @@ import { ReviewList } from "../components/ReviewList"
 import {
 	Avatar,
 	ErrorNotice,
-	PageTitle,
 	EyeIcon,
+	NameLine,
+	PageTitle,
 	PencilIcon,
-	RatingLine,
-	TierBadge,
 } from "../components/TattooUI"
 import { useAuth } from "../hooks/useAuth"
 import { usePhotoUrl } from "../hooks/useProfiles"
@@ -456,17 +455,13 @@ const Profile = () => {
 					<div className="host-row">
 						<Avatar artist={a} big />
 						<div style={{ flex: 1, minWidth: 0 }}>
-							<div className="name-row">
-								<h1 style={{ fontSize: "1.8rem", margin: 0 }}>{a.name}</h1>
-								<TierBadge artist={a} />
-							</div>
+							<NameLine artist={a} big />
 							<div
 								className="meta"
 								style={{ color: "var(--lavender-700)", fontWeight: 700 }}
 							>
 								{a.city} · {profile?.instagram || a.instagram}
 							</div>
-							<RatingLine artist={a} />
 						</div>
 						<div className="icon-actions">
 							{profile && !editing && (

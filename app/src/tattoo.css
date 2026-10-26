@@ -2135,3 +2135,16 @@ a.btn-lavender {
 	color: white;
 	font-size: 0.85rem;
 }
+
+.good-reviews {
+	font-weight: 800;
+	font-size: 0.9rem;
+	color: var(--gray-900);
+	white-space: nowrap;
+}
+
+.one-line {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}

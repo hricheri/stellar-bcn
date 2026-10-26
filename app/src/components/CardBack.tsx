@@ -25,10 +25,9 @@ import { Chat } from "./Chat"
 import {
 	Avatar,
 	BasicsBadge,
-	RatingLine,
+	NameLine,
 	Stars,
 	StudioTierBadge,
-	TierBadge,
 } from "./TattooUI"
 
 // TATTOO APP: the back of an Explore card. Who they are (bigger photo),
@@ -150,13 +149,8 @@ export const CardBack = ({
 						<Avatar artist={a} xl />
 					</Link>
 					<div style={{ minWidth: 0 }}>
-						<Link to={profile} className="host-name card-name">
-							{a.name}
-						</Link>
+						<NameLine artist={a} to={profile} />
 						<div className="meta">{a.instagram}</div>
-						<div className="meta">
-							<TierBadge artist={a} /> <RatingLine artist={a} />
-						</div>
 					</div>
 				</div>
 

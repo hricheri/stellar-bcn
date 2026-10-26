@@ -4,11 +4,12 @@ import { Chat } from "../components/Chat"
 import { ProposeDates } from "../components/ProposeDates"
 import { ReviewList } from "../components/ReviewList"
 import {
+	About,
 	Avatar,
+	NameLine,
 	PageTitle,
 	Photo,
 	RatingLine,
-	TierBadge,
 } from "../components/TattooUI"
 import { useAuth } from "../hooks/useAuth"
 import { useUnread } from "../hooks/useChat"
@@ -147,12 +148,8 @@ const FavoriteCard = ({
 								<Avatar artist={a} big />
 							</Link>
 							<div style={{ flex: 1, minWidth: 0 }}>
-								<Link to={profile} className="host-name card-name">
-									{a.name}
-								</Link>
-								<div className="meta">
-									{studio?.name ?? "No studio"} · <TierBadge artist={a} />
-								</div>
+								<NameLine artist={a} to={profile} />
+								<About artist={a} studio={studio?.name} />
 							</div>
 						</div>
 

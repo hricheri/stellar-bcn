@@ -1,11 +1,10 @@
 import { useState } from "react"
 import { Link } from "react-router-dom"
 import { usePhotoUrl, useProfileOf } from "../hooks/useProfiles"
-import { txLink } from "../hooks/useTattoo"
+import { txLink, useReviews } from "../hooks/useTattoo"
 import { artistPhoto } from "../lib/photos"
 import {
 	type Artist,
-	formatAvg,
 	HOME_SWAP_MIN_AVG,
 	HOME_SWAP_MIN_REVIEWS,
 	isEstablished,
@@ -139,14 +138,59 @@ export const Stars = ({ score }: { score: number }) => (
 	</span>
 )
 
-/** Nothing until the first review: the Newbie badge already says it */
-export const RatingLine = ({ artist }: { artist: Artist }) =>
-	artist.review_count === 0 ? null : (
-		<span className="meta">
-			<span className="stars">★</span> {formatAvg(artist)} ·{" "}
-			{artist.review_count} {artist.review_count === 1 ? "review" : "reviews"}
+/** "⭐ 3": how many reviews of 4 stars or more. Nothing before the first one */
+export const RatingLine = ({ artist }: { artist: Artist }) => {
+	const reviews = useReviews(
+		artist.review_count > 0 ? artist.address : undefined,
+	)
+	const good = (reviews.data ?? []).filter((r) => r.score >= 4).length
+	if (good === 0) return null
+	return (
+		<span className="good-reviews" title={`${good} reviews of 4★ or more`}>
+			⭐ {good}
 		</span>
 	)
+}
+
+/** One line under the name: their description, or their studio */
+export const About = ({
+	artist,
+	studio,
+}: {
+	artist: Artist
+	studio?: string
+}) => {
+	const bio = useProfileOf(artist.address)?.bio
+	const text =
+		bio ||
+		(studio && studio.toLowerCase() !== artist.name.toLowerCase() ? studio : "")
+	return text ? <div className="meta one-line">{text}</div> : null
+}
+
+/** Name with its badge and good reviews beside it */
+export const NameLine = ({
+	artist,
+	to,
+	big,
+}: {
+	artist: Artist
+	to?: string
+	big?: boolean
+}) => (
+	<div className="name-row">
+		{to ? (
+			<Link to={to} className="host-name card-name">
+				{artist.name}
+			</Link>
+		) : big ? (
+			<h1 style={{ fontSize: "1.8rem", margin: 0 }}>{artist.name}</h1>
+		) : (
+			<span className="host-name">{artist.name}</span>
+		)}
+		<TierBadge artist={artist} />
+		<RatingLine artist={artist} />
+	</div>
+)
 
 export const ArtistRow = ({
 	artist,
@@ -158,23 +202,10 @@ export const ArtistRow = ({
 	<div className="host-row">
 		<Avatar artist={artist} />
 		<div style={{ flex: 1, minWidth: 0 }}>
-			<div
-				style={{
-					display: "flex",
-					gap: "0.5rem",
-					alignItems: "center",
-					flexWrap: "wrap",
-				}}
-			>
-				<Link to={`/artista/${artist.address}`} className="host-name">
-					{artist.name}
-				</Link>
-				<TierBadge artist={artist} />
-			</div>
+			<NameLine artist={artist} to={`/artista/${artist.address}`} />
 			<div className="meta">
 				{artist.city} · {artist.instagram}
 			</div>
-			<RatingLine artist={artist} />
 		</div>
 		{extra}
 	</div>

@@ -9,10 +9,9 @@ import { SpotCard } from "../components/SpotCard"
 import {
 	Avatar,
 	BasicsBadge,
+	NameLine,
 	Photo,
-	RatingLine,
 	Stars,
-	TierBadge,
 } from "../components/TattooUI"
 import { useProfileOf, useStudioImage } from "../hooks/useProfiles"
 import { useStudioArea } from "../hooks/useStudioPlace"
@@ -123,24 +122,12 @@ const ArtistPage = () => {
 					<div className="host-row">
 						<Avatar artist={a} xl />
 						<div style={{ minWidth: 0 }}>
-							<h1 style={{ fontSize: "1.8rem", margin: 0 }}>{a.name}</h1>
+							<NameLine artist={a} big />
 							<div
 								className="meta"
 								style={{ color: "var(--lavender-700)", fontWeight: 700 }}
 							>
 								{a.city} · {a.instagram}
-							</div>
-							<div
-								style={{
-									display: "flex",
-									gap: "0.5rem",
-									alignItems: "center",
-									marginTop: "0.25rem",
-									flexWrap: "wrap",
-								}}
-							>
-								<TierBadge artist={a} />
-								<RatingLine artist={a} />
 							</div>
 						</div>
 						{!isMe && (

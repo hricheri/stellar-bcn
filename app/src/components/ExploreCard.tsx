@@ -17,11 +17,12 @@ import {
 import { CardBack } from "./CardBack"
 import { ProposeDates } from "./ProposeDates"
 import {
+	About,
 	Avatar,
 	CalendarIcon,
 	ErrorNotice,
+	NameLine,
 	Photo,
-	TierBadge,
 	TxNotice,
 } from "./TattooUI"
 import { WantToVisit } from "./VisitRequest"
@@ -239,12 +240,8 @@ export const ExploreCard = ({
 								<Avatar artist={a} big />
 							</Link>
 							<div style={{ flex: 1, minWidth: 0 }}>
-								<Link to={profile} className="host-name card-name">
-									{a.name}
-								</Link>
-								<div className="meta">
-									{c.studio?.name ?? "Home only"} · <TierBadge artist={a} />
-								</div>
+								<NameLine artist={a} to={profile} />
+								<About artist={a} studio={c.studio?.name} />
 							</div>
 							<button
 								className={`cal-btn${panel === "dates" ? " on" : ""}`}
