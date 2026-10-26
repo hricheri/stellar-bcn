@@ -189,20 +189,22 @@ export const ProposeDates = ({
 							? "Now tap your last day (or send it as a single day)."
 							: formatRange(from, to)}
 			</p>
-			{hash ? (
-				<div className="alert alert-ok">
-					✓ Request sent to {studioName}! They'll answer you in Guest spots.
-				</div>
-			) : (
-				<button
-					className="btn-lavender btn-block"
-					disabled={busy || from === undefined}
-					onClick={() => void propose()}
-				>
-					{busy ? "Sending..." : "✈ I want to visit!"}
-				</button>
-			)}
-			<ErrorNotice error={error} />
+			<div className="propose-send">
+				{hash ? (
+					<div className="alert alert-ok">
+						✓ Request sent to {studioName}! They'll answer you in Guest spots.
+					</div>
+				) : (
+					<button
+						className="btn-lavender btn-block"
+						disabled={busy || from === undefined}
+						onClick={() => void propose()}
+					>
+						{busy ? "Sending..." : "✈ I want to visit!"}
+					</button>
+				)}
+				<ErrorNotice error={error} />
+			</div>
 		</div>
 	)
 }
