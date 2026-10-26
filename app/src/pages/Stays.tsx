@@ -168,10 +168,14 @@ const StayRow = ({
 							profile. Anything else, tell them in the chat.
 						</p>
 					)}
-					<div className="alert alert-info">
-						📸 Post the guest artist graphic before{" "}
-						{formatDate(promoDeadline(b.start))}, so clients know the dates.
-					</div>
+					{(b.host === me ? b.host_promo_sent : b.guest_promo_sent) ? (
+						<div className="alert alert-ok">✓ You posted the graphic.</div>
+					) : (
+						<div className="alert alert-info">
+							📸 Post the guest artist graphic before{" "}
+							{formatDate(promoDeadline(b.start))}, so clients know the dates.
+						</div>
+					)}
 				</div>
 			)}
 			<div style={{ marginTop: "0.5rem" }}>
