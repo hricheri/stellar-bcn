@@ -20,10 +20,13 @@ export interface CheckedAddress {
 export const AddressInput = ({
 	initial = "",
 	city,
+	onCity,
 	onChecked,
 }: {
 	initial?: string
 	city?: string
+	/** The address turned out to be in another city */
+	onCity?: (city: string) => void
 	onChecked: (a?: CheckedAddress) => void
 }) => {
 	const [address, setAddress] = useState(initial)
@@ -35,11 +38,20 @@ export const AddressInput = ({
 		setBusy(true)
 		setError(undefined)
 		try {
-			const q =
+			const withCity =
 				city && !address.toLowerCase().includes(city.toLowerCase())
 					? `${address}, ${city}`
 					: address
-			const place = await geocode(q)
+			// If the city field is wrong ("Bolivia"), the address alone may work
+			const place = await geocode(withCity).catch((e: Error) =>
+				withCity === address ? Promise.reject(e) : geocode(address),
+			)
+			if (
+				onCity &&
+				place.city &&
+				place.city.toLowerCase() !== city?.trim().toLowerCase()
+			)
+				onCity(place.city)
 			setFound(place)
 			onChecked({ address: address.trim(), place })
 		} catch (e) {

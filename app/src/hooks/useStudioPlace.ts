@@ -23,7 +23,7 @@ interface PlaceRow extends Place {
 /** Looks up an address on OpenStreetMap */
 export const geocode = async (
 	q: string,
-): Promise<Place & { label: string }> => {
+): Promise<Place & { label: string; city: string }> => {
 	const res = await fetch(
 		`https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=1&q=${encodeURIComponent(q)}`,
 		{ headers: { "Accept-Language": "en" } },
@@ -45,6 +45,7 @@ export const geocode = async (
 		lng: Number(hit.lon),
 		area: [hood, city].filter(Boolean).join(", "),
 		label: hit.display_name,
+		city,
 	}
 }
 

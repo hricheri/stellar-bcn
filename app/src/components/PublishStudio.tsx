@@ -300,7 +300,7 @@ const CreateStudio = ({ me }: { me: Artist }) => {
 						/>
 					</div>
 				</div>
-				<AddressInput city={city} onChecked={setAddress} />
+				<AddressInput city={city} onCity={setCity} onChecked={setAddress} />
 				<div className="section-label">What does your studio offer?</div>
 				<AmenityPicker selected={amenities} onChange={setAmenities} />
 				<button
