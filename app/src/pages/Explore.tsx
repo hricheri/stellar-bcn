@@ -6,6 +6,7 @@ import { useLike, useLikedMe, useLikes } from "../hooks/useLikes"
 import { useArtist, useArtists, useSpots, useStudios } from "../hooks/useTattoo"
 import { useTravelDays } from "../hooks/useTrips"
 import { useWallet } from "../hooks/useWallet"
+import { loadSeen, seenOnLike } from "../lib/favoritesSeen"
 import {
 	type Artist,
 	isEstablished,
@@ -213,8 +214,20 @@ const Explore = () => {
 	)
 
 	const liked = new Set([...(likes.data ?? []), ...justLiked])
+	// Favorites from before this visit: they only come back with new dates.
+	// Frozen on arrival, so a card doesn't vanish while I'm looking at it.
+	const [likedBefore, setLikedBefore] = useState<Set<string>>()
+	useEffect(() => {
+		if (likes.data && !likedBefore) setLikedBefore(new Set(likes.data))
+	}, [likes.data, likedBefore])
+	const seen = useMemo(loadSeen, [])
+	const hasNews = (c: Candidate) => {
+		const known = seen[c.artist.address]?.spots ?? []
+		return c.spots.some((s) => !known.includes(s.id))
+	}
 	const shown = candidates.filter((c) => {
 		if (dismissed.includes(cardId(c))) return false
+		if (likedBefore?.has(c.artist.address) && !hasNews(c)) return false
 		switch (filter.mode) {
 			case "dates":
 				return !hasProfile || c.sharedDays > 0
@@ -229,6 +242,12 @@ const Explore = () => {
 				return true
 		}
 	})
+	// Artists I haven't liked yet come first
+	shown.sort(
+		(x, y) =>
+			Number(!!likedBefore?.has(x.artist.address)) -
+			Number(!!likedBefore?.has(y.artist.address)),
+	)
 	const at = shown.length ? Math.min(index, shown.length - 1) : 0
 	const current = shown[at]
 	const go = (step: number) => {
@@ -273,6 +292,11 @@ const Explore = () => {
 		go(1)
 		if (liked.has(who.address)) return
 		setJustLiked((l) => [...l, who.address])
+		seenOnLike(
+			who.address,
+			current.spots.map((s) => s.id),
+			who.review_count,
+		)
 		setNotice(`♥ ${who.name} is in your favorites.`)
 		try {
 			if (await likeArtist(who.address)) {

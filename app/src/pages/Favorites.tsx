@@ -25,6 +25,7 @@ import {
 } from "../hooks/useTattoo"
 import { useAllTrips, useTravelDays } from "../hooks/useTrips"
 import { useWallet } from "../hooks/useWallet"
+import { loadSeen, saveSeen, type Seen } from "../lib/favoritesSeen"
 import {
 	type Artist,
 	formatRange,
@@ -39,39 +40,10 @@ import { freeDays, sharedDays } from "../lib/travel"
 // version. Front: their studio and what's new (dates, trips, reviews, unread
 // messages). Back: the chat, their dates and their reviews.
 
-const SEEN_KEY = "tattoo-favorites-seen"
-
-interface Seen {
-	spots: number[]
-	reviews: number
-	trips: string[]
-}
-
 interface TripRange {
 	start: number
 	end: number
 	key: string
-}
-
-const loadSeen = (): Record<string, Seen> => {
-	try {
-		return JSON.parse(localStorage.getItem(SEEN_KEY) ?? "{}") as Record<
-			string,
-			Seen
-		>
-	} catch {
-		return {}
-	}
-}
-
-const saveSeen = (who: string, s: Seen) => {
-	const all = loadSeen()
-	all[who] = s
-	try {
-		localStorage.setItem(SEEN_KEY, JSON.stringify(all))
-	} catch {
-		// Private mode: news just show again next time
-	}
 }
 
 const unix = (date: string) => Date.parse(`${date}T00:00:00Z`) / 1000
