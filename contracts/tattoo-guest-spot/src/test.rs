@@ -297,6 +297,51 @@ fn proposed_dates_need_the_studio() {
 }
 
 #[test]
+fn guest_changes_or_cancels_a_request() {
+    let t = setup();
+    let host = artist(&t, "Ana", "Barcelona");
+    let guest = artist(&t, "Bea", "Berlin");
+    let other = artist(&t, "Cris", "Lisbon");
+    let st = studio(&t, &host);
+
+    let id = t.client.propose_dates(&guest, &st, &1_000, &2_000);
+    assert_eq!(
+        t.client.try_change_request(&other, &id, &1_000, &3_000),
+        Err(Ok(Error::NotPartOfBooking))
+    );
+    assert_eq!(
+        t.client.try_change_request(&guest, &id, &3_000, &3_000),
+        Err(Ok(Error::InvalidDates))
+    );
+    t.client.change_request(&guest, &id, &1_000, &3_000);
+    let b = t.client.get_booking(&id).unwrap();
+    assert_eq!((b.start, b.end, b.status), (1_000, 3_000, BookingStatus::Pending));
+
+    t.client.cancel_request(&guest, &id);
+    assert_eq!(
+        t.client.get_booking(&id).unwrap().status,
+        BookingStatus::Cancelled
+    );
+    // Too late to answer it, or change it again
+    assert_eq!(
+        t.client.try_confirm_booking(&host, &id),
+        Err(Ok(Error::WrongBookingStatus))
+    );
+    assert_eq!(
+        t.client.try_change_request(&guest, &id, &1_000, &2_000),
+        Err(Ok(Error::WrongBookingStatus))
+    );
+
+    // Once confirmed, the dates are set
+    let next = t.client.propose_dates(&guest, &st, &5_000, &6_000);
+    t.client.confirm_booking(&host, &next);
+    assert_eq!(
+        t.client.try_cancel_request(&guest, &next),
+        Err(Ok(Error::WrongBookingStatus))
+    );
+}
+
+#[test]
 fn likes_become_matches() {
     let t = setup();
     let ana = artist(&t, "Ana", "Barcelona");

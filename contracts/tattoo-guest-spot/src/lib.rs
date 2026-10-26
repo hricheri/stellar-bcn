@@ -137,6 +137,8 @@ pub enum BookingStatus {
     Confirmed = 1,
     Completed = 2,
     Declined = 3,
+    /// The guest took the request back before the host answered
+    Cancelled = 4,
 }
 
 #[contracttype]
@@ -575,6 +577,34 @@ impl TattooGuestSpot {
         Ok(())
     }
 
+    /// The guest changes the dates of a request the host hasn't answered yet
+    pub fn change_request(
+        env: &Env,
+        guest: Address,
+        booking_id: u32,
+        start: u64,
+        end: u64,
+    ) -> Result<(), Error> {
+        guest.require_auth();
+        let mut booking = Self::guest_request(env, &guest, booking_id)?;
+        if end <= start {
+            return Err(Error::InvalidDates);
+        }
+        booking.start = start;
+        booking.end = end;
+        Self::save(env, &DataKey::Booking(booking_id), &booking);
+        Ok(())
+    }
+
+    /// The guest takes back a request the host hasn't answered yet
+    pub fn cancel_request(env: &Env, guest: Address, booking_id: u32) -> Result<(), Error> {
+        guest.require_auth();
+        let mut booking = Self::guest_request(env, &guest, booking_id)?;
+        booking.status = BookingStatus::Cancelled;
+        Self::save(env, &DataKey::Booking(booking_id), &booking);
+        Ok(())
+    }
+
     /// Host or guest marks their "guest artist" social media post as sent
     pub fn mark_promo_sent(env: &Env, artist: Address, booking_id: u32) -> Result<(), Error> {
         artist.require_auth();
@@ -988,6 +1018,18 @@ impl TattooGuestSpot {
                 .unwrap_or(false);
         if booking.host != *host && !studio_artist {
             return Err(Error::NotPartOfBooking);
+        }
+        Ok(booking)
+    }
+
+    /// A request of mine, still waiting for the host
+    fn guest_request(env: &Env, guest: &Address, booking_id: u32) -> Result<Booking, Error> {
+        let booking = Self::get_booking(env, booking_id).ok_or(Error::BookingNotFound)?;
+        if booking.guest != *guest {
+            return Err(Error::NotPartOfBooking);
+        }
+        if booking.status != BookingStatus::Pending || booking.spot_id != NO_SPOT {
+            return Err(Error::WrongBookingStatus);
         }
         Ok(booking)
     }
