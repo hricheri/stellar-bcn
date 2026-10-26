@@ -332,8 +332,24 @@ fn guest_changes_or_cancels_a_request() {
         Err(Ok(Error::WrongBookingStatus))
     );
 
-    // Once confirmed, the dates are set
+    // One request at a time per studio, and no days twice
     let next = t.client.propose_dates(&guest, &st, &5_000, &6_000);
+    assert_eq!(
+        t.client.try_propose_dates(&guest, &st, &8_000, &9_000),
+        Err(Ok(Error::AlreadyRequested))
+    );
+    let other_st = studio(&t, &other);
+    assert_eq!(
+        t.client.try_propose_dates(&guest, &other_st, &6_000, &7_000),
+        Err(Ok(Error::DatesOverlap))
+    );
+    let elsewhere = t.client.propose_dates(&guest, &other_st, &7_000, &7_500);
+    assert_eq!(
+        t.client.try_change_request(&guest, &elsewhere, &5_500, &7_500),
+        Err(Ok(Error::DatesOverlap))
+    );
+
+    // Once confirmed, the dates are set
     t.client.confirm_booking(&host, &next);
     assert_eq!(
         t.client.try_cancel_request(&guest, &next),

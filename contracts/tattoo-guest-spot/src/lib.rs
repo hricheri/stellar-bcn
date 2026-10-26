@@ -530,6 +530,7 @@ impl TattooGuestSpot {
         if end <= start {
             return Err(Error::InvalidDates);
         }
+        Self::check_request(env, &guest, studio_id, start, end, None)?;
         let id = Self::new_booking(
             env,
             NO_SPOT,
@@ -590,6 +591,7 @@ impl TattooGuestSpot {
         if end <= start {
             return Err(Error::InvalidDates);
         }
+        Self::check_request(env, &guest, booking.studio_id, start, end, Some(booking_id))?;
         booking.start = start;
         booking.end = end;
         Self::save(env, &DataKey::Booking(booking_id), &booking);
@@ -1020,6 +1022,35 @@ impl TattooGuestSpot {
             return Err(Error::NotPartOfBooking);
         }
         Ok(booking)
+    }
+
+    /// One request at a time per studio, and never on days I already asked
+    /// for or have a stay. `skip` is the request being changed.
+    fn check_request(
+        env: &Env,
+        guest: &Address,
+        studio_id: u32,
+        start: u64,
+        end: u64,
+        skip: Option<u32>,
+    ) -> Result<(), Error> {
+        for b in Self::list_bookings(env, guest.clone()).iter() {
+            if b.guest != *guest || Some(b.id) == skip {
+                continue;
+            }
+            let active = b.status == BookingStatus::Pending || b.status == BookingStatus::Confirmed;
+            if !active {
+                continue;
+            }
+            if b.status == BookingStatus::Pending && b.studio_id == studio_id {
+                return Err(Error::AlreadyRequested);
+            }
+            // Ends are the last day itself, so touching ranges share a day
+            if b.start <= end && start <= b.end {
+                return Err(Error::DatesOverlap);
+            }
+        }
+        Ok(())
     }
 
     /// A request of mine, still waiting for the host

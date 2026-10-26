@@ -46,4 +46,8 @@ pub enum Error {
     StudioNotFound = 22,
     /// Only the studio's artists can do this
     NotStudioArtist = 23,
+    /// There's already a request waiting at this studio
+    AlreadyRequested = 24,
+    /// The dates overlap another request or stay of yours
+    DatesOverlap = 25,
 }
