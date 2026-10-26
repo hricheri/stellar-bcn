@@ -9,7 +9,6 @@ import { ReviewList } from "../components/ReviewList"
 import {
 	Avatar,
 	ErrorNotice,
-	HomeSwapProgress,
 	PageTitle,
 	RatingLine,
 	TierBadge,
@@ -19,7 +18,12 @@ import { usePhotoUrl } from "../hooks/useProfiles"
 import { useArtist, useReviews, useSend, useStudios } from "../hooks/useTattoo"
 import { useWallet } from "../hooks/useWallet"
 import { must, type Profile as ProfileRow, supabase } from "../lib/supabase"
-import { loadWishlist, reputationOf, saveWishlist } from "../lib/tattoo"
+import {
+	HOME_SWAP_MIN_REVIEWS,
+	loadWishlist,
+	reputationOf,
+	saveWishlist,
+} from "../lib/tattoo"
 
 // TATTOO APP: My profile, ordered like the Sprint 4: about you, your studio,
 // what you need and your home. Photos and bio are private (Supabase); name,
@@ -424,6 +428,7 @@ const Profile = () => {
 		s.members.includes(a.address),
 	)
 	const unlocked = reputationOf(a).home_swap_unlocked
+	const reviewsLeft = Math.max(1, HOME_SWAP_MIN_REVIEWS - a.review_count)
 
 	const saveWanted = (next: string[]) => {
 		setWanted(next)
@@ -510,20 +515,24 @@ const Profile = () => {
 				<h2>My home</h2>
 			</div>
 			<section className="ts-card">
-				{profile && <HomeEditor row={profile} />}
-				<div className="ts-card-body">
-					{unlocked ? (
-						<p style={{ marginTop: 0 }}>
-							You can now offer your home, with your studio or on its own.
-							Choose it when you publish free dates in the Calendar.
+				{unlocked ? (
+					<>
+						{profile && <HomeEditor row={profile} />}
+						<div className="ts-card-body">
+							<p style={{ marginTop: 0 }}>
+								You can now offer your home, with your studio or on its own.
+								Choose it when you add your studio's free dates.
+							</p>
+						</div>
+					</>
+				) : (
+					<div className="ts-card-body">
+						<p style={{ margin: 0, fontWeight: 700 }}>
+							🔒 To access this feature, get {reviewsLeft} more{" "}
+							{reviewsLeft === 1 ? "review" : "reviews"}!
 						</p>
-					) : (
-						<p style={{ marginTop: 0 }}>
-							Offering your home unlocks once you're established.
-						</p>
-					)}
-					<HomeSwapProgress artist={a} />
-				</div>
+					</div>
+				)}
 			</section>
 
 			{/* Access instructions */}
