@@ -20,6 +20,7 @@ import {
 	type StudioTier,
 } from "../lib/tattoo"
 import { AreaMap } from "./AreaMap"
+import { Chat } from "./Chat"
 import {
 	Avatar,
 	BasicsBadge,
@@ -114,6 +115,8 @@ export const CardBack = ({
 	match: m,
 	liked,
 	signedIn,
+	me,
+	canChat,
 	onBack,
 }: {
 	artist: Artist
@@ -123,6 +126,9 @@ export const CardBack = ({
 	match: MatchResult
 	liked: boolean
 	signedIn: boolean
+	/** My address, once I have a profile */
+	me?: string
+	canChat: boolean
 	onBack: () => void
 }) => {
 	const profile = `/artista/${a.address}`
@@ -178,6 +184,13 @@ export const CardBack = ({
 							<BasicsBadge spot={studio} />
 						</div>
 						{signedIn && <StudioMap studio={studio} />}
+					</>
+				)}
+
+				{signedIn && me && me !== a.address && (
+					<>
+						<div className="section-label">Chat</div>
+						<Chat me={me} other={a} canChat={canChat} />
 					</>
 				)}
 

@@ -102,12 +102,15 @@ export const ExploreCard = ({
 	c,
 	me,
 	liked,
+	canChat,
 	onLike,
 	onNope,
 }: {
 	c: Candidate
 	me?: Artist | null
 	liked: boolean
+	/** A match, or I'm established and can write first */
+	canChat: boolean
 	onLike: () => void
 	onNope: () => void
 }) => {
@@ -274,6 +277,8 @@ export const ExploreCard = ({
 					match={m}
 					liked={liked}
 					signedIn={signedIn}
+					me={me ? me.address : undefined}
+					canChat={canChat}
 					onBack={() => setFlipped(false)}
 				/>
 			</div>

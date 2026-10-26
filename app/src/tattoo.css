@@ -1922,3 +1922,28 @@ a.btn-lavender {
 .back-who a {
 	text-decoration: none;
 }
+
+/* Favorites: flip cards */
+.fav-list {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+	margin-bottom: 1.25rem;
+}
+
+.fav-photo {
+	min-height: 0;
+	height: 170px;
+}
+
+.fav-photo img,
+.fav-photo .cover-fallback {
+	height: 100%;
+	min-height: 0;
+	max-height: none;
+	object-fit: cover;
+}
+
+.fav-card .flip-back {
+	min-height: 420px;
+}

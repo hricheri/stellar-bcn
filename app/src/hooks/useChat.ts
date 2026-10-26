@@ -115,22 +115,24 @@ export const useChat = (other: string) => {
 	}
 }
 
-/** How many unread messages I have, from each sender (Stellar address) */
+/** My unread messages, counted by sender (their profile id) */
 export const useUnread = () => {
 	const { ready, userId } = useAuth()
 	return useQuery({
 		queryKey: ["unread", userId],
 		enabled: ready && !!userId,
 		refetchInterval: 30_000,
-		queryFn: async () =>
-			(
-				must(
-					await supabase
-						.from("messages")
-						.select("sender")
-						.eq("recipient", userId!)
-						.is("read_at", null),
-				) as { sender: string }[]
-			).length,
+		queryFn: async () => {
+			const rows = must(
+				await supabase
+					.from("messages")
+					.select("sender")
+					.eq("recipient", userId!)
+					.is("read_at", null),
+			) as { sender: string }[]
+			const out = new Map<string, number>()
+			for (const r of rows) out.set(r.sender, (out.get(r.sender) ?? 0) + 1)
+			return out
+		},
 	})
 }

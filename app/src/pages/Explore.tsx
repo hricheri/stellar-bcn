@@ -379,6 +379,11 @@ const Explore = () => {
 									c={current}
 									me={me.data}
 									liked={liked.has(current.artist.address)}
+									canChat={
+										(liked.has(current.artist.address) &&
+											likedMe.has(current.artist.address)) ||
+										(!!me.data && isEstablished(me.data))
+									}
 									onLike={() => void like()}
 									onNope={nope}
 								/>
