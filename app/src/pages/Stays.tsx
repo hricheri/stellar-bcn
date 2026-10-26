@@ -49,9 +49,9 @@ const COPY: Record<
 		title: "Guest spots",
 		subtitle: "The studios you asked to visit, from request to review.",
 		groups: {
-			pending: "Waiting for the studio",
+			pending: "Requested",
 			confirmed: "✈️ Confirmed",
-			past: "Past visits",
+			past: "Completed",
 		},
 		empty: (
 			<>
@@ -322,6 +322,22 @@ const Stays = ({ side }: { side: Side }) => {
 		past: mine.filter((b) => b.status === BK_COMPLETED),
 	}
 
+	// How many stays of a group need something from me
+	const myStudios = new Set(
+		(studios.data ?? [])
+			.filter((s) => s.members.includes(address))
+			.map((s) => s.id),
+	)
+	const todo = (list: Booking[]) =>
+		list.filter(
+			(b) =>
+				pendingActions(
+					b,
+					address,
+					side === "studio" && myStudios.has(b.studio_id),
+				).filter((a) => a !== "esperando_host").length > 0,
+		).length
+
 	const row = (b: Booking) => {
 		const studio = (studios.data ?? []).find((s) => s.id === b.studio_id)
 		const spot = (spots.data ?? []).find((s) => s.id === b.spot_id)
@@ -353,7 +369,14 @@ const Stays = ({ side }: { side: Side }) => {
 					groups[g].length > 0 && (
 						<div key={g}>
 							<div className="split-title">
-								<h2>{copy.groups[g]}</h2>
+								<h2>
+									{copy.groups[g]}
+									{todo(groups[g]) > 0 && (
+										<span className="todo-badge" title="Things for you to do">
+											{todo(groups[g])} to do
+										</span>
+									)}
+								</h2>
 								<span className="hint">{groups[g].length}</span>
 							</div>
 							<div
