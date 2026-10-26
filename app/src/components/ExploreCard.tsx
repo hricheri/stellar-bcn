@@ -25,7 +25,6 @@ import {
 	Photo,
 	TxNotice,
 } from "./TattooUI"
-import { WantToVisit } from "./VisitRequest"
 
 /** One artist in Explore: their studio, their home if they offer it, and their open dates */
 export interface Candidate {
@@ -117,7 +116,7 @@ export const ExploreCard = ({
 	const [dx, setDx] = useState(0)
 	const [flipped, setFlipped] = useState(false)
 	// Calendar or visit request, shown over the photos so the card keeps its size
-	const [panel, setPanel] = useState<"dates" | "visit">()
+	const [panel, setPanel] = useState<"dates">()
 	const startX = useRef<number | null>(null)
 	const a = c.artist
 	const m = c.match
@@ -193,29 +192,14 @@ export const ExploreCard = ({
 
 						{panel && (
 							<div className="card-panel">
-								<div className="card-panel-head">
-									<b>
-										{panel === "dates"
-											? "📅 Available dates"
-											: "✈ Ask for a visit"}
-									</b>
-									<button
-										className="btn-ghost"
-										aria-label="Close"
-										onClick={() => setPanel(undefined)}
-									>
-										✕
-									</button>
-								</div>
-								{panel === "visit" && c.studio ? (
-									<WantToVisit
-										host={a.address}
-										studioId={c.studio.id}
-										studioName={c.studio.name}
-										startOpen
-										onCancel={() => setPanel(undefined)}
-									/>
-								) : c.studio ? (
+								<button
+									className="btn-ghost card-panel-close"
+									aria-label="Close"
+									onClick={() => setPanel(undefined)}
+								>
+									✕
+								</button>
+								{c.studio ? (
 									me ? (
 										<ProposeDates
 											host={a.address}
@@ -260,36 +244,7 @@ export const ExploreCard = ({
 
 						<div className="chips" style={{ marginTop: "0.75rem" }}>
 							<MaterialsLine m={m} />
-							{c.sharedDays > 0 && (
-								<span className="chip chip-trip">
-									✈ {c.sharedDays} {c.sharedDays === 1 ? "day" : "days"} on your
-									trip
-								</span>
-							)}
 						</div>
-
-						{c.spots.length === 0 && (
-							<div style={{ marginTop: "0.85rem" }}>
-								{c.studio && me ? (
-									<button
-										className="btn-lavender btn-block"
-										onClick={() => setPanel("visit")}
-									>
-										✈ I want to visit!
-									</button>
-								) : (
-									<p className="hint" style={{ margin: 0 }}>
-										No free dates published yet.
-										{c.studio && (
-											<>
-												{" "}
-												<Join what="ask for a visit" />
-											</>
-										)}
-									</p>
-								)}
-							</div>
-						)}
 					</div>
 				</article>
 

@@ -5,7 +5,7 @@ import { useTravelDays } from "../hooks/useTrips"
 import { formatRange } from "../lib/tattoo"
 import { freeDays } from "../lib/travel"
 import { DayPicker } from "./DayPicker"
-import { ErrorNotice, TxNotice } from "./TattooUI"
+import { ErrorNotice } from "./TattooUI"
 
 /**
  * Request dates (the Sprint 4 "Set dates"): their free days are lime, my travel days have
@@ -71,9 +71,17 @@ export const ProposeDates = ({
 	const travel = new Set(travelDays)
 	const firstFree = [...theirFree].sort((a, b) => a - b)[0]
 
+	const studioName = theirStudios.find((s) => s.id === selected)?.name
+
+	// Only their free days, and a range can't jump over a busy one
 	const pick = (day: number) => {
 		setHash(undefined)
-		if (from === undefined || to !== undefined || day < from) {
+		const gap =
+			from !== undefined &&
+			[...Array(Math.max(0, Math.round((day - from) / 86_400)))].some(
+				(_, i) => !theirFree.has(from + i * 86_400),
+			)
+		if (from === undefined || to !== undefined || day < from || gap) {
 			setFrom(day)
 			setTo(undefined)
 		} else setTo(day)
@@ -96,7 +104,7 @@ export const ProposeDates = ({
 					o,
 				),
 			)
-			setHash(hash)
+			setHash(hash || "sent")
 			// Asking for dates means you're interested: save them to favorites
 			if (!likes.data?.includes(host)) await like(host).catch(() => false)
 			setFrom(undefined)
@@ -153,45 +161,48 @@ export const ProposeDates = ({
 						travel.has(d) ? "trip" : "",
 					].join(" ")
 				}}
+				isLocked={(d) => !theirFree.has(d)}
 				onPick={pick}
 			>
 				<div className="cal-foot">
 					<div>
 						<span className="cal-legend">
-							<span className="cal-swatch free" /> Available dates
+							<span className="cal-swatch free" /> Studio's availability
 						</span>
 						{travel.size > 0 && (
 							<span className="cal-legend">
-								<span className="cal-swatch trip" /> Your trip
+								<span className="cal-swatch trip" /> Your availability
 							</span>
 						)}
 						<span className="cal-legend">
-							<span className="cal-swatch range-end" /> Your dates
+							<span className="cal-swatch range-end" /> Request guest
 						</span>
 					</div>
 				</div>
 			</DayPicker>
 			<p className="hint" style={{ margin: "0.5rem 0" }}>
-				{from === undefined
-					? "Tap your first day, then your last one."
-					: to === undefined
-						? "Now tap your last day (or send it as a single day)."
-						: formatRange(from, to)}
+				{theirFree.size === 0
+					? "No available dates yet."
+					: from === undefined
+						? "Tap your first day, then your last one."
+						: to === undefined
+							? "Now tap your last day (or send it as a single day)."
+							: formatRange(from, to)}
 			</p>
-			<button
-				className="btn-lime btn-block"
-				disabled={busy || from === undefined}
-				onClick={() => void propose()}
-			>
-				{busy ? "Sending..." : "Request these dates"}
-			</button>
-			<ErrorNotice error={error} />
-			{hash && (
-				<TxNotice
-					hash={hash}
-					text="Request sent! You'll see it in Guest until the studio answers."
-				/>
+			{hash ? (
+				<div className="alert alert-ok">
+					✓ Request sent to {studioName}! They'll answer you in Guest spots.
+				</div>
+			) : (
+				<button
+					className="btn-lavender btn-block"
+					disabled={busy || from === undefined}
+					onClick={() => void propose()}
+				>
+					{busy ? "Sending..." : "✈ I want to visit!"}
+				</button>
 			)}
+			<ErrorNotice error={error} />
 		</div>
 	)
 }
