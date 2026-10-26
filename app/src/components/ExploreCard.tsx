@@ -115,7 +115,8 @@ export const ExploreCard = ({
 }) => {
 	const [dx, setDx] = useState(0)
 	const [flipped, setFlipped] = useState(false)
-	const [showCal, setShowCal] = useState(false)
+	// Calendar or visit request, shown over the photos so the card keeps its size
+	const [panel, setPanel] = useState<"dates" | "visit">()
 	const startX = useRef<number | null>(null)
 	const a = c.artist
 	const m = c.match
@@ -168,25 +169,69 @@ export const ExploreCard = ({
 			<div className="flip-inner">
 				{/* Front: city, photos, who, what's missing and the calendar */}
 				<article className="flip-face ts-card explore-card">
-					<CardPhoto
-						kind={c.studio ? "studio" : "home"}
-						src={c.studio ? studioImage : homeImage}
-						alt={c.studio?.name ?? `${a.name}'s home`}
-					>
-						<span className="card-city">{city}</span>
-						<button
-							className="card-flip"
-							aria-label="More info"
-							onClick={() => setFlipped(true)}
+					<div className="card-photos">
+						<CardPhoto
+							kind={c.studio ? "studio" : "home"}
+							src={c.studio ? studioImage : homeImage}
+							alt={c.studio?.name ?? `${a.name}'s home`}
 						>
-							→
-						</button>
-					</CardPhoto>
-					{c.offersHome && c.studio && (
-						<CardPhoto kind="home" src={homeImage} alt="Home">
-							<span className="pill pill-lavender card-tag">+ HOME</span>
+							<span className="card-city">{city}</span>
+							<button
+								className="card-flip"
+								aria-label="More info"
+								onClick={() => setFlipped(true)}
+							>
+								→
+							</button>
 						</CardPhoto>
-					)}
+						{c.offersHome && c.studio && (
+							<CardPhoto kind="home" src={homeImage} alt="Home">
+								<span className="pill pill-lavender card-tag">+ HOME</span>
+							</CardPhoto>
+						)}
+
+						{panel && (
+							<div className="card-panel">
+								<div className="card-panel-head">
+									<b>
+										{panel === "dates"
+											? "📅 Available dates"
+											: "✈ Ask for a visit"}
+									</b>
+									<button
+										className="btn-ghost"
+										aria-label="Close"
+										onClick={() => setPanel(undefined)}
+									>
+										✕
+									</button>
+								</div>
+								{panel === "visit" && c.studio ? (
+									<WantToVisit
+										host={a.address}
+										studioId={c.studio.id}
+										studioName={c.studio.name}
+										startOpen
+										onCancel={() => setPanel(undefined)}
+									/>
+								) : c.studio ? (
+									me ? (
+										<ProposeDates
+											host={a.address}
+											studioId={c.studio.id}
+											inline
+										/>
+									) : (
+										<p className="hint">
+											<Join what="request dates" />
+										</p>
+									)
+								) : (
+									c.spots.map((s) => <DateRow key={s.id} spot={s} me={me} />)
+								)}
+							</div>
+						)}
+					</div>
 
 					<div className="ts-card-body">
 						<div className="host-row">
@@ -202,10 +247,12 @@ export const ExploreCard = ({
 								</div>
 							</div>
 							<button
-								className={`cal-btn${showCal ? " on" : ""}`}
+								className={`cal-btn${panel === "dates" ? " on" : ""}`}
 								title="Available dates"
-								aria-pressed={showCal}
-								onClick={() => setShowCal(!showCal)}
+								aria-pressed={panel === "dates"}
+								onClick={() =>
+									setPanel(panel === "dates" ? undefined : "dates")
+								}
 							>
 								<CalendarIcon />
 								{c.spots.length > 0 && (
@@ -224,14 +271,15 @@ export const ExploreCard = ({
 							)}
 						</div>
 
-						{c.spots.length === 0 && !showCal && (
+						{c.spots.length === 0 && (
 							<div style={{ marginTop: "0.85rem" }}>
 								{c.studio && me ? (
-									<WantToVisit
-										host={a.address}
-										studioId={c.studio.id}
-										studioName={c.studio.name}
-									/>
+									<button
+										className="btn-lavender btn-block"
+										onClick={() => setPanel("visit")}
+									>
+										✈ I want to visit!
+									</button>
 								) : (
 									<p className="hint" style={{ margin: 0 }}>
 										No free dates published yet.
@@ -242,26 +290,6 @@ export const ExploreCard = ({
 											</>
 										)}
 									</p>
-								)}
-							</div>
-						)}
-
-						{showCal && (
-							<div style={{ marginTop: "0.85rem" }}>
-								{c.studio ? (
-									me ? (
-										<ProposeDates
-											host={a.address}
-											studioId={c.studio.id}
-											inline
-										/>
-									) : (
-										<p className="hint">
-											<Join what="request dates" />
-										</p>
-									)
-								) : (
-									c.spots.map((s) => <DateRow key={s.id} spot={s} me={me} />)
 								)}
 							</div>
 						)}

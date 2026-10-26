@@ -51,10 +51,15 @@ export const WantToVisit = ({
 	host,
 	studioId,
 	studioName,
+	startOpen,
+	onCancel,
 }: {
 	host: string
 	studioId: number
 	studioName: string
+	/** Show the form right away, without the button */
+	startOpen?: boolean
+	onCancel?: () => void
 }) => {
 	const { session } = useAuth()
 	const profile = useProfileOf(host)
@@ -63,7 +68,7 @@ export const WantToVisit = ({
 	const travel = useTravelDays().days
 	const likes = useLikes()
 	const like = useLike()
-	const [open, setOpen] = useState(false)
+	const [open, setOpen] = useState(!!startOpen)
 	const [message, setMessage] = useState("")
 	const [busy, setBusy] = useState(false)
 	const [error, setError] = useState<string>()
@@ -158,7 +163,10 @@ export const WantToVisit = ({
 				/>
 			</div>
 			<div className="card-actions">
-				<button className="btn-ghost" onClick={() => setOpen(false)}>
+				<button
+					className="btn-ghost"
+					onClick={() => (onCancel ? onCancel() : setOpen(false))}
+				>
 					Cancel
 				</button>
 				<button
