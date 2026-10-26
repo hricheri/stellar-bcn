@@ -23,10 +23,10 @@ import {
 	type Artist,
 	BK_COMPLETED,
 	BK_CONFIRMED,
-	BK_DECLINED,
 	BK_PENDING,
 	type Booking,
 	formatRange,
+	isDropped,
 	pendingActions,
 	type Studio,
 } from "../lib/tattoo"
@@ -313,7 +313,7 @@ const Stays = ({ side }: { side: Side }) => {
 	const byAddress = new Map((artists.data ?? []).map((a) => [a.address, a]))
 	const mine = (bookings.data ?? []).filter(
 		(b) =>
-			b.status !== BK_DECLINED &&
+			!isDropped(b) &&
 			(side === "guest" ? b.guest === address : b.guest !== address),
 	)
 	const groups = {

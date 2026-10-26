@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Link, useSearchParams } from "react-router-dom"
 import {
-	DAY,
 	daysBetween,
 	DayPicker,
 	todayUnix,
@@ -21,31 +20,26 @@ import {
 import { useTravelDays } from "../hooks/useTrips"
 import { useWallet } from "../hooks/useWallet"
 import {
+	type Booking,
 	BK_CONFIRMED,
 	BK_PENDING,
 	formatRange,
-	type Spot,
+	isDropped,
 	SPOT_OPEN,
-	type Studio,
 } from "../lib/tattoo"
 
-// TATTOO APP: the days you'd like to travel, and your favorites' free days
-// next to them: the ones that fall on your days first, then the others, so
-// you can move your days to match. Your studio's free days are marked in
-// the Studio menu.
+// TATTOO APP: the days you'd like to travel, your favorites' free days next
+// to them, and the guest spots you asked for. Tap one of your requests to
+// see it on the calendar and change the days you asked for.
 
-/** Free dates of a favorite, and which of them are on my days */
-interface Alert {
-	key: string
-	spot: Spot
-	studio?: Studio
+/** A request of mine, with the studio it's asking */
+interface Request {
+	booking: Booking
 	name: string
-	/** Their free days from today on */
+	city: string
+	/** The studio's own free days, so I can add or drop days */
+	free: number[]
 	days: number[]
-	/** The ones I can travel */
-	match: number[]
-	/** What a Request asks for: the first run of matching days */
-	trip: { start: number; end: number }
 }
 
 const Calendar = () => {
@@ -66,6 +60,9 @@ const Calendar = () => {
 	const [busy, setBusy] = useState("")
 	const [error, setError] = useState<string>()
 	const [hash, setHash] = useState<string>()
+	// The request I'm looking at on the calendar, and the days it asks for
+	const [openId, setOpenId] = useState<number>()
+	const [picked, setPicked] = useState<number[]>()
 
 	// Travel days: edited here, saved a moment after the last tap
 	const tripDays = trip ?? travel.days
@@ -80,7 +77,9 @@ const Calendar = () => {
 	}
 
 	// My own stays as a guest
-	const visits = (bookings.data ?? []).filter((b) => b.guest === address)
+	const visits = (bookings.data ?? []).filter(
+		(b) => b.guest === address && !isDropped(b),
+	)
 	const confirmed = new Set(
 		visits
 			.filter((b) => b.status === BK_CONFIRMED)
@@ -93,56 +92,45 @@ const Calendar = () => {
 	)
 	const marking = useRangeMarking(tripDays, setTripDays, () => false)
 
-	// I already asked this studio for these days
-	const asked = (a: Alert) =>
-		visits.some(
-			(b) =>
-				b.status === BK_PENDING &&
-				b.studio_id === a.studio?.id &&
-				Number(b.start) <= a.trip.end &&
-				Number(b.end) >= a.trip.start,
-		)
-
-	// Every free date of my favorites, the ones on my days first
-	const alerts = useMemo<Alert[]>(() => {
-		const liked = new Set(likes.data ?? [])
-		const byAddress = new Map((artists.data ?? []).map((a) => [a.address, a]))
-		const mine = new Set(tripDays)
+	// What I asked for, newest first
+	const requests = useMemo<Request[]>(() => {
 		const today = todayUnix()
-		const out: Alert[] = []
+		const open = (spots.data ?? []).filter((s) => s.status === SPOT_OPEN)
+		return visits
+			.filter((b) => Number(b.end) >= today)
+			.map((b) => {
+				const studio = (studios.data ?? []).find((s) => s.id === b.studio_id)
+				const host = (artists.data ?? []).find((a) => a.address === b.host)
+				return {
+					booking: b,
+					name: studio?.name ?? `${host?.name ?? "An artist"}'s home`,
+					city: studio?.city ?? host?.city ?? "",
+					free: open
+						.filter((s) => s.studio_id === b.studio_id)
+						.flatMap((s) => daysBetween(Number(s.start), Number(s.end)))
+						.filter((d) => d >= today),
+					days: daysBetween(Number(b.start), Number(b.end)),
+				}
+			})
+			.sort((x, y) => x.days[0]! - y.days[0]!)
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [bookings.data, studios.data, artists.data, spots.data, address])
+
+	// Free days of my favorites, so I can see when it's worth travelling
+	const favoritesFree = useMemo(() => {
+		const liked = new Set(likes.data ?? [])
+		const today = todayUnix()
+		const days = new Set<number>()
 		for (const s of spots.data ?? []) {
 			if (s.status !== SPOT_OPEN) continue
 			const studio = (studios.data ?? []).find((st) => st.id === s.studio_id)
 			const people = studio ? studio.members : [s.host]
 			if (!people.some((p) => liked.has(p))) continue
-			const days = daysBetween(Number(s.start), Number(s.end)).filter(
-				(d) => d >= today,
-			)
-			if (days.length === 0) continue
-			const match = days.filter((d) => mine.has(d))
-			const run = toRanges(match)[0]
-			out.push({
-				key: String(s.id),
-				spot: s,
-				studio,
-				name: studio?.name ?? `${byAddress.get(s.host)?.name}'s home`,
-				days,
-				match,
-				trip: run
-					? { start: run.start, end: run.end - (run.end % DAY) }
-					: { start: days[0]!, end: days[days.length - 1]! },
-			})
+			for (const d of daysBetween(Number(s.start), Number(s.end)))
+				if (d >= today) days.add(d)
 		}
-		return out.sort(
-			(x, y) =>
-				Number(y.match.length > 0) - Number(x.match.length > 0) ||
-				x.days[0]! - y.days[0]!,
-		)
-	}, [tripDays, spots.data, studios.data, likes.data, artists.data])
-	const favoritesFree = new Set(alerts.flatMap((a) => a.days))
-	const matching = alerts.filter((a) => a.match.length > 0)
-	// "See" on a date that doesn't match: the calendar jumps to its month
-	const [shown, setShown] = useState<number>()
+		return days
+	}, [spots.data, studios.data, likes.data])
 
 	if (!address)
 		return (
@@ -160,24 +148,72 @@ const Calendar = () => {
 			</>
 		)
 
-	const request = async (a: Alert) => {
-		if (!a.studio) return
-		setBusy(a.key)
+	const open = requests.find((r) => r.booking.id === openId)
+	const openDays = picked ?? open?.days ?? []
+	const openFree = new Set(open?.free ?? [])
+	const openSet = new Set(openDays)
+	const changed =
+		!!open &&
+		(openDays.length !== open.days.length ||
+			open.days.some((d) => !openSet.has(d)))
+
+	const show = (r: Request) => {
+		const same = openId === r.booking.id
+		setOpenId(same ? undefined : r.booking.id)
+		setPicked(undefined)
+		setHash(undefined)
+		setError(undefined)
+	}
+
+	// Their free days and the ones I already asked for can be tapped
+	const pickDay = (d: number) => {
+		if (!open) return
+		setHash(undefined)
+		setPicked(
+			openSet.has(d)
+				? openDays.filter((x) => x !== d)
+				: [...openDays, d].sort((a, b) => a - b),
+		)
+	}
+
+	const update = async () => {
+		if (!open) return
+		const run = toRanges(openDays)[0]
+		if (!run) return
+		setBusy("update")
 		setError(undefined)
 		try {
-			const end = a.trip.end > a.trip.start ? a.trip.end : a.trip.start + 1
 			const { hash } = await send((c, guest, o) =>
-				c.propose_dates(
+				c.change_request(
 					{
 						guest,
-						studio_id: a.studio!.id,
-						start: BigInt(a.trip.start),
-						end: BigInt(end),
+						booking_id: open.booking.id,
+						start: BigInt(run.start),
+						end: BigInt(run.end),
 					},
 					o,
 				),
 			)
-			setHash(hash)
+			setHash(hash || "done")
+			setPicked(undefined)
+		} catch (e) {
+			setError((e as Error).message)
+		} finally {
+			setBusy("")
+		}
+	}
+
+	const cancel = async () => {
+		if (!open) return
+		setBusy("cancel")
+		setError(undefined)
+		try {
+			const { hash } = await send((c, guest, o) =>
+				c.cancel_request({ guest, booking_id: open.booking.id }, o),
+			)
+			setHash(hash || "done")
+			setOpenId(undefined)
+			setPicked(undefined)
 		} catch (e) {
 			setError((e as Error).message)
 		} finally {
@@ -194,102 +230,148 @@ const Calendar = () => {
 				subtitle="Mark the days you'd like to travel. We'll let you know when your favorites are free then."
 			/>
 
-			{alerts.length > 0 && (
+			{requests.length > 0 && (
 				<section className="ts-card trip-alerts">
 					<div className="ts-card-body">
-						<h3>
-							{matching.length > 0
-								? "✈ One of your favorites is available!"
-								: "Your favorites' available dates"}
-						</h3>
-						{matching.length === 0 && (
-							<p className="hint" style={{ marginTop: 0 }}>
-								None of them falls on your days yet. Mark days that match to ask
-								for them.
-							</p>
-						)}
-						{alerts.map((a) => (
-							<div key={a.key} className="trip-alert">
-								<div style={{ flex: 1 }}>
-									<b>{a.name}</b> · {a.spot.city}
-									<div className="hint">
-										{formatRange(a.days[0]!, a.days[a.days.length - 1]!)}
-										{a.match.length > 0
-											? ` · ✈️ ${a.match.length} ${a.match.length === 1 ? "day matches" : "days match"} yours`
-											: " · not on your days"}
-									</div>
-								</div>
-								{a.match.length === 0 ? (
-									<button
-										className="btn-ghost"
-										onClick={() => setShown(a.days[0])}
-									>
-										See
+						<h3>✈ Guest spots I asked for</h3>
+						{requests.map((r) => {
+							const pending = r.booking.status === BK_PENDING
+							return (
+								<div
+									key={r.booking.id}
+									className={`trip-alert${openId === r.booking.id ? " on" : ""}`}
+								>
+									<button className="trip-alert-main" onClick={() => show(r)}>
+										<b>{r.name}</b> · {r.city}
+										<div className="hint">
+											{formatRange(r.days[0]!, r.days[r.days.length - 1]!)}
+										</div>
 									</button>
-								) : (
-									a.studio &&
-									(asked(a) ? (
-										<span className="pill pill-gray">
-											⏳ Waiting confirmation
-										</span>
-									) : (
-										<button
-											className="btn-lime"
-											disabled={!!busy}
-											title={`Asks for ${formatRange(a.trip.start, a.trip.end)}`}
-											onClick={() => void request(a)}
-										>
-											{busy === a.key ? "..." : "Request"}
-										</button>
-									))
-								)}
-							</div>
-						))}
+									<span className={`pill ${pending ? "pill-gray" : "pill-dark"}`}>
+										{pending ? "⏳ Waiting confirmation" : "✓ Confirmed"}
+									</span>
+									<Link
+										to="/guest"
+										className="btn-ghost"
+										title="Follow it up in the chat"
+									>
+										💬
+									</Link>
+								</div>
+							)
+						})}
 					</div>
 				</section>
 			)}
 
 			<section className="ts-card trip-cal">
 				<div className="ts-card-body">
+					{open && (
+						<div className="split-title" style={{ marginBottom: "0.5rem" }}>
+							<div className="section-label" style={{ margin: 0 }}>
+								{open.name} · {open.city}
+							</div>
+							<button className="btn-ghost" onClick={() => setOpenId(undefined)}>
+								✕
+							</button>
+						</div>
+					)}
 					<DayPicker
-						key={shown}
-						startMonth={shown ?? month}
+						key={openId ?? month ?? 0}
+						startMonth={open?.days[0] ?? month}
 						dayClass={(d) =>
-							[
-								confirmed.has(d)
-									? "confirmed"
-									: requested.has(d)
-										? "proposed"
-										: favoritesFree.has(d)
-											? "free"
-											: "",
-								tripSet.has(d) ? "travel" : "",
-								marking.anchor === d ? "anchor" : "",
-							].join(" ")
+							open
+								? [
+										openSet.has(d)
+											? "proposed"
+											: openFree.has(d)
+												? "theirs"
+												: "",
+										tripSet.has(d) ? "travel" : "",
+									].join(" ")
+								: [
+										confirmed.has(d)
+											? "confirmed"
+											: requested.has(d)
+												? "proposed"
+												: favoritesFree.has(d)
+													? "free"
+													: "",
+										tripSet.has(d) ? "travel" : "",
+										marking.anchor === d ? "anchor" : "",
+									].join(" ")
 						}
-						onPick={marking.pick}
+						isLocked={
+							open ? (d) => !openFree.has(d) && !openSet.has(d) : undefined
+						}
+						onPick={open ? pickDay : marking.pick}
 					>
 						<div className="cal-foot">
 							<div>
-								<span className="cal-legend">
-									<span className="cal-swatch travel" /> I want to travel
-								</span>
-								<span className="cal-legend">
-									<span className="cal-swatch confirmed" /> Confirmed stay
-								</span>
-								<span className="cal-legend">
-									<span className="cal-swatch proposed" /> Requested
-								</span>
-								<span className="cal-legend">
-									<span className="cal-swatch free" /> Favorites' availability
-								</span>
+								{open ? (
+									<>
+										<span className="cal-legend">
+											<span className="cal-swatch proposed" /> Days I asked for
+										</span>
+										<span className="cal-legend">
+											<span className="cal-swatch theirs" /> Their other free
+											days
+										</span>
+									</>
+								) : (
+									<>
+										<span className="cal-legend">
+											<span className="cal-swatch travel" /> I want to travel
+										</span>
+										<span className="cal-legend">
+											<span className="cal-swatch confirmed" /> Confirmed stay
+										</span>
+										<span className="cal-legend">
+											<span className="cal-swatch proposed" /> Requested
+										</span>
+										<span className="cal-legend">
+											<span className="cal-swatch free" /> Favorites'
+											availability
+										</span>
+									</>
+								)}
 							</div>
 						</div>
 					</DayPicker>
-					<p className="hint" style={{ margin: "0.6rem 0 0" }}>
-						Tap the first and the last day to mark a whole range. Tap a marked
-						day to unmark it. They save on their own.
-					</p>
+					{open ? (
+						<>
+							<p className="hint" style={{ margin: "0.6rem 0" }}>
+								{open.booking.status === BK_PENDING
+									? toRanges(openDays).length > 1
+										? "Your days have a gap. Only the first run will be asked for."
+										: "Tap their free days to add them to your request, or tap yours to drop them."
+									: "This stay is already confirmed. Write to them in the chat to change it."}
+							</p>
+							{open.booking.status === BK_PENDING && (
+								<div className="card-actions">
+									<button
+										className="btn-lime"
+										disabled={!!busy || !changed || openDays.length === 0}
+										onClick={() => void update()}
+									>
+										{busy === "update" ? "Saving..." : "Update my request"}
+									</button>
+									<button
+										className="btn-ghost"
+										disabled={!!busy}
+										onClick={() => void cancel()}
+									>
+										{busy === "cancel" ? "..." : "Cancel my request"}
+									</button>
+								</div>
+							)}
+						</>
+					) : (
+						<p className="hint" style={{ margin: "0.6rem 0 0" }}>
+							Tap the first and the last day to mark a whole range. Tap a marked
+							day to unmark it. They save on their own.
+						</p>
+					)}
 
 					<ErrorNotice error={error} />
 					{hash && <TxNotice hash={hash} text="Done! It's saved on Stellar." />}

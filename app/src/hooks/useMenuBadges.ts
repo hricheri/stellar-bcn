@@ -1,4 +1,4 @@
-import { BK_DECLINED, pendingActions } from "../lib/tattoo"
+import { isDropped, pendingActions } from "../lib/tattoo"
 import { useAuth } from "./useAuth"
 import { useUnread } from "./useChat"
 import { useBookings, useStudios } from "./useTattoo"
@@ -24,7 +24,7 @@ export const useMenuBadges = () => {
 	let guest = 0
 	let studio = 0
 	for (const b of bookings.data ?? []) {
-		if (!address || b.status === BK_DECLINED) continue
+		if (!address || isDropped(b)) continue
 		const asGuest = b.guest === address
 		const todo = pendingActions(
 			b,

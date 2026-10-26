@@ -25,6 +25,11 @@ export const BK_PENDING = 0
 export const BK_CONFIRMED = 1
 export const BK_COMPLETED = 2
 export const BK_DECLINED = 3
+/** The guest took the request back */
+export const BK_CANCELLED = 4
+/** Declined by the host or cancelled by the guest: it's over */
+export const isDropped = (b: { status: number }) =>
+	b.status === BK_DECLINED || b.status === BK_CANCELLED
 
 // ----- Furniture and supplies of a studio -----
 

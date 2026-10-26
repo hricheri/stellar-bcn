@@ -2258,3 +2258,28 @@ a.btn-lavender {
 	color: var(--gray-900);
 }
 
+/* Calendar: one of my requests, open on the calendar */
+.trip-alert-main {
+	flex: 1;
+	min-width: 0;
+	border: none;
+	background: none;
+	padding: 0;
+	text-align: left;
+	cursor: pointer;
+	font: inherit;
+}
+
+.trip-alert.on {
+	background: var(--lavender-50);
+	border-radius: 0.75rem;
+	padding-inline: 0.5rem;
+}
+
+/* Their free days, muted next to the ones I asked for */
+.trip-cal .cal-day.theirs,
+.trip-cal .cal-swatch.theirs {
+	background: var(--lima-100);
+	color: var(--gray-900);
+	box-shadow: none;
+}
