@@ -2148,3 +2148,19 @@ a.btn-lavender {
 	text-overflow: ellipsis;
 	white-space: nowrap;
 }
+
+/* Travel calendar palette: lilac border = I'd travel, green border = I asked
+   a studio, lilac fill = confirmed guest spot */
+.trip-cal .cal-day.proposed,
+.trip-cal .cal-swatch.proposed {
+	background: white;
+	color: var(--gray-900);
+	box-shadow: inset 0 0 0 2px var(--lima-400);
+}
+
+.trip-cal .cal-day.confirmed,
+.trip-cal .cal-swatch.confirmed,
+.trip-cal .cal-day.confirmed:hover:not(:disabled) {
+	background: var(--lavender-300);
+	color: var(--gray-900);
+}

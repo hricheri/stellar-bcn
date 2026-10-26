@@ -188,7 +188,7 @@ const Calendar = () => {
 				</section>
 			)}
 
-			<section className="ts-card">
+			<section className="ts-card trip-cal">
 				<div className="ts-card-body">
 					<DayPicker
 						dayClass={(d) =>
