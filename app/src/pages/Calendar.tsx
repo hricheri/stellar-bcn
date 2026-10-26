@@ -4,6 +4,7 @@ import {
 	DAY,
 	daysBetween,
 	DayPicker,
+	todayUnix,
 	toRanges,
 	useRangeMarking,
 } from "../components/DayPicker"
@@ -28,16 +29,22 @@ import {
 	type Studio,
 } from "../lib/tattoo"
 
-// TATTOO APP: the days you'd like to travel. When a favorite is free on
-// them (±1 day), you get a heads-up. Your studio's free days are marked in
+// TATTOO APP: the days you'd like to travel, and your favorites' free days
+// next to them: the ones that fall on your days first, then the others, so
+// you can move your days to match. Your studio's free days are marked in
 // the Studio menu.
 
-/** A favorite that's free on one of my trips */
+/** Free dates of a favorite, and which of them are on my days */
 interface Alert {
 	key: string
 	spot: Spot
 	studio?: Studio
 	name: string
+	/** Their free days from today on */
+	days: number[]
+	/** The ones I can travel */
+	match: number[]
+	/** What a Request asks for: the first run of matching days */
 	trip: { start: number; end: number }
 }
 
@@ -96,33 +103,46 @@ const Calendar = () => {
 				Number(b.end) >= a.trip.start,
 		)
 
-	// Favorites free on my trips, give or take a day
+	// Every free date of my favorites, the ones on my days first
 	const alerts = useMemo<Alert[]>(() => {
 		const liked = new Set(likes.data ?? [])
 		const byAddress = new Map((artists.data ?? []).map((a) => [a.address, a]))
+		const mine = new Set(tripDays)
+		const today = todayUnix()
 		const out: Alert[] = []
-		for (const r of toRanges(tripDays)) {
-			const end = r.end - (r.end % DAY)
-			for (const s of spots.data ?? []) {
-				if (s.status !== SPOT_OPEN) continue
-				const studio = (studios.data ?? []).find((st) => st.id === s.studio_id)
-				const people = studio ? studio.members : [s.host]
-				if (!people.some((p) => liked.has(p))) continue
-				if (Number(s.start) <= r.start + DAY && Number(s.end) >= end - DAY)
-					out.push({
-						key: `${s.id}-${r.start}`,
-						spot: s,
-						studio,
-						name: studio?.name ?? `${byAddress.get(s.host)?.name}'s home`,
-						trip: {
-							start: Math.max(r.start, Number(s.start)),
-							end: Math.min(end, Number(s.end)),
-						},
-					})
-			}
+		for (const s of spots.data ?? []) {
+			if (s.status !== SPOT_OPEN) continue
+			const studio = (studios.data ?? []).find((st) => st.id === s.studio_id)
+			const people = studio ? studio.members : [s.host]
+			if (!people.some((p) => liked.has(p))) continue
+			const days = daysBetween(Number(s.start), Number(s.end)).filter(
+				(d) => d >= today,
+			)
+			if (days.length === 0) continue
+			const match = days.filter((d) => mine.has(d))
+			const run = toRanges(match)[0]
+			out.push({
+				key: String(s.id),
+				spot: s,
+				studio,
+				name: studio?.name ?? `${byAddress.get(s.host)?.name}'s home`,
+				days,
+				match,
+				trip: run
+					? { start: run.start, end: run.end - (run.end % DAY) }
+					: { start: days[0]!, end: days[days.length - 1]! },
+			})
 		}
-		return out
+		return out.sort(
+			(x, y) =>
+				Number(y.match.length > 0) - Number(x.match.length > 0) ||
+				x.days[0]! - y.days[0]!,
+		)
 	}, [tripDays, spots.data, studios.data, likes.data, artists.data])
+	const favoritesFree = new Set(alerts.flatMap((a) => a.days))
+	const matching = alerts.filter((a) => a.match.length > 0)
+	// "See" on a date that doesn't match: the calendar jumps to its month
+	const [shown, setShown] = useState<number>()
 
 	if (!address)
 		return (
@@ -177,16 +197,37 @@ const Calendar = () => {
 			{alerts.length > 0 && (
 				<section className="ts-card trip-alerts">
 					<div className="ts-card-body">
-						<h3>✈ One of your favorites is available!</h3>
+						<h3>
+							{matching.length > 0
+								? "✈ One of your favorites is available!"
+								: "Your favorites' available dates"}
+						</h3>
+						{matching.length === 0 && (
+							<p className="hint" style={{ marginTop: 0 }}>
+								None of them falls on your days yet. Mark days that match to ask
+								for them.
+							</p>
+						)}
 						{alerts.map((a) => (
 							<div key={a.key} className="trip-alert">
 								<div style={{ flex: 1 }}>
 									<b>{a.name}</b> · {a.spot.city}
 									<div className="hint">
-										{formatRange(a.trip.start, a.trip.end)}
+										{formatRange(a.days[0]!, a.days[a.days.length - 1]!)}
+										{a.match.length > 0
+											? ` · ✈️ ${a.match.length} ${a.match.length === 1 ? "day matches" : "days match"} yours`
+											: " · not on your days"}
 									</div>
 								</div>
-								{a.studio &&
+								{a.match.length === 0 ? (
+									<button
+										className="btn-ghost"
+										onClick={() => setShown(a.days[0])}
+									>
+										See
+									</button>
+								) : (
+									a.studio &&
 									(asked(a) ? (
 										<span className="pill pill-gray">
 											⏳ Waiting confirmation
@@ -195,11 +236,13 @@ const Calendar = () => {
 										<button
 											className="btn-lime"
 											disabled={!!busy}
+											title={`Asks for ${formatRange(a.trip.start, a.trip.end)}`}
 											onClick={() => void request(a)}
 										>
 											{busy === a.key ? "..." : "Request"}
 										</button>
-									))}
+									))
+								)}
 							</div>
 						))}
 					</div>
@@ -209,14 +252,17 @@ const Calendar = () => {
 			<section className="ts-card trip-cal">
 				<div className="ts-card-body">
 					<DayPicker
-						startMonth={month}
+						key={shown}
+						startMonth={shown ?? month}
 						dayClass={(d) =>
 							[
 								confirmed.has(d)
 									? "confirmed"
 									: requested.has(d)
 										? "proposed"
-										: "",
+										: favoritesFree.has(d)
+											? "free"
+											: "",
 								tripSet.has(d) ? "travel" : "",
 								marking.anchor === d ? "anchor" : "",
 							].join(" ")
@@ -233,6 +279,9 @@ const Calendar = () => {
 								</span>
 								<span className="cal-legend">
 									<span className="cal-swatch proposed" /> Requested
+								</span>
+								<span className="cal-legend">
+									<span className="cal-swatch free" /> Favorites' availability
 								</span>
 							</div>
 						</div>
