@@ -1964,20 +1964,77 @@ a.btn-lavender {
 	min-height: 420px;
 }
 
-/* Their next free dates, on the front of the card */
-.fav-cal {
-	margin-top: 0.75rem;
-	border-top: 1px solid var(--gray-200);
-	padding-top: 0.75rem;
+/* Tiny month with their studio availability, beside who they are */
+.fav-body {
+	display: flex;
+	gap: 1rem;
+	align-items: flex-start;
 }
 
-.fav-cal .cal-day {
-	font-size: 0.75rem;
-	border-radius: 0.5rem;
+.fav-info {
+	flex: 1;
+	min-width: 0;
+}
+
+.fav-cal {
+	flex: 0 0 196px;
+	width: 196px;
+}
+
+.fav-cal .cal-head {
+	margin-bottom: 0.3rem;
 }
 
 .fav-cal .cal-head h3 {
-	font-size: 0.95rem;
+	font-size: 0.75rem;
+}
+
+.fav-cal .cal-head .btn-ghost {
+	padding: 0.1rem 0.45rem;
+	font-size: 0.7rem;
+	min-height: 0;
+}
+
+.fav-cal .cal-grid {
+	gap: 2px;
+}
+
+.fav-cal .cal-weekday {
+	font-size: 0.55rem;
+}
+
+.fav-cal .cal-day {
+	font-size: 0.6rem;
+	border-radius: 0.3rem;
+}
+
+.fav-cal .cal-day.travel {
+	box-shadow: inset 0 0 0 1.5px var(--lavender-500);
+}
+
+.fav-cal .cal-foot {
+	margin-top: 0.3rem;
+}
+
+.fav-cal .cal-legend {
+	font-size: 0.6rem;
+}
+
+@media (max-width: 520px) {
+	.fav-body {
+		flex-direction: column;
+	}
+
+	.fav-cal {
+		flex-basis: auto;
+		width: 100%;
+		max-width: 240px;
+	}
+}
+
+/* Explore: the send bar only shows once a day is picked */
+.propose-send:empty {
+	display: none;
 }
 
 /* Access instructions */
@@ -2259,7 +2316,8 @@ a.btn-lavender {
 }
 
 /* Calendar: one of my requests, open on the calendar */
-.trip-alert-main {
+.trip-alert .trip-alert-main,
+.trip-alert .trip-alert-main:hover:not(:disabled) {
 	flex: 1;
 	min-width: 0;
 	border: none;

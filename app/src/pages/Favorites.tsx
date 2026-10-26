@@ -52,7 +52,7 @@ const unix = (date: string) => Date.parse(`${date}T00:00:00Z`) / 1000
 type Kind = "match" | "liked" | "likedMe"
 type Tab = "chat" | "dates" | "reviews"
 
-/** Their next free dates, right on the card */
+/** A tiny month with their studio availability, beside who they are */
 const DatesPreview = ({
 	free,
 	travel,
@@ -78,7 +78,7 @@ const DatesPreview = ({
 				<div className="cal-foot">
 					<div>
 						<span className="cal-legend">
-							<span className="cal-swatch free" /> Their free days
+							<span className="cal-swatch free" /> Their studio availability
 						</span>
 						<span className="cal-legend">
 							<span className="cal-swatch travel" /> Your availability
@@ -122,7 +122,7 @@ const FavoriteCard = ({
 	const newSpots = seen ? free.filter((s) => !seen.spots.includes(s.id)) : []
 	const newTrips = seen ? trips.filter((t) => !seen.trips.includes(t.key)) : []
 	const newReviews = seen ? Math.max(0, a.review_count - seen.reviews) : 0
-	// Their free days that fall on the days I can travel
+	// Their studio availability that fall on the days I can travel
 	const shared = sharedDays(travel, freeDays(spots))
 
 	// What I've seen is remembered once this visit is over
@@ -167,74 +167,75 @@ const FavoriteCard = ({
 							→
 						</button>
 					</div>
-					<div className="ts-card-body">
-						<div className="host-row">
-							<Link to={profile} aria-label={`${a.name}'s profile`}>
-								<Avatar artist={a} big />
-							</Link>
-							<div style={{ flex: 1, minWidth: 0 }}>
-								<NameLine artist={a} to={profile} />
-								<About artist={a} studio={studio?.name} />
-							</div>
-							{shared > 0 && (
-								<span
-									className="chip chip-trip"
-									title="Days on your availability"
-								>
-									✈️ {shared}
-								</span>
-							)}
-							<button
-								className="cal-btn"
-								title="Their dates"
-								onClick={() => setTab("dates")}
-							>
-								<CalendarIcon />
-								{newSpots.length > 0 && (
-									<span className="badge">{newSpots.length}</span>
+					<div className="ts-card-body fav-body">
+						<div className="fav-info">
+							<div className="host-row">
+								<Link to={profile} aria-label={`${a.name}'s profile`}>
+									<Avatar artist={a} big />
+								</Link>
+								<div style={{ flex: 1, minWidth: 0 }}>
+									<NameLine artist={a} to={profile} />
+									<About artist={a} studio={studio?.name} />
+								</div>
+								{shared > 0 && (
+									<span
+										className="chip chip-trip"
+										title="Days on your availability"
+									>
+										✈️ {shared}
+									</span>
 								)}
-							</button>
-						</div>
+								<button
+									className="cal-btn"
+									title="Their dates"
+									onClick={() => setTab("dates")}
+								>
+									<CalendarIcon />
+									{newSpots.length > 0 && (
+										<span className="badge">{newSpots.length}</span>
+									)}
+								</button>
+							</div>
 
-						<div className="chips" style={{ marginTop: "0.6rem" }}>
-							{kind === "match" && (
-								<span className="pill pill-dark">♥ Match</span>
-							)}
+							<div className="chips" style={{ marginTop: "0.6rem" }}>
+								{kind === "match" && (
+									<span className="pill pill-dark">♥ Match</span>
+								)}
+								{kind === "likedMe" && !likedBack && (
+									<span className="pill pill-outline-dark">♥ Liked you</span>
+								)}
+								{trips.map((t) => (
+									<span key={t.key} className="chip chip-trip">
+										✈ Wants to travel {formatRange(t.start, t.end)}
+										{newTrips.includes(t) && <b> · new</b>}
+									</span>
+								))}
+								{newReviews > 0 && (
+									<span className="chip chip-full">
+										★ {newReviews} new {newReviews === 1 ? "review" : "reviews"}
+									</span>
+								)}
+							</div>
+
 							{kind === "likedMe" && !likedBack && (
-								<span className="pill pill-outline-dark">♥ Liked you</span>
-							)}
-							{trips.map((t) => (
-								<span key={t.key} className="chip chip-trip">
-									✈ Wants to travel {formatRange(t.start, t.end)}
-									{newTrips.includes(t) && <b> · new</b>}
-								</span>
-							))}
-							{newReviews > 0 && (
-								<span className="chip chip-full">
-									★ {newReviews} new {newReviews === 1 ? "review" : "reviews"}
-								</span>
+								<div className="card-actions">
+									<button
+										className="btn-lime"
+										onClick={() =>
+											void like(a.address).then(() => setLikedBack(true))
+										}
+									>
+										♥ Like back
+									</button>
+								</div>
 							)}
 						</div>
-
 						{free.length > 0 && (
 							<DatesPreview
 								free={free}
 								travel={travel}
 								onPick={() => setTab("dates")}
 							/>
-						)}
-
-						{kind === "likedMe" && !likedBack && (
-							<div className="card-actions">
-								<button
-									className="btn-lime"
-									onClick={() =>
-										void like(a.address).then(() => setLikedBack(true))
-									}
-								>
-									♥ Like back
-								</button>
-							</div>
 						)}
 					</div>
 				</article>
@@ -267,7 +268,7 @@ const FavoriteCard = ({
 									<p className="hint" style={{ marginTop: 0 }}>
 										{a.name} wants to travel{" "}
 										{trips.map((t) => formatRange(t.start, t.end)).join(", ")}.
-										If your studio is free then, offer it in the chat.
+										If your studio is available then, offer it in the chat.
 									</p>
 								)}
 								{studio ? (
