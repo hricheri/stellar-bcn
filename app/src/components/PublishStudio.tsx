@@ -7,7 +7,7 @@ import {
 	useStudioImage,
 	useStudioPhotoPath,
 } from "../hooks/useProfiles"
-import { useSaveStudioAddress } from "../hooks/useStudioPlace"
+import { englishCity, useSaveStudioAddress } from "../hooks/useStudioPlace"
 import { useArtists, useSend, useStudios } from "../hooks/useTattoo"
 import { must, supabase } from "../lib/supabase"
 import {
@@ -250,8 +250,9 @@ const CreateStudio = ({ me }: { me: Artist }) => {
 		setBusy(true)
 		setError(undefined)
 		try {
+			const studioCity = await englishCity(city)
 			const { value: id, hash } = await send((c, owner, o) =>
-				c.create_studio({ owner, name, city: city.trim(), amenities }, o),
+				c.create_studio({ owner, name, city: studioCity, amenities }, o),
 			)
 			const studioId = Number(id)
 			if (photo) await savePhoto(studioId, photo)

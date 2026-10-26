@@ -2,6 +2,7 @@ import { tattooGuestSpot } from "@stellar-scaffold/app-lib/clients"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useCallback } from "react"
 import { type Profile } from "../lib/supabase"
+import { cityName } from "../lib/tattoo"
 import { useProfiles } from "./useProfiles"
 import { useWallet } from "./useWallet"
 
@@ -65,7 +66,11 @@ function unwrap<T>(value: T | MaybeResult<T>): T {
 export const useSpots = () =>
 	useQuery({
 		queryKey: ["spots"],
-		queryFn: async () => (await tattooGuestSpot.list_spots()).result,
+		queryFn: async () =>
+			(await tattooGuestSpot.list_spots()).result.map((s) => ({
+				...s,
+				city: cityName(s.city),
+			})),
 	})
 
 export const useContacts = (address?: string) =>
@@ -79,7 +84,11 @@ export const useContacts = (address?: string) =>
 export const useStudios = () =>
 	useQuery({
 		queryKey: ["studios"],
-		queryFn: async () => (await tattooGuestSpot.list_studios()).result,
+		queryFn: async () =>
+			(await tattooGuestSpot.list_studios()).result.map((s) => ({
+				...s,
+				city: cityName(s.city),
+			})),
 	})
 
 export const useStudioReviews = (studioId?: number) =>
@@ -138,23 +147,18 @@ type Artist = Awaited<
 >["result"][number]
 
 /** Name, city and Instagram can be edited in the account (Supabase) */
-const withProfile = (a: Artist, p?: Profile): Artist =>
-	p
-		? {
-				...a,
-				name: p.name || a.name,
-				city: p.city || a.city,
-				instagram: p.instagram || a.instagram,
-			}
-		: a
+const withProfile = (a: Artist, p?: Profile): Artist => ({
+	...a,
+	name: p?.name || a.name,
+	city: cityName(p?.city || a.city),
+	instagram: p?.instagram || a.instagram,
+})
 
 export const useArtists = () => {
 	const profiles = useProfiles().data
 	const select = useCallback(
 		(list: Artist[]) =>
-			profiles
-				? list.map((a) => withProfile(a, profiles.get(a.address)))
-				: list,
+			list.map((a) => withProfile(a, profiles?.get(a.address))),
 		[profiles],
 	)
 	return useQuery({
@@ -167,8 +171,7 @@ export const useArtists = () => {
 export const useArtist = (address?: string) => {
 	const profiles = useProfiles().data
 	const select = useCallback(
-		(a: Artist | null) =>
-			a && profiles ? withProfile(a, profiles.get(a.address)) : a,
+		(a: Artist | null) => a && withProfile(a, profiles?.get(a.address)),
 		[profiles],
 	)
 	return useQuery({

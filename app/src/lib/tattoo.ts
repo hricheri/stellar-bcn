@@ -163,6 +163,17 @@ export const markSeen = (me: string, other: string, count: number) => {
 
 const WEIGHTS = { city: 35, dates: 35, amenities: 30 }
 
+/** "  barcelona " and "BARCELONA" both become "Barcelona" */
+export const cityName = (s: string) =>
+	s
+		.trim()
+		.replace(/\s+/g, " ")
+		.toLowerCase()
+		.replace(
+			/(^|[\s-])(\p{L})/gu,
+			(_, sep: string, ch: string) => sep + ch.toUpperCase(),
+		)
+
 const normalize = (s: string) =>
 	s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim()
 

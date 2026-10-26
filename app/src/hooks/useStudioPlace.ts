@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useCallback } from "react"
 import { maybe, must, supabase } from "../lib/supabase"
+import { cityName } from "../lib/tattoo"
 import { useAuth } from "./useAuth"
 import { useProfiles } from "./useProfiles"
 
@@ -44,6 +45,30 @@ export const geocode = async (
 		lng: Number(hit.lon),
 		area: [hood, city].filter(Boolean).join(", "),
 		label: hit.display_name,
+	}
+}
+
+/**
+ * A city as everyone will see it: its English name from OpenStreetMap
+ * ("Sevilla" -> "Seville"), capitalized. If the lookup fails, just capitalized.
+ */
+export const englishCity = async (q: string) => {
+	const typed = cityName(q)
+	if (!typed) return typed
+	try {
+		const res = await fetch(
+			`https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=1&featureType=settlement&q=${encodeURIComponent(typed)}`,
+			{ headers: { "Accept-Language": "en" } },
+		)
+		const [hit] = (await res.json()) as {
+			name?: string
+			address?: Record<string, string>
+		}[]
+		const a = hit?.address ?? {}
+		const found = a.city ?? a.town ?? a.village ?? hit?.name
+		return found ? cityName(found) : typed
+	} catch {
+		return typed
 	}
 }
 

@@ -17,6 +17,7 @@ import {
 } from "../components/TattooUI"
 import { useAuth } from "../hooks/useAuth"
 import { usePhotoUrl } from "../hooks/useProfiles"
+import { englishCity } from "../hooks/useStudioPlace"
 import { useArtist, useReviews, useSend, useStudios } from "../hooks/useTattoo"
 import { useWallet } from "../hooks/useWallet"
 import { must, type Profile as ProfileRow, supabase } from "../lib/supabase"
@@ -49,10 +50,11 @@ const RegisterForm = ({ registered }: { registered: boolean }) => {
 		setBusy(true)
 		setError(undefined)
 		try {
+			const city = await englishCity(field("city"))
 			if (ready && userId) {
 				const row = {
 					name: field("name"),
-					city: field("city"),
+					city,
 					instagram: field("instagram"),
 					bio: field("bio"),
 					avatar_path: avatar,
@@ -72,7 +74,7 @@ const RegisterForm = ({ registered }: { registered: boolean }) => {
 						{
 							artist,
 							name: field("name"),
-							city: field("city"),
+							city,
 							instagram: field("instagram"),
 						},
 						opts,
@@ -232,12 +234,15 @@ const EditAbout = ({
 					onClick={() => {
 						setBusy(true)
 						setError(undefined)
-						save({
-							name: name.trim(),
-							city: city.trim(),
-							bio: bio.trim(),
-							instagram: instagram.trim(),
-						})
+						englishCity(city)
+							.then((city) =>
+								save({
+									name: name.trim(),
+									city,
+									bio: bio.trim(),
+									instagram: instagram.trim(),
+								}),
+							)
 							.then(onDone)
 							.catch((e: Error) => setError(e.message))
 							.finally(() => setBusy(false))

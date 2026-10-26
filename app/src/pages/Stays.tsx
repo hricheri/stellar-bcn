@@ -70,8 +70,8 @@ const COPY: Record<
 		},
 		empty: (
 			<>
-				No requests yet. Tap Add availability on your studio so guests can
-				find you.
+				No requests yet. Tap Add availability on your studio so guests can find
+				you.
 			</>
 		),
 	},
