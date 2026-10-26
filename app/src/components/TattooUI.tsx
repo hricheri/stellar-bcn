@@ -146,9 +146,13 @@ export const RatingLine = ({ artist }: { artist: Artist }) => {
 	const good = (reviews.data ?? []).filter((r) => r.score >= 4).length
 	if (good === 0) return null
 	return (
-		<span className="good-reviews" title={`${good} reviews of 4★ or more`}>
+		<Link
+			to={`/artista/${artist.address}?see=reviews`}
+			className="good-reviews"
+			title={`${good} reviews of 4★ or more`}
+		>
 			⭐ {good}
-		</span>
+		</Link>
 	)
 }
 

@@ -6,6 +6,7 @@ import { ReviewList } from "../components/ReviewList"
 import {
 	About,
 	Avatar,
+	CalendarIcon,
 	NameLine,
 	PageTitle,
 	Photo,
@@ -22,7 +23,7 @@ import {
 	useSpots,
 	useStudios,
 } from "../hooks/useTattoo"
-import { useAllTrips } from "../hooks/useTrips"
+import { useAllTrips, useTravelDays } from "../hooks/useTrips"
 import { useWallet } from "../hooks/useWallet"
 import {
 	type Artist,
@@ -32,6 +33,7 @@ import {
 	SPOT_OPEN,
 	type Studio,
 } from "../lib/tattoo"
+import { freeDays, sharedDays } from "../lib/travel"
 
 // TATTOO APP: my favorites as flip cards, like in the Swaps of the hackathon
 // version. Front: their studio and what's new (dates, trips, reviews, unread
@@ -98,6 +100,7 @@ const FavoriteCard = ({
 }) => {
 	const { address } = useWallet()
 	const like = useLike()
+	const travel = useTravelDays().days
 	const image = useStudioImage(studio)
 	const [tab, setTab] = useState<Tab>()
 	const [likedBack, setLikedBack] = useState(false)
@@ -108,6 +111,8 @@ const FavoriteCard = ({
 	const newSpots = seen ? free.filter((s) => !seen.spots.includes(s.id)) : []
 	const newTrips = seen ? trips.filter((t) => !seen.trips.includes(t.key)) : []
 	const newReviews = seen ? Math.max(0, a.review_count - seen.reviews) : 0
+	// Their free days that fall on the days I can travel
+	const shared = sharedDays(travel, freeDays(spots))
 
 	// What I've seen is remembered once this visit is over
 	useEffect(
@@ -135,6 +140,15 @@ const FavoriteCard = ({
 						/>
 						<span className="card-city">{studio?.city ?? a.city}</span>
 						<button
+							className="card-flip card-chat"
+							aria-label="Chat"
+							title="Chat"
+							onClick={() => setTab("chat")}
+						>
+							💬
+							{unread > 0 && <span className="badge">{unread}</span>}
+						</button>
+						<button
 							className="card-flip"
 							aria-label="Chat and more"
 							onClick={() => setTab("chat")}
@@ -151,6 +165,24 @@ const FavoriteCard = ({
 								<NameLine artist={a} to={profile} />
 								<About artist={a} studio={studio?.name} />
 							</div>
+							{shared > 0 && (
+								<span
+									className="chip chip-trip"
+									title="Days on your availability"
+								>
+									✈️ {shared}
+								</span>
+							)}
+							<button
+								className="cal-btn"
+								title="Their dates"
+								onClick={() => setTab("dates")}
+							>
+								<CalendarIcon />
+								{newSpots.length > 0 && (
+									<span className="badge">{newSpots.length}</span>
+								)}
+							</button>
 						</div>
 
 						<div className="chips" style={{ marginTop: "0.6rem" }}>
@@ -159,18 +191,6 @@ const FavoriteCard = ({
 							)}
 							{kind === "likedMe" && !likedBack && (
 								<span className="pill pill-outline-dark">♥ Liked you</span>
-							)}
-							{unread > 0 && (
-								<span className="pill pill-dark">💬 {unread} new</span>
-							)}
-							{free.length > 0 ? (
-								<span className="chip chip-full">
-									📅 {free.length} available{" "}
-									{free.length === 1 ? "date" : "dates"}
-									{newSpots.length > 0 && <b> · {newSpots.length} new</b>}
-								</span>
-							) : (
-								<span className="chip">No available dates</span>
 							)}
 							{trips.map((t) => (
 								<span key={t.key} className="chip chip-trip">
@@ -185,17 +205,8 @@ const FavoriteCard = ({
 							)}
 						</div>
 
-						<div className="card-actions">
-							<button className="btn-ghost" onClick={() => setTab("chat")}>
-								💬 Chat
-							</button>
-							<button className="btn-ghost" onClick={() => setTab("dates")}>
-								📅 Dates
-							</button>
-							<button className="btn-ghost" onClick={() => setTab("reviews")}>
-								★ Reviews
-							</button>
-							{kind === "likedMe" && !likedBack && (
+						{kind === "likedMe" && !likedBack && (
+							<div className="card-actions">
 								<button
 									className="btn-lime"
 									onClick={() =>
@@ -204,8 +215,8 @@ const FavoriteCard = ({
 								>
 									♥ Like back
 								</button>
-							)}
-						</div>
+							</div>
+						)}
 					</div>
 				</article>
 

@@ -2072,11 +2072,9 @@ a.btn-lavender {
 	padding: 0.85rem;
 }
 
-.card-panel-head {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 0.6rem;
+.card-panel-close {
+	display: block;
+	margin: 0 0 0.4rem auto;
 }
 
 .deck-card .flip-back-body {
@@ -2186,4 +2184,23 @@ a.btn-lavender {
 
 .stay-dates:hover {
 	background: var(--lavender-100);
+}
+
+/* Favorites: chat button beside the flip arrow */
+.card-flip.card-chat {
+	right: 4rem;
+	font-size: 1.1rem;
+}
+
+.card-flip .badge {
+	position: absolute;
+	top: -5px;
+	right: -5px;
+	min-width: 18px;
+	padding: 0 4px;
+	border-radius: 9px;
+	background: var(--gray-900);
+	color: white;
+	font-size: 0.7rem;
+	line-height: 18px;
 }
