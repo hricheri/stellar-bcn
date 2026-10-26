@@ -21,6 +21,15 @@ export const AreaMap = ({
 		<div className={`area-map${exact ? "" : " approx"}`}>
 			<iframe title={label} src={src} loading="lazy" />
 			{!exact && <span className="area-circle" aria-hidden="true" />}
+			{/* The embed's own footer is cut off; OpenStreetMap still needs credit */}
+			<a
+				className="area-credit"
+				href="https://www.openstreetmap.org/copyright"
+				target="_blank"
+				rel="noreferrer"
+			>
+				© OpenStreetMap
+			</a>
 		</div>
 	)
 }

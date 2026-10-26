@@ -1857,11 +1857,27 @@ a.btn-lavender {
 	background: var(--gray-100);
 }
 
+/* Taller than its box and centered, so the embed's footer is cut off */
 .area-map iframe {
+	position: absolute;
+	top: -60px;
+	left: 0;
 	width: 100%;
-	height: 100%;
+	height: calc(100% + 120px);
 	border: 0;
 	pointer-events: none;
+}
+
+.area-credit {
+	position: absolute;
+	right: 0.4rem;
+	bottom: 0.3rem;
+	padding: 0 0.35rem;
+	border-radius: 0.4rem;
+	background: rgb(255 255 255 / 75%);
+	color: var(--gray-700);
+	font-size: 0.65rem;
+	text-decoration: none;
 }
 
 .area-circle {
