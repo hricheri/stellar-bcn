@@ -46,24 +46,27 @@ const must = ({ data, error }) => {
 	return data
 }
 
-// Newer Stellar CLIs have `keys secret`, older ones `keys show`
+// Scaffold keeps the project's keys in .config/stellar. Newer Stellar CLIs
+// have `keys secret`, older ones `keys show`.
 const secretOf = (id) => {
 	let last
-	for (const cmd of [`stellar keys secret ${id}`, `stellar keys show ${id}`]) {
-		try {
-			const out = execSync(cmd, {
-				encoding: "utf8",
-				stdio: ["ignore", "pipe", "pipe"],
-			})
-			const key = out.match(/S[A-Z2-7]{55}/)?.[0]
-			if (key) return key
-		} catch (e) {
-			last = String(e.stderr || e.message)
-				.trim()
-				.split("\n")
-				.pop()
+	for (const dir of [".config/stellar", ".stellar", ""])
+		for (const sub of ["secret", "show"]) {
+			const cmd = `stellar keys ${sub} ${id}${dir ? ` --config-dir ${dir}` : ""}`
+			try {
+				const out = execSync(cmd, {
+					encoding: "utf8",
+					stdio: ["ignore", "pipe", "pipe"],
+				})
+				const key = out.match(/S[A-Z2-7]{55}/)?.[0]
+				if (key) return key
+			} catch (e) {
+				last = String(e.stderr || e.message)
+					.trim()
+					.split("\n")
+					.pop()
+			}
 		}
-	}
 	throw new Error(`No key for ${id}: ${last ?? "not found"}`)
 }
 
