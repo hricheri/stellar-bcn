@@ -49,7 +49,7 @@ interface TripRange {
 
 const unix = (date: string) => Date.parse(`${date}T00:00:00Z`) / 1000
 
-type Kind = "match" | "liked" | "likedMe"
+type Kind = "liked" | "likedMe"
 type Tab = "chat" | "dates" | "reviews"
 
 /** A tiny month with their studio availability, beside who they are */
@@ -198,15 +198,12 @@ const FavoriteCard = ({
 							</div>
 
 							<div className="chips" style={{ marginTop: "0.6rem" }}>
-								{kind === "match" && (
-									<span className="pill pill-dark">♥ Match</span>
-								)}
 								{kind === "likedMe" && !likedBack && (
 									<span className="pill pill-outline-dark">♥ Liked you</span>
 								)}
 								{trips.map((t) => (
 									<span key={t.key} className="chip chip-trip">
-										✈ Wants to travel {formatRange(t.start, t.end)}
+										✈ Available to guest {formatRange(t.start, t.end)}
 										{newTrips.includes(t) && <b> · new</b>}
 									</span>
 								))}
@@ -266,7 +263,7 @@ const FavoriteCard = ({
 							<>
 								{trips.length > 0 && (
 									<p className="hint" style={{ marginTop: 0 }}>
-										{a.name} wants to travel{" "}
+										{a.name} is available to guest{" "}
 										{trips.map((t) => formatRange(t.start, t.end)).join(", ")}.
 										If your studio is available then, offer it in the chat.
 									</p>
@@ -366,13 +363,7 @@ const Favorites = () => {
 	const theyLiked = likedMe.data ?? new Set<string>()
 	const iCanWriteFirst = isEstablished(me.data)
 	const kindOf = (a: string): Kind | undefined =>
-		liked.has(a) && theyLiked.has(a)
-			? "match"
-			: liked.has(a)
-				? "liked"
-				: theyLiked.has(a)
-					? "likedMe"
-					: undefined
+		liked.has(a) ? "liked" : theyLiked.has(a) ? "likedMe" : undefined
 
 	// Unread messages first, then whoever has news
 	const people = (artists.data ?? [])
@@ -402,7 +393,10 @@ const Favorites = () => {
 							spots={(spots.data ?? []).filter((s) => s.host === a.address)}
 							trips={tripsOf.get(a.address) ?? []}
 							unread={unreadOf.get(a.address) ?? 0}
-							canChat={kind === "match" || iCanWriteFirst}
+							canChat={
+								(liked.has(a.address) && theyLiked.has(a.address)) ||
+								iCanWriteFirst
+							}
 							seen={seen[a.address]}
 						/>
 					))}
@@ -423,9 +417,8 @@ const Favorites = () => {
 					save it here.
 				</div>
 			)}
-			{section("match", "♥ Matches", "You liked each other: chat is open")}
 			{section("liked", "♡ My favorites", "New dates, trips and reviews")}
-			{section("likedMe", "They liked you", "Like them back to match")}
+			{section("likedMe", "They liked you", "Like them back to stay updated")}
 		</>
 	)
 }

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import { type Candidate, ExploreCard } from "../components/ExploreCard"
-import { Avatar, PageTitle } from "../components/TattooUI"
+import { PageTitle } from "../components/TattooUI"
 import { useLike, useLikedMe, useLikes } from "../hooks/useLikes"
 import { useArtist, useArtists, useSpots, useStudios } from "../hooks/useTattoo"
 import { useTravelDays } from "../hooks/useTrips"
@@ -114,7 +114,6 @@ const Explore = () => {
 	const [dismissed, setDismissed] = useState<string[]>(loadDismissed)
 	const [justLiked, setJustLiked] = useState<string[]>([])
 	const [notice, setNotice] = useState<React.ReactNode>()
-	const [matched, setMatched] = useState<Artist>()
 	const hasProfile = !!me.data
 
 	const setFilter = (f: Filter) => {
@@ -299,10 +298,7 @@ const Explore = () => {
 		)
 		setNotice(`♥ ${who.name} is in your favorites.`)
 		try {
-			if (await likeArtist(who.address)) {
-				setNotice(undefined)
-				setMatched(who)
-			}
+			await likeArtist(who.address)
 		} catch (e) {
 			setJustLiked((l) => l.filter((x) => x !== who.address))
 			setNotice((e as Error).message)
@@ -457,51 +453,8 @@ const Explore = () => {
 					)}
 				</div>
 			)}
-
-			{matched && me.data && (
-				<MatchPopup
-					me={me.data}
-					them={matched}
-					onClose={() => setMatched(undefined)}
-				/>
-			)}
 		</>
 	)
 }
-
-/** "It's a match!": both liked each other */
-const MatchPopup = ({
-	me,
-	them,
-	onClose,
-}: {
-	me: Artist
-	them: Artist
-	onClose: () => void
-}) => (
-	<div className="modal-backdrop" onClick={onClose}>
-		<div
-			className="modal match-modal"
-			role="dialog"
-			aria-modal="true"
-			aria-labelledby="match-title"
-			onClick={(e) => e.stopPropagation()}
-		>
-			<div className="match-avatars">
-				<Avatar artist={me} big />
-				<span className="match-heart">♥</span>
-				<Avatar artist={them} big />
-			</div>
-			<h2 id="match-title">It's a match! 🎨</h2>
-			<p>{them.name} likes you too. Pick your dates or say hi in the chat.</p>
-			<Link to="/favoritos" className="btn-lime btn-block">
-				📅 Request dates
-			</Link>
-			<button className="btn-ghost btn-block" onClick={onClose}>
-				Keep exploring
-			</button>
-		</div>
-	</div>
-)
 
 export default Explore
