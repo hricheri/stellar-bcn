@@ -10,6 +10,8 @@ import {
 	Avatar,
 	ErrorNotice,
 	PageTitle,
+	EyeIcon,
+	PencilIcon,
 	RatingLine,
 	TierBadge,
 } from "../components/TattooUI"
@@ -448,36 +450,45 @@ const Profile = () => {
 				<div className="ts-card-body">
 					<div className="host-row">
 						<Avatar artist={a} big />
-						<div style={{ flex: 1 }}>
-							<h1 style={{ fontSize: "1.8rem" }}>{a.name}</h1>
+						<div style={{ flex: 1, minWidth: 0 }}>
+							<div className="name-row">
+								<h1 style={{ fontSize: "1.8rem", margin: 0 }}>{a.name}</h1>
+								<TierBadge artist={a} />
+							</div>
 							<div
 								className="meta"
 								style={{ color: "var(--lavender-700)", fontWeight: 700 }}
 							>
 								{a.city} · {profile?.instagram || a.instagram}
 							</div>
-							<div className="chips" style={{ marginTop: "0.3rem" }}>
-								<TierBadge artist={a} />
-								<RatingLine artist={a} />
-							</div>
+							<RatingLine artist={a} />
+						</div>
+						<div className="icon-actions">
+							{profile && !editing && (
+								<button
+									className="icon-btn"
+									title="Edit profile"
+									aria-label="Edit profile"
+									onClick={() => setEditing(true)}
+								>
+									<PencilIcon />
+								</button>
+							)}
+							<Link
+								to={`/artista/${a.address}`}
+								className="icon-btn"
+								title="Preview"
+								aria-label="Preview"
+							>
+								<EyeIcon />
+							</Link>
 						</div>
 					</div>
 					{profile?.bio && !editing && (
 						<p style={{ margin: "0.85rem 0 0" }}>{profile.bio}</p>
 					)}
-					{editing && profile ? (
+					{editing && profile && (
 						<EditAbout row={profile} onDone={() => setEditing(false)} />
-					) : (
-						<div className="field-row" style={{ marginTop: "1rem" }}>
-							{profile && (
-								<button className="btn-lime" onClick={() => setEditing(true)}>
-									Edit profile
-								</button>
-							)}
-							<Link to={`/artista/${a.address}`} className="btn-ghost">
-								Preview
-							</Link>
-						</div>
 					)}
 				</div>
 			</section>

@@ -128,7 +128,7 @@ export const TierBadge = ({ artist }: { artist: Artist }) =>
 		</span>
 	) : (
 		<span className="pill pill-outline" title="Still building their reputation">
-			✦ New
+			✦ Newbie
 		</span>
 	)
 
@@ -139,12 +139,14 @@ export const Stars = ({ score }: { score: number }) => (
 	</span>
 )
 
-export const RatingLine = ({ artist }: { artist: Artist }) => (
-	<span className="meta">
-		<span className="stars">★</span> {formatAvg(artist)} · {artist.review_count}{" "}
-		{artist.review_count === 1 ? "review" : "reviews"}
-	</span>
-)
+/** Nothing until the first review: the Newbie badge already says it */
+export const RatingLine = ({ artist }: { artist: Artist }) =>
+	artist.review_count === 0 ? null : (
+		<span className="meta">
+			<span className="stars">★</span> {formatAvg(artist)} ·{" "}
+			{artist.review_count} {artist.review_count === 1 ? "review" : "reviews"}
+		</span>
+	)
 
 export const ArtistRow = ({
 	artist,
@@ -318,4 +320,34 @@ export const CalendarIcon = ({ size = 22 }: { size?: number }) => (
 		<circle cx="8.5" cy="17.4" r="1.1" fill="currentColor" stroke="none" />
 		<circle cx="12" cy="17.4" r="1.1" fill="currentColor" stroke="none" />
 	</svg>
+)
+
+const Outline = ({ children }: { children: React.ReactNode }) => (
+	<svg
+		width={20}
+		height={20}
+		viewBox="0 0 24 24"
+		fill="none"
+		stroke="currentColor"
+		strokeWidth="2"
+		strokeLinecap="round"
+		strokeLinejoin="round"
+		aria-hidden="true"
+	>
+		{children}
+	</svg>
+)
+
+export const PencilIcon = () => (
+	<Outline>
+		<path d="M16.9 3.6a2.1 2.1 0 0 1 3 3L8.5 18 4 19.5 5.5 15z" />
+		<path d="M14.5 6l3.5 3.5" />
+	</Outline>
+)
+
+export const EyeIcon = () => (
+	<Outline>
+		<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" />
+		<circle cx="12" cy="12" r="3" />
+	</Outline>
 )
