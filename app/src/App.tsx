@@ -3,6 +3,7 @@ import ConnectAccount from "./components/ConnectAccount"
 import { NewPassword } from "./components/NewPassword"
 import { RequireLogin } from "./components/RequireLogin"
 import { AccessGrantSync } from "./hooks/useAccess"
+import { useMenuBadges } from "./hooks/useMenuBadges"
 import ArtistPage from "./pages/ArtistPage"
 import Calendar from "./pages/Calendar"
 import ClientInvite from "./pages/ClientInvite"
@@ -81,34 +82,45 @@ const dock = [
 	{ to: "/perfil", icon: "profile", label: "Profile" },
 ]
 
-const Dock = () => (
-	<nav className="dock" aria-label="Navigation">
-		{dock.map((d) => (
-			<NavLink
-				key={d.to}
-				to={d.to}
-				end={d.to === "/"}
-				title={d.label}
-				className={({ isActive }) => `dock-item${isActive ? " active" : ""}`}
-			>
-				<svg
-					width="20"
-					height="20"
-					fill="none"
-					viewBox="0 0 24 24"
-					stroke="currentColor"
-					strokeWidth="1.8"
-					strokeLinecap="round"
-					strokeLinejoin="round"
-					aria-hidden="true"
+const Dock = () => {
+	const badges = useMenuBadges()
+	return (
+		<nav className="dock" aria-label="Navigation">
+			{dock.map((d) => (
+				<NavLink
+					key={d.to}
+					to={d.to}
+					end={d.to === "/"}
+					title={d.label}
+					className={({ isActive }) => `dock-item${isActive ? " active" : ""}`}
 				>
-					{icons[d.icon]}
-				</svg>
-				<span className="dock-label">{d.label}</span>
-			</NavLink>
-		))}
-	</nav>
-)
+					<svg
+						width="20"
+						height="20"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke="currentColor"
+						strokeWidth="1.8"
+						strokeLinecap="round"
+						strokeLinejoin="round"
+						aria-hidden="true"
+					>
+						{icons[d.icon]}
+					</svg>
+					<span className="dock-label">{d.label}</span>
+					{(badges[d.icon] ?? 0) > 0 && (
+						<span
+							className="dock-badge"
+							aria-label={`${badges[d.icon]} pending`}
+						>
+							{badges[d.icon]}
+						</span>
+					)}
+				</NavLink>
+			))}
+		</nav>
+	)
+}
 
 const AppLayout = () => (
 	<>

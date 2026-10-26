@@ -1990,3 +1990,19 @@ a.btn-lavender {
 	white-space: pre-wrap;
 	margin: 0 0 0.6rem;
 }
+
+.dock-badge {
+	position: absolute;
+	top: 0;
+	right: 2px;
+	min-width: 17px;
+	height: 17px;
+	padding: 0 4px;
+	border-radius: var(--radius-pill);
+	background: var(--danger-600);
+	color: white;
+	font-size: 0.62rem;
+	font-weight: 900;
+	line-height: 17px;
+	text-align: center;
+}
