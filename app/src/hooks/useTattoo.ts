@@ -28,9 +28,11 @@ const ERROR_MESSAGES: Record<number, string> = {
 	17: "Studio + home unlocks with 3 reviews averaging 4 or more.",
 	19: "The booking isn't in the right state for this.",
 	20: "Messages must have between 1 and 280 characters.",
-	21: "You can only write to your matches or to artists you have a booking with.",
+	21: "You can write to an artist once you both like each other, or once you share a guest spot.",
 	22: "That studio doesn't exist.",
 	23: "Only the studio's artists can do this.",
+	24: "You already have a request waiting at this studio. Change it in your Calendar.",
+	25: "Those dates overlap another request or guest spot of yours.",
 }
 
 /** Turns a contract `Result` (or a thrown simulation error) into a friendly message */

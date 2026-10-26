@@ -1,10 +1,12 @@
 import { useState } from "react"
+import { Link } from "react-router-dom"
 import { useLike, useLikes } from "../hooks/useLikes"
-import { useSend, useSpots, useStudios } from "../hooks/useTattoo"
+import { useBookings, useSend, useSpots, useStudios } from "../hooks/useTattoo"
 import { useTravelDays } from "../hooks/useTrips"
-import { formatRange } from "../lib/tattoo"
+import { useWallet } from "../hooks/useWallet"
+import { BK_CONFIRMED, BK_PENDING, formatRange } from "../lib/tattoo"
 import { freeDays } from "../lib/travel"
-import { DayPicker } from "./DayPicker"
+import { daysBetween, DayPicker } from "./DayPicker"
 import { ErrorNotice } from "./TattooUI"
 
 /**
@@ -26,6 +28,8 @@ export const ProposeDates = ({
 	inline?: boolean
 }) => {
 	const send = useSend()
+	const { address } = useWallet()
+	const bookings = useBookings(address)
 	const studios = useStudios()
 	const spots = useSpots()
 	const travelDays = useTravelDays().days
@@ -65,13 +69,45 @@ export const ProposeDates = ({
 		)
 	}
 
-	const theirFree = freeDays(
-		(spots.data ?? []).filter((s) => s.studio_id === selected),
+	// My requests and stays: one request per studio, and no day twice
+	const active = (bookings.data ?? []).filter(
+		(b) =>
+			b.guest === address &&
+			(b.status === BK_PENDING || b.status === BK_CONFIRMED),
+	)
+	const waiting = active.find(
+		(b) => b.status === BK_PENDING && b.studio_id === selected,
+	)
+	const taken = new Set(
+		active.flatMap((b) => daysBetween(Number(b.start), Number(b.end))),
+	)
+	const theirFree = new Set(
+		[
+			...freeDays((spots.data ?? []).filter((s) => s.studio_id === selected)),
+		].filter((d) => !taken.has(d)),
 	)
 	const travel = new Set(travelDays)
 	const firstFree = [...theirFree].sort((a, b) => a - b)[0]
 
 	const studioName = theirStudios.find((s) => s.id === selected)?.name
+
+	// Already asked here: change that request instead of sending another
+	if (waiting && !hash)
+		return (
+			<div className="propose" onClick={(e) => e.stopPropagation()}>
+				<p className="hint" style={{ marginTop: 0 }}>
+					You already asked {studioName ?? "this studio"} for{" "}
+					<b>{formatRange(waiting.start, waiting.end)}</b>. They have to answer
+					before you can ask again.
+				</p>
+				<Link
+					to={`/calendario?request=${waiting.id}`}
+					className="btn-lavender btn-block"
+				>
+					See or change my request
+				</Link>
+			</div>
+		)
 
 	// Only their free days, and a range can't jump over a busy one
 	const pick = (day: number) => {

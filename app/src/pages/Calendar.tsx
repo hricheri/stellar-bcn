@@ -61,7 +61,9 @@ const Calendar = () => {
 	const [error, setError] = useState<string>()
 	const [hash, setHash] = useState<string>()
 	// The request I'm looking at on the calendar, and the days it asks for
-	const [openId, setOpenId] = useState<number>()
+	const [openId, setOpenId] = useState<number | undefined>(
+		Number(params.get("request")) || undefined,
+	)
 	const [picked, setPicked] = useState<number[]>()
 
 	// Travel days: edited here, saved a moment after the last tap
