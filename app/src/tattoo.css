@@ -2354,3 +2354,19 @@ a.btn-lavender {
 	font-weight: 800;
 	vertical-align: middle;
 }
+
+/* Address field with its "Check on map" button on the same line */
+.address-row {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+}
+
+.address-row input {
+	flex: 1;
+	min-width: 0;
+}
+
+.address-row .btn-ghost {
+	flex-shrink: 0;
+}

@@ -65,9 +65,9 @@ export const AddressInput = ({
 
 	return (
 		<div>
-			<div className="field-row">
-				<div className="field" style={{ flex: 1 }}>
-					<label htmlFor="studio-address">Exact address</label>
+			<div className="field">
+				<label htmlFor="studio-address">Exact address</label>
+				<div className="address-row">
 					<input
 						id="studio-address"
 						placeholder="Street and number"
@@ -79,16 +79,18 @@ export const AddressInput = ({
 							onChecked(undefined)
 						}}
 					/>
+					<button
+						type="button"
+						className="btn-ghost"
+						disabled={busy || address.trim().length < 3}
+						onClick={() => void check()}
+					>
+						{busy ? "Looking..." : "📍 Check on map"}
+					</button>
 				</div>
-				<button
-					type="button"
-					className="btn-ghost"
-					style={{ alignSelf: "flex-end" }}
-					disabled={busy || address.trim().length < 3}
-					onClick={() => void check()}
-				>
-					{busy ? "Looking..." : "📍 Check on map"}
-				</button>
+				<p className="hint" style={{ margin: "0.3rem 0 0" }}>
+					We'll only share the exact location with confirmed Guests!
+				</p>
 			</div>
 			{found && (
 				<>
@@ -100,8 +102,7 @@ export const AddressInput = ({
 					/>
 					<p className="hint" style={{ margin: "0.3rem 0 0" }}>
 						{found.label}. Is the pin right? If not, add more detail and check
-						again. Other artists only see the area ({found.area || city}); the
-						exact address goes in the chat once a stay is confirmed.
+						again. Other artists only see the area ({found.area || city}).
 					</p>
 				</>
 			)}

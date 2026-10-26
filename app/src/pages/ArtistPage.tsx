@@ -5,7 +5,6 @@ import { Chat } from "../components/Chat"
 import { LikeButton } from "../components/LikeButton"
 import { ProposeDates } from "../components/ProposeDates"
 import { ReviewList } from "../components/ReviewList"
-import { SpotCard } from "../components/SpotCard"
 import {
 	Avatar,
 	BasicsBadge,
@@ -26,6 +25,7 @@ import { useWallet } from "../hooks/useWallet"
 import {
 	amenityLabel,
 	formatDate,
+	formatRange,
 	isEstablished,
 	reputationOf,
 	type Studio,
@@ -163,9 +163,17 @@ const ArtistPage = () => {
 					<div className="split-title">
 						<h2>Available dates</h2>
 					</div>
-					{openSpots.map((s) => (
-						<SpotCard key={s.id} spot={s} host={a} me={me.data} />
-					))}
+					<section className="ts-card">
+						<div className="ts-card-body">
+							<div className="chips">
+								{openSpots.map((s) => (
+									<span key={s.id} className="chip chip-has">
+										📅 {formatRange(s.start, s.end)}
+									</span>
+								))}
+							</div>
+						</div>
+					</section>
 				</>
 			)}
 
@@ -182,7 +190,7 @@ const ArtistPage = () => {
 					<div className="split-title">
 						<h2>Write to them</h2>
 						<span className="hint">
-							As an established artist you can write without a match
+							As an established artist you can write first
 						</span>
 					</div>
 					<section className="ts-card">
