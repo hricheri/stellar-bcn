@@ -33,6 +33,12 @@ export const AmenityPicker = ({
 		(id) => !known.has(id),
 	)
 
+	// Ticked while what I need is exactly what my studio offers
+	const sameAsStudio =
+		!!copyFrom?.length &&
+		copyFrom.length === selected.length &&
+		copyFrom.every((id) => selected.includes(id))
+
 	const addCustom = () => {
 		const id = customAmenityId(custom)
 		if (id && !selected.includes(id)) onChange([...selected, id])
@@ -41,15 +47,19 @@ export const AmenityPicker = ({
 
 	return (
 		<>
-			{copyFrom && copyFrom.length > 0 && (
-				<button
-					type="button"
-					className="btn-ghost"
-					style={{ marginBottom: "0.5rem" }}
-					onClick={() => onChange([...new Set([...selected, ...copyFrom])])}
-				>
-					⧉ Copy from my studio
-				</button>
+			{copyFrom && (
+				<label className="check-row" style={{ marginTop: 0 }}>
+					<input
+						type="checkbox"
+						disabled={copyFrom.length === 0}
+						checked={sameAsStudio}
+						onChange={(e) => onChange(e.target.checked ? [...copyFrom] : [])}
+					/>
+					Copy the list of supplies from my studio
+					{copyFrom.length === 0 && (
+						<span className="hint"> (create your studio first)</span>
+					)}
+				</label>
 			)}
 			{groups.map((group) => {
 				const items = AMENITIES.filter((a) => a.group === group)

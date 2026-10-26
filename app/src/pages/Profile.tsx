@@ -505,7 +505,7 @@ const Profile = () => {
 					<AmenityPicker
 						selected={wanted}
 						onChange={saveWanted}
-						copyFrom={myStudio?.amenities}
+						copyFrom={myStudio?.amenities ?? []}
 					/>
 				</div>
 			</section>
