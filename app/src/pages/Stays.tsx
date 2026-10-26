@@ -9,6 +9,7 @@ import { Avatar, PageTitle, Photo } from "../components/TattooUI"
 import { OfferDates, requestRange } from "../components/VisitRequest"
 import { useAuth } from "../hooks/useAuth"
 import { useProfiles, useStudioImage } from "../hooks/useProfiles"
+import { usePromoGraphics } from "../hooks/usePromos"
 import {
 	useArtist,
 	useArtists,
@@ -94,8 +95,10 @@ const StayRow = ({
 	/** The stay includes the host's home */
 	home: boolean
 }) => {
-	const [open, setOpen] = useState<"chat" | "details">()
+	const [open, setOpen] = useState<"chat" | "details" | "graphics">()
 	const image = useStudioImage(studio)
+	// 📎 Graphics already sent, by either artist
+	const graphics = usePromoGraphics(b.id).data?.length ?? 0
 	const toDo = pendingActions(
 		b,
 		me,
@@ -161,6 +164,17 @@ const StayRow = ({
 								: "📣 Graphics"}
 					</button>
 				)}
+				{graphics > 0 && (
+					<button
+						className={`btn-ghost${open === "graphics" ? " on" : ""}`}
+						title="Graphics sent"
+						onClick={() =>
+							setOpen(open === "graphics" ? undefined : "graphics")
+						}
+					>
+						📎 {graphics}
+					</button>
+				)}
 				{toDo.includes("enviar_grafica") && open !== "details" && (
 					<button className="btn-lavender" onClick={() => setOpen("details")}>
 						📣 Upload the graphic
@@ -172,6 +186,11 @@ const StayRow = ({
 					{side === "guest" && (
 						<AccessView host={b.host} studioId={b.studio_id} home={home} />
 					)}
+					<PromoGraphics booking={b} me={me} other={other} city={city} />
+				</div>
+			)}
+			{open === "graphics" && (
+				<div className="swap-details">
 					<PromoGraphics booking={b} me={me} other={other} city={city} />
 				</div>
 			)}
