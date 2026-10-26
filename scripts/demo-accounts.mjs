@@ -74,9 +74,7 @@ for (const [id, name, city, instagram] of ARTISTS) {
 			await sb.from("profiles").select("id").eq("id", uid).maybeSingle(),
 		)
 		if (!profile)
-			must(
-				await sb.from("profiles").insert({ id: uid, name, city, instagram }),
-			)
+			must(await sb.from("profiles").insert({ id: uid, name, city, instagram }))
 		const wallet = must(
 			await sb.from("wallets").select("id").eq("id", uid).maybeSingle(),
 		)
