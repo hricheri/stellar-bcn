@@ -138,7 +138,7 @@ export const WantToVisit = ({
 	return (
 		<div className="visit-form">
 			<p className="hint" style={{ marginTop: 0 }}>
-				{studioName} hasn't published free dates. Tell them you'd like to come
+				{studioName} hasn't published its availability yet. Tell them you'd like to come
 				and they'll offer you some.
 			</p>
 			{nextTrip && (
@@ -250,8 +250,8 @@ export const OfferDates = ({ r }: { r: VisitRequest }) => {
 			/>
 			<p className="hint" style={{ margin: "0.5rem 0" }}>
 				{range.from === undefined
-					? "Tap the first free day, then the last one."
-					: `Offer ${formatRange(range.from, range.to!)}. They'll be published as free days.`}
+					? "Tap the first available day, then the last one."
+					: `Offer ${formatRange(range.from, range.to!)}. They'll be published as your studio availability.`}
 			</p>
 			<div className="card-actions">
 				<button className="btn-ghost" onClick={() => setOpen(false)}>

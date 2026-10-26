@@ -533,7 +533,7 @@ const Profile = () => {
 							<AccessEditor part="home" />
 							<p style={{ marginTop: 0 }}>
 								You can now offer your home, with your studio or on its own.
-								Choose it when you add your studio's free dates.
+								Choose it when you add your studio's availability.
 							</p>
 						</div>
 					</>

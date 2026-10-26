@@ -320,7 +320,7 @@ const CreateStudio = ({ me }: { me: Artist }) => {
 				{hash && (
 					<TxNotice
 						hash={hash}
-						text="Studio created! Now add its free dates in the Studio menu."
+						text="Studio created! Now add its availability in the Studio menu."
 					/>
 				)}
 			</form>

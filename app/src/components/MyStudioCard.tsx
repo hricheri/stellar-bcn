@@ -113,7 +113,7 @@ export const MyStudioCard = ({ me }: { me: string }) => {
 			{dates && (
 				<>
 					<div className="split-title">
-						<h2>📅 Free dates</h2>
+						<h2>📅 Studio availability</h2>
 						<button className="btn-ghost" onClick={() => setDates(false)}>
 							Close
 						</button>

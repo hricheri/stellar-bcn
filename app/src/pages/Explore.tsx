@@ -21,7 +21,7 @@ import {
 import { freeDays, sharedDays } from "../lib/travel"
 
 // TATTOO APP: Explore as in the Sprint 4. One card per studio (or home), and
-// you can go back and forth. Studios with free dates come first. Filters on
+// you can go back and forth. Studios with available dates come first. Filters on
 // top: everyone, matching dates (with my travel days from the Calendar), who
 // liked me and one city. A mutual like opens the "It's a match!" pop-up.
 
@@ -316,7 +316,7 @@ const Explore = () => {
 		<>
 			<PageTitle
 				title="Explore"
-				subtitle="Studios with free dates come first. Tap the calendar to ask for yours."
+				subtitle="Studios with available dates come first. Tap the calendar to ask for yours."
 			/>
 
 			<div className="ts-card explore-filters">
@@ -438,7 +438,7 @@ const Explore = () => {
 								: filter.mode === "likedMe"
 									? "Nobody new liked you yet. Keep exploring!"
 									: filter.mode === "dates"
-										? "No studio is free on your travel days yet."
+										? "No studio is available on your days yet."
 										: "Nothing here. Try See everyone."}
 							{dismissed.length > 0 && (
 								<div style={{ marginTop: "0.75rem" }}>

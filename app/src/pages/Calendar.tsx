@@ -227,7 +227,7 @@ const Calendar = () => {
 		<>
 			<PageTitle
 				title="Calendar"
-				subtitle="Mark the days you'd like to travel. We'll let you know when your favorites are free then."
+				subtitle="Mark the days you'd like to travel. We'll let you know when your favorites are available then."
 			/>
 
 			{requests.length > 0 && (
@@ -247,7 +247,9 @@ const Calendar = () => {
 											{formatRange(r.days[0]!, r.days[r.days.length - 1]!)}
 										</div>
 									</button>
-									<span className={`pill ${pending ? "pill-gray" : "pill-dark"}`}>
+									<span
+										className={`pill ${pending ? "pill-gray" : "pill-dark"}`}
+									>
 										{pending ? "⏳ Waiting confirmation" : "✓ Confirmed"}
 									</span>
 									<Link
@@ -271,7 +273,10 @@ const Calendar = () => {
 							<div className="section-label" style={{ margin: 0 }}>
 								{open.name} · {open.city}
 							</div>
-							<button className="btn-ghost" onClick={() => setOpenId(undefined)}>
+							<button
+								className="btn-ghost"
+								onClick={() => setOpenId(undefined)}
+							>
 								✕
 							</button>
 						</div>
@@ -314,17 +319,18 @@ const Calendar = () => {
 											<span className="cal-swatch proposed" /> Days I asked for
 										</span>
 										<span className="cal-legend">
-											<span className="cal-swatch theirs" /> Their other free
-											days
+											<span className="cal-swatch theirs" /> Their studio
+											availability
 										</span>
 									</>
 								) : (
 									<>
 										<span className="cal-legend">
-											<span className="cal-swatch travel" /> I want to travel
+											<span className="cal-swatch travel" /> Available to guest
 										</span>
 										<span className="cal-legend">
-											<span className="cal-swatch confirmed" /> Confirmed stay
+											<span className="cal-swatch confirmed" /> Confirmed Guest
+											Spot
 										</span>
 										<span className="cal-legend">
 											<span className="cal-swatch proposed" /> Requested
@@ -344,7 +350,7 @@ const Calendar = () => {
 								{open.booking.status === BK_PENDING
 									? toRanges(openDays).length > 1
 										? "Your days have a gap. Only the first run will be asked for."
-										: "Tap their free days to add them to your request, or tap yours to drop them."
+										: "Tap their available days to add them to your request, or tap yours to drop them."
 									: "This stay is already confirmed. Write to them in the chat to change it."}
 							</p>
 							{open.booking.status === BK_PENDING && (
