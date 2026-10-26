@@ -2213,3 +2213,24 @@ a.btn-lavender {
 	font-size: 0.7rem;
 	line-height: 18px;
 }
+
+/* "Copy from my studio": tiny text, top right of the card */
+.copy-from {
+	display: flex;
+	justify-content: flex-end;
+	margin: -0.35rem -0.25rem -1.1rem 0;
+}
+
+.copy-from button {
+	border: none;
+	background: none;
+	padding: 0;
+	font-size: 0.75rem;
+	text-decoration: underline;
+	cursor: pointer;
+}
+
+.copy-from button:disabled {
+	text-decoration: none;
+	cursor: default;
+}

@@ -47,19 +47,17 @@ export const AmenityPicker = ({
 
 	return (
 		<>
-			{copyFrom && (
-				<label className="check-row" style={{ marginTop: 0 }}>
-					<input
-						type="checkbox"
-						disabled={copyFrom.length === 0}
-						checked={sameAsStudio}
-						onChange={(e) => onChange(e.target.checked ? [...copyFrom] : [])}
-					/>
-					Copy the list of supplies from my studio
-					{copyFrom.length === 0 && (
-						<span className="hint"> (create your studio first)</span>
-					)}
-				</label>
+			{!!copyFrom?.length && (
+				<div className="copy-from">
+					<button
+						type="button"
+						className="hint"
+						disabled={sameAsStudio}
+						onClick={() => onChange([...copyFrom])}
+					>
+						{sameAsStudio ? "✓ Same as my studio" : "⧉ Copy from my studio"}
+					</button>
+				</div>
 			)}
 			{groups.map((group) => {
 				const items = AMENITIES.filter((a) => a.group === group)
