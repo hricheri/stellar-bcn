@@ -481,7 +481,7 @@ const Profile = () => {
 			<div className="split-title" id="mi-estudio">
 				<h2>My studio</h2>
 				{myStudio && (
-					<Link to="/calendario" className="btn-lime">
+					<Link to="/studio?dates" className="btn-lime">
 						📅 Add availability
 					</Link>
 				)}

@@ -1,14 +1,22 @@
-import { useMemo } from "react"
-import { Link } from "react-router-dom"
+import { useEffect, useMemo, useState } from "react"
+import { Link, useSearchParams } from "react-router-dom"
 import { useStudioImage } from "../hooks/useProfiles"
 import { useArtists, useStudios } from "../hooks/useTattoo"
 import { amenityLabel, type Studio, studioAvg, studioTier } from "../lib/tattoo"
+import { StudioDates } from "./StudioDates"
 import { Photo, StudioTierBadge } from "./TattooUI"
 
 // TATTOO APP: top of the Studio menu. My studio at a glance with an Edit
-// button, or an invitation to create one.
+// button and its free days, or an invitation to create one. With no studio
+// there are no free days to mark.
 
-const Preview = ({ studio }: { studio: Studio }) => {
+const Preview = ({
+	studio,
+	onDates,
+}: {
+	studio: Studio
+	onDates: () => void
+}) => {
 	const image = useStudioImage(studio)
 	const artists = useArtists()
 	const byAddress = useMemo(
@@ -51,9 +59,9 @@ const Preview = ({ studio }: { studio: Studio }) => {
 					<Link to="/perfil#mi-estudio" className="btn-ghost">
 						✎ Edit studio
 					</Link>
-					<Link to="/calendario" className="btn-lime">
+					<button className="btn-lime" onClick={onDates}>
 						📅 Add availability
-					</Link>
+					</button>
 				</div>
 			</div>
 		</section>
@@ -62,6 +70,14 @@ const Preview = ({ studio }: { studio: Studio }) => {
 
 export const MyStudioCard = ({ me }: { me: string }) => {
 	const studios = useStudios()
+	const [params] = useSearchParams()
+	// "Add availability" from the profile lands here with ?dates
+	const [dates, setDates] = useState(params.has("dates"))
+	const loaded = !!studios.data
+	useEffect(() => {
+		if (loaded && params.has("dates"))
+			document.getElementById("fechas")?.scrollIntoView({ behavior: "smooth" })
+	}, [loaded, params])
 	if (!studios.data) return null
 	const mine = studios.data.filter((s) => s.members.includes(me))
 	if (mine.length === 0)
@@ -81,8 +97,30 @@ export const MyStudioCard = ({ me }: { me: string }) => {
 	return (
 		<>
 			{mine.map((s) => (
-				<Preview key={s.id} studio={s} />
+				<Preview
+					key={s.id}
+					studio={s}
+					onDates={() => {
+						setDates(true)
+						setTimeout(() =>
+							document
+								.getElementById("fechas")
+								?.scrollIntoView({ behavior: "smooth" }),
+						)
+					}}
+				/>
 			))}
+			{dates && (
+				<>
+					<div className="split-title">
+						<h2>📅 Free dates</h2>
+						<button className="btn-ghost" onClick={() => setDates(false)}>
+							Close
+						</button>
+					</div>
+					<StudioDates studios={mine} />
+				</>
+			)}
 		</>
 	)
 }

@@ -38,6 +38,31 @@ export const toRanges = (days: number[]) => {
 	}))
 }
 
+/** Range marking: tap the first and last day; tap a marked day to unmark it */
+export const useRangeMarking = (
+	marked: number[],
+	setMarked: (days: number[]) => void,
+	locked: (day: number) => boolean,
+) => {
+	const [anchor, setAnchor] = useState<number>()
+	const pick = (day: number) => {
+		const has = marked.includes(day)
+		if (anchor !== undefined && anchor !== day && !has) {
+			const [a, b] = anchor < day ? [anchor, day] : [day, anchor]
+			const range = daysBetween(a, b).filter((d) => !locked(d))
+			setMarked([...new Set([...marked, ...range])])
+			setAnchor(undefined)
+		} else if (has) {
+			setMarked(marked.filter((d) => d !== day))
+			setAnchor(undefined)
+		} else {
+			setMarked([...marked, day])
+			setAnchor(day)
+		}
+	}
+	return { anchor, pick, reset: () => setAnchor(undefined) }
+}
+
 export const DayPicker = ({
 	dayClass,
 	isLocked,
