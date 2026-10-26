@@ -224,24 +224,26 @@ export const ExploreCard = ({
 								<NameLine artist={a} to={profile} />
 								<About artist={a} studio={c.studio?.name} />
 							</div>
-							<button
-								className={`cal-btn${panel === "dates" ? " on" : ""}`}
-								title="Available dates"
-								aria-pressed={panel === "dates"}
-								onClick={() =>
-									setPanel(panel === "dates" ? undefined : "dates")
-								}
-							>
-								<CalendarIcon />
-								{c.sharedDays > 0 && (
-									<span
-										className="badge"
-										title="Days matching your availability"
-									>
-										{c.sharedDays}
-									</span>
-								)}
-							</button>
+							{panel !== "dates" && (
+								<button
+									className={`cal-btn${panel === "dates" ? " on" : ""}`}
+									title="Available dates"
+									aria-pressed={panel === "dates"}
+									onClick={() =>
+										setPanel(panel === "dates" ? undefined : "dates")
+									}
+								>
+									<CalendarIcon />
+									{c.sharedDays > 0 && (
+										<span
+											className="badge"
+											title="Days matching your availability"
+										>
+											{c.sharedDays}
+										</span>
+									)}
+								</button>
+							)}
 						</div>
 
 						<div className="chips" style={{ marginTop: "0.75rem" }}>

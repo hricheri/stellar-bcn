@@ -143,6 +143,15 @@ export const ProposeDates = ({
 					</select>
 				</div>
 			)}
+			<p className="hint" style={{ margin: "0 0 0.5rem" }}>
+				{theirFree.size === 0
+					? "No available dates yet."
+					: from === undefined
+						? "Click on dates to request to guest at this studio."
+						: to === undefined
+							? "Now tap your last day (or send it as a single day)."
+							: formatRange(from, to)}
+			</p>
 			<DayPicker
 				key={selected}
 				startMonth={firstFree}
@@ -180,28 +189,22 @@ export const ProposeDates = ({
 					</div>
 				</div>
 			</DayPicker>
-			<p className="hint" style={{ margin: "0.5rem 0" }}>
-				{theirFree.size === 0
-					? "No available dates yet."
-					: from === undefined
-						? "Tap your first day, then your last one."
-						: to === undefined
-							? "Now tap your last day (or send it as a single day)."
-							: formatRange(from, to)}
-			</p>
+
 			<div className="propose-send">
 				{hash ? (
 					<div className="alert alert-ok">
 						✓ Request sent to {studioName}! They'll answer you in Guest spots.
 					</div>
 				) : (
-					<button
-						className="btn-lavender btn-block"
-						disabled={busy || from === undefined}
-						onClick={() => void propose()}
-					>
-						{busy ? "Sending..." : "✈ I want to visit!"}
-					</button>
+					from !== undefined && (
+						<button
+							className="btn-lavender btn-block"
+							disabled={busy}
+							onClick={() => void propose()}
+						>
+							{busy ? "Sending..." : "✈ I want to visit!"}
+						</button>
+					)
 				)}
 				<ErrorNotice error={error} />
 			</div>
