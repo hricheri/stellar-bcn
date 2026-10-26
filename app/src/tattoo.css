@@ -571,8 +571,14 @@ button.chip-toggle.on {
 	cursor: pointer;
 }
 
-.star-picker button.on {
+.star-picker button.on,
+.star-picker button.on:hover:not(:disabled) {
 	color: #e0a100;
+}
+
+.star-picker button:hover:not(:disabled),
+.star-picker button:focus {
+	background: none;
 }
 
 .qr-box {

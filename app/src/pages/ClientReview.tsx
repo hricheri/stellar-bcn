@@ -36,7 +36,7 @@ const ClientReview = () => {
 	})
 	const artist = useArtist(invite.data?.artist)
 
-	const [score, setScore] = useState(5)
+	const [score, setScore] = useState(0)
 	const [comment, setComment] = useState("")
 	const [busy, setBusy] = useState(false)
 	const [error, setError] = useState<string>()
@@ -119,9 +119,12 @@ const ClientReview = () => {
 									onChange={(e) => setComment(e.target.value)}
 								/>
 							</div>
+							<p className="hint" style={{ margin: "0 0 0.5rem" }}>
+								Please review carefully, this cannot be undone.
+							</p>
 							<button
 								className="btn-lavender btn-block"
-								disabled={busy}
+								disabled={busy || score === 0}
 								onClick={() => void submit()}
 							>
 								{busy ? "Sending..." : "Post review"}

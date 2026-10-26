@@ -34,7 +34,7 @@ export const BookingActions = ({
 	const actions = pendingActions(booking, me, studioArtist)
 
 	const [reviewing, setReviewing] = useState<false | "artist" | "studio">(false)
-	const [score, setScore] = useState(5)
+	const [score, setScore] = useState(0)
 	const [tags, setTags] = useState<string[]>([])
 	const [comment, setComment] = useState("")
 	const [busy, setBusy] = useState<string>()
@@ -177,9 +177,12 @@ export const BookingActions = ({
 							onChange={(e) => setComment(e.target.value)}
 						/>
 					</div>
+					<p className="hint" style={{ margin: "0 0 0.5rem" }}>
+						Please review carefully, this cannot be undone.
+					</p>
 					<button
 						className="btn-lavender"
-						disabled={!!busy}
+						disabled={!!busy || score === 0}
 						onClick={() =>
 							void run(
 								"review",
