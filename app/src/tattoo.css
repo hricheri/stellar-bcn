@@ -1960,8 +1960,24 @@ a.btn-lavender {
 	object-fit: cover;
 }
 
-.fav-card .flip-back {
+.fav-card.flipped .flip-inner {
 	min-height: 420px;
+}
+
+/* Their next free dates, on the front of the card */
+.fav-cal {
+	margin-top: 0.75rem;
+	border-top: 1px solid var(--gray-200);
+	padding-top: 0.75rem;
+}
+
+.fav-cal .cal-day {
+	font-size: 0.75rem;
+	border-radius: 0.5rem;
+}
+
+.fav-cal .cal-head h3 {
+	font-size: 0.95rem;
 }
 
 /* Access instructions */
@@ -2241,3 +2257,4 @@ a.btn-lavender {
 	line-height: 1;
 	color: var(--gray-900);
 }
+

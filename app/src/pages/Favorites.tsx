@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import { Chat } from "../components/Chat"
+import { DayPicker } from "../components/DayPicker"
 import { ProposeDates } from "../components/ProposeDates"
 import { ReviewList } from "../components/ReviewList"
 import {
@@ -50,6 +51,44 @@ const unix = (date: string) => Date.parse(`${date}T00:00:00Z`) / 1000
 
 type Kind = "match" | "liked" | "likedMe"
 type Tab = "chat" | "dates" | "reviews"
+
+/** Their next free dates, right on the card */
+const DatesPreview = ({
+	free,
+	travel,
+	onPick,
+}: {
+	free: Spot[]
+	travel: number[]
+	onPick: () => void
+}) => {
+	const theirs = new Set(freeDays(free))
+	const mine = new Set(travel)
+	const first = [...theirs].sort((a, b) => a - b)[0]
+	return (
+		<div className="fav-cal trip-cal">
+			<DayPicker
+				startMonth={first}
+				dayClass={(d) =>
+					[theirs.has(d) ? "free" : "", mine.has(d) ? "travel" : ""].join(" ")
+				}
+				isLocked={(d) => !theirs.has(d)}
+				onPick={onPick}
+			>
+				<div className="cal-foot">
+					<div>
+						<span className="cal-legend">
+							<span className="cal-swatch free" /> Their free days
+						</span>
+						<span className="cal-legend">
+							<span className="cal-swatch travel" /> Your availability
+						</span>
+					</div>
+				</div>
+			</DayPicker>
+		</div>
+	)
+}
 
 const FavoriteCard = ({
 	artist: a,
@@ -176,6 +215,14 @@ const FavoriteCard = ({
 								</span>
 							)}
 						</div>
+
+						{free.length > 0 && (
+							<DatesPreview
+								free={free}
+								travel={travel}
+								onPick={() => setTab("dates")}
+							/>
+						)}
 
 						{kind === "likedMe" && !likedBack && (
 							<div className="card-actions">
