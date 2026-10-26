@@ -46,14 +46,32 @@ const must = ({ data, error }) => {
 	return data
 }
 
+// Newer Stellar CLIs have `keys secret`, older ones `keys show`
+const secretOf = (id) => {
+	let last
+	for (const cmd of [`stellar keys secret ${id}`, `stellar keys show ${id}`]) {
+		try {
+			const out = execSync(cmd, {
+				encoding: "utf8",
+				stdio: ["ignore", "pipe", "pipe"],
+			})
+			const key = out.match(/S[A-Z2-7]{55}/)?.[0]
+			if (key) return key
+		} catch (e) {
+			last = String(e.stderr || e.message)
+				.trim()
+				.split("\n")
+				.pop()
+		}
+	}
+	throw new Error(`No key for ${id}: ${last ?? "not found"}`)
+}
+
 const rows = []
 for (const [id, name, city, instagram] of ARTISTS) {
 	const login = `${user}+${id}@${domain}`
 	try {
-		const secret = execSync(`stellar keys secret ${id}`, {
-			encoding: "utf8",
-			stdio: ["ignore", "pipe", "ignore"],
-		}).trim()
+		const secret = secretOf(id)
 		const address = Keypair.fromSecret(secret).publicKey()
 
 		const sb = createClient(URL, KEY, { auth: { persistSession: false } })
