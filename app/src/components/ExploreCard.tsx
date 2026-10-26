@@ -236,8 +236,13 @@ export const ExploreCard = ({
 								}
 							>
 								<CalendarIcon />
-								{c.spots.length > 0 && (
-									<span className="badge">{c.spots.length}</span>
+								{c.sharedDays > 0 && (
+									<span
+										className="badge"
+										title="Days matching your availability"
+									>
+										{c.sharedDays}
+									</span>
 								)}
 							</button>
 						</div>
