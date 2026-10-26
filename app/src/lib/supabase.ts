@@ -64,6 +64,16 @@ export interface VisitRequest {
 	created_at: string
 }
 
+export interface PromoGraphic {
+	id: number
+	booking_id: number
+	owner: string
+	shared_with: string
+	city: string
+	path: string
+	created_at: string
+}
+
 export interface ChatMessage {
 	id: number
 	sender: string

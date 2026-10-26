@@ -34,7 +34,7 @@ export const useProfileOf = (address?: string) =>
 	useProfiles().data?.get(address ?? "")
 
 /** "photos" for profiles and studios; "access" for access instructions */
-export type Bucket = "photos" | "access"
+export type Bucket = "photos" | "access" | "promos"
 
 /** A temporary link to a private photo */
 export const usePhotoUrl = (path?: string | null, bucket: Bucket = "photos") =>

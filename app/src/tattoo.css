@@ -2116,3 +2116,22 @@ a.btn-lavender {
 	background: var(--lima-300);
 	color: var(--gray-900);
 }
+
+/* Guest artist graphics */
+.promo-graphics {
+	margin: 0.6rem 0;
+}
+
+.promo-download {
+	position: absolute;
+	left: 4px;
+	bottom: 4px;
+	width: 28px;
+	height: 28px;
+	padding: 0;
+	border: none;
+	border-radius: 50%;
+	background: rgba(0, 0, 0, 0.6);
+	color: white;
+	font-size: 0.85rem;
+}

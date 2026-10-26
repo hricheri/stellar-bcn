@@ -4,6 +4,7 @@ import { AccessView } from "../components/Access"
 import { BookingActions } from "../components/BookingActions"
 import { Chat } from "../components/Chat"
 import { MyStudioCard } from "../components/MyStudioCard"
+import { PromoGraphics } from "../components/PromoGraphics"
 import { Avatar, PageTitle, Photo } from "../components/TattooUI"
 import { OfferDates, requestRange } from "../components/VisitRequest"
 import { useAuth } from "../hooks/useAuth"
@@ -24,10 +25,8 @@ import {
 	BK_DECLINED,
 	BK_PENDING,
 	type Booking,
-	formatDate,
 	formatRange,
 	pendingActions,
-	promoDeadline,
 	type Studio,
 } from "../lib/tattoo"
 
@@ -146,6 +145,11 @@ const StayRow = ({
 						{open === "details" ? "Hide details" : "View details"}
 					</button>
 				)}
+				{toDo.includes("enviar_grafica") && open !== "details" && (
+					<button className="btn-lavender" onClick={() => setOpen("details")}>
+						📣 Upload the graphic
+					</button>
+				)}
 				{other && (
 					<Link to={`/artista/${other.address}`} className="btn-ghost">
 						Profile
@@ -168,14 +172,7 @@ const StayRow = ({
 							profile. Anything else, tell them in the chat.
 						</p>
 					)}
-					{(b.host === me ? b.host_promo_sent : b.guest_promo_sent) ? (
-						<div className="alert alert-ok">✓ You posted the graphic.</div>
-					) : (
-						<div className="alert alert-info">
-							📸 Post the guest artist graphic before{" "}
-							{formatDate(promoDeadline(b.start))}, so clients know the dates.
-						</div>
-					)}
+					<PromoGraphics booking={b} me={me} other={other} city={city} />
 				</div>
 			)}
 			<div style={{ marginTop: "0.5rem" }}>

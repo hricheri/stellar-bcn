@@ -160,24 +160,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 	const deleteAccount = useCallback(async () => {
 		if (!userId) return
 		// Photos first (Storage API), then the account and everything linked
-		const files = must(
-			await supabase.storage.from("photos").list(userId, { limit: 1000 }),
-		)
-		if (files.length)
-			must(
-				await supabase.storage
-					.from("photos")
-					.remove(files.map((f) => `${userId}/${f.name}`)),
+		for (const bucket of ["photos", "access", "promos"]) {
+			const files = must(
+				await supabase.storage.from(bucket).list(userId, { limit: 1000 }),
 			)
-		const access = must(
-			await supabase.storage.from("access").list(userId, { limit: 1000 }),
-		)
-		if (access.length)
-			must(
-				await supabase.storage
-					.from("access")
-					.remove(access.map((f) => `${userId}/${f.name}`)),
-			)
+			if (files.length)
+				must(
+					await supabase.storage
+						.from(bucket)
+						.remove(files.map((f) => `${userId}/${f.name}`)),
+				)
+		}
 		must(await supabase.rpc("delete_my_account"))
 		await signOut()
 	}, [userId, signOut])

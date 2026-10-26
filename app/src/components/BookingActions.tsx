@@ -5,14 +5,12 @@ import {
 	BK_PENDING,
 	type Artist,
 	type Booking,
-	formatDate,
 	GUEST_TAGS,
 	HOST_TAGS,
 	NO_STUDIO,
 	STUDIO_TAGS,
 	isStudioArtist,
 	pendingActions,
-	promoDeadline,
 	TAG_LABELS,
 } from "../lib/tattoo"
 import { StarPicker } from "./StarPicker"
@@ -110,25 +108,6 @@ export const BookingActions = ({
 					<span className="pill pill-gray">
 						⏳ {ACTION_LABELS.esperando_host}
 					</span>
-				)}
-				{actions.includes("enviar_grafica") && (
-					<button
-						className="btn-lavender"
-						disabled={!!busy}
-						title={`Before ${formatDate(promoDeadline(booking.start))}`}
-						onClick={() =>
-							void run(
-								"promo",
-								() =>
-									send((c, artist, o) =>
-										c.mark_promo_sent({ artist, ...id }, o),
-									),
-								"Graphic marked as posted!",
-							)
-						}
-					>
-						{busy === "promo" ? "..." : "📣 I posted the graphic"}
-					</button>
 				)}
 				{actions.includes("confirmar_estancia") && (
 					<button
