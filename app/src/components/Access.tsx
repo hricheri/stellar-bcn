@@ -12,8 +12,9 @@ import { AreaMap } from "./AreaMap"
 import { PhotoPicker } from "./PhotoPicker"
 import { ErrorNotice } from "./TattooUI"
 
-// TATTOO APP: access instructions. The host writes them once in the
-// profile; each confirmed guest sees them in Guest, under View details.
+// TATTOO APP: access instructions. The host writes them in the profile, the
+// studio ones under My studio and the home ones under My home; each
+// confirmed guest sees them in Guest, under View details.
 
 const MAX_PHOTOS = 6
 
@@ -48,21 +49,26 @@ const AccessPhoto = ({
 	)
 }
 
-/** In my profile: write the instructions and add photos */
-export const AccessEditor = ({ offersHome }: { offersHome: boolean }) => {
+/** Studio photos are named "access-studio-...", home ones "access-home-..." */
+type Part = "studio" | "home"
+const partOf = (path: string): Part =>
+	path.split("/").pop()!.startsWith("access-home-") ? "home" : "studio"
+
+/** In my profile: how to get into my studio, or into my home, with photos */
+export const AccessEditor = ({ part }: { part: Part }) => {
 	const { userId } = useAuth()
 	const info = useMyAccessInfo()
 	const save = useSaveAccessInfo()
-	const [studio, setStudio] = useState<string>()
-	const [home, setHome] = useState<string>()
+	const [text, setText] = useState<string>()
 	const [busy, setBusy] = useState(false)
 	const [error, setError] = useState<string>()
 	const [saved, setSaved] = useState(false)
 	if (info.isLoading) return null
 
-	const photos = info.data?.photo_paths ?? []
-	const studioText = studio ?? info.data?.studio_text ?? ""
-	const homeText = home ?? info.data?.home_text ?? ""
+	const field = part === "studio" ? "studio_text" : "home_text"
+	const all = info.data?.photo_paths ?? []
+	const photos = all.filter((p) => partOf(p) === part)
+	const value = text ?? info.data?.[field] ?? ""
 
 	const run = (fn: () => Promise<void>) => {
 		setBusy(true)
@@ -74,33 +80,25 @@ export const AccessEditor = ({ offersHome }: { offersHome: boolean }) => {
 	}
 
 	return (
-		<div>
+		<div className="access-editor">
+			<div className="section-label">
+				🔒 How to get in · only guests with a confirmed stay see it
+			</div>
 			<div className="field">
-				<label htmlFor="access-studio">How to get into the studio</label>
 				<textarea
-					id="access-studio"
+					aria-label={`How to get into your ${part}`}
 					rows={4}
 					maxLength={2000}
-					placeholder="Door code, which bell to ring, floor, where the keys are, wifi..."
-					value={studioText}
-					onChange={(e) => setStudio(e.target.value)}
+					placeholder={
+						part === "studio"
+							? "Door code, which bell to ring, floor, where the keys are, wifi..."
+							: "Keys, door code, house rules..."
+					}
+					value={value}
+					onChange={(e) => setText(e.target.value)}
 				/>
 			</div>
-			{offersHome && (
-				<div className="field">
-					<label htmlFor="access-home">How to get into your home</label>
-					<textarea
-						id="access-home"
-						rows={4}
-						maxLength={2000}
-						placeholder="Keys, door code, house rules..."
-						value={homeText}
-						onChange={(e) => setHome(e.target.value)}
-					/>
-				</div>
-			)}
 
-			<div className="section-label">Photos (the door, the bell...)</div>
 			<div className="access-photos">
 				{photos.map((p) => (
 					<AccessPhoto
@@ -108,38 +106,36 @@ export const AccessEditor = ({ offersHome }: { offersHome: boolean }) => {
 						path={p}
 						onRemove={() =>
 							run(async () => {
-								await save({ photo_paths: photos.filter((x) => x !== p) })
+								await save({ photo_paths: all.filter((x) => x !== p) })
 								await supabase.storage.from("access").remove([p])
 							})
 						}
 					/>
 				))}
 			</div>
-			{userId && photos.length < MAX_PHOTOS && (
-				<PhotoPicker
-					name="access"
-					bucket="access"
-					label="📷 Add a photo"
-					onUploaded={(path) => save({ photo_paths: [...photos, path] })}
-				/>
-			)}
-
-			<button
-				className="btn-lime btn-block"
-				style={{ marginTop: "1rem" }}
-				disabled={busy || (studio === undefined && home === undefined)}
-				onClick={() =>
-					run(async () => {
-						await save({
-							studio_text: studioText.trim(),
-							home_text: homeText.trim(),
+			<div className="field-row">
+				{userId && photos.length < MAX_PHOTOS && (
+					<PhotoPicker
+						name={`access-${part}`}
+						bucket="access"
+						label="📷 Photo of the door, the bell..."
+						onUploaded={(path) => save({ photo_paths: [...all, path] })}
+					/>
+				)}
+				<button
+					className="btn-lime"
+					disabled={busy || text === undefined}
+					onClick={() =>
+						run(async () => {
+							await save({ [field]: value.trim() })
+							setText(undefined)
+							setSaved(true)
 						})
-						setSaved(true)
-					})
-				}
-			>
-				{busy ? "Saving..." : "Save instructions"}
-			</button>
+					}
+				>
+					{busy ? "Saving..." : "Save instructions"}
+				</button>
+			</div>
 			{saved && (
 				<div className="alert alert-ok">
 					Saved. Guests see them once their stay is confirmed.
@@ -189,25 +185,25 @@ export const AccessView = ({
 	return (
 		<div className="access-view">
 			{where}
-			{i.studio_text && (
-				<>
-					<div className="section-label">How to get into the studio</div>
-					<p className="pre">{i.studio_text}</p>
-				</>
-			)}
-			{home && i.home_text && (
-				<>
-					<div className="section-label">How to get into the home</div>
-					<p className="pre">{i.home_text}</p>
-				</>
-			)}
-			{i.photo_paths.length > 0 && (
-				<div className="access-photos">
-					{i.photo_paths.map((p) => (
-						<AccessPhoto key={p} path={p} />
-					))}
-				</div>
-			)}
+			{(["studio", "home"] as const).map((part) => {
+				const text = part === "studio" ? i.studio_text : i.home_text
+				const photos = i.photo_paths.filter((p) => partOf(p) === part)
+				if ((part === "home" && !home) || (!text && photos.length === 0))
+					return null
+				return (
+					<div key={part}>
+						<div className="section-label">How to get into the {part}</div>
+						{text && <p className="pre">{text}</p>}
+						{photos.length > 0 && (
+							<div className="access-photos">
+								{photos.map((p) => (
+									<AccessPhoto key={p} path={p} />
+								))}
+							</div>
+						)}
+					</div>
+				)
+			})}
 		</div>
 	)
 }

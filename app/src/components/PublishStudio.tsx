@@ -18,6 +18,7 @@ import {
 	studioAvg,
 	studioTier,
 } from "../lib/tattoo"
+import { AccessEditor } from "./Access"
 import { AmenityPicker } from "./AmenityPicker"
 import { PhotoPicker } from "./PhotoPicker"
 import {
@@ -119,6 +120,7 @@ const StudioPanel = ({
 
 				<div className="section-label">Where it is</div>
 				<StudioAddress studioId={studio.id} city={studio.city} />
+				<AccessEditor part="studio" />
 
 				<div className="section-label">Studio artists</div>
 				<div className="chips">

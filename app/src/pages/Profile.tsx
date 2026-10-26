@@ -535,6 +535,7 @@ const Profile = () => {
 					<>
 						{profile && <HomeEditor row={profile} />}
 						<div className="ts-card-body">
+							<AccessEditor part="home" />
 							<p style={{ marginTop: 0 }}>
 								You can now offer your home, with your studio or on its own.
 								Choose it when you add your studio's free dates.
@@ -549,19 +550,6 @@ const Profile = () => {
 						</p>
 					</div>
 				)}
-			</section>
-
-			{/* Access instructions */}
-			<div className="split-title" id="acceso">
-				<h2>Access instructions</h2>
-				<span className="hint">
-					🔒 Only guests with a confirmed stay see them
-				</span>
-			</div>
-			<section className="ts-card">
-				<div className="ts-card-body">
-					<AccessEditor offersHome={unlocked} />
-				</div>
 			</section>
 
 			{/* Reviews */}
